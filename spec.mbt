@@ -23,7 +23,7 @@
 ///   inexact->exact number->string string->number
 ///   numerator denominator abs quotient remainder modulo gcd lcm
 ///   max min floor ceiling truncate round
-///   procedure? not apply call/cc eq? eqv?
+///   procedure? not apply call/cc call-with-current-continuation eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
 ///   reverse c[ad]+r member memq memv assoc assq assv map for-each list-copy
 ///   set-car! set-cdr!

@@ -38,6 +38,20 @@ test "r6rs hard: eval_program_all" {
 }
 
 ///|
+test "r6rs large: tak" {
+  let program =
+    "(letrec ((tak (lambda (x y z) (if (<= x y) z (tak (tak (- x 1) y z) (tak (- y 1) z x) (tak (- z 1) x y)))))) (tak 12 6 0))"
+  inspect(value_to_string(eval_program(program)), content="1")
+}
+
+///|
+test "r6rs large: sieve" {
+  let program =
+    "(letrec ((remove-multiples (lambda (n lst) (cond ((null? lst) '()) ((= (modulo (car lst) n) 0) (remove-multiples n (cdr lst))) (else (cons (car lst) (remove-multiples n (cdr lst)))))))\n               (sieve (lambda (lst) (if (null? lst) '() (cons (car lst) (sieve (remove-multiples (car lst) (cdr lst))))))))\n       (sieve '(2 3 4 5 6 7 8 9 10 11)))"
+  inspect(value_to_string(eval_program(program)), content="(2 3 5 7 11)")
+}
+
+///|
 test "r6rs hard: errors" {
   let unbound = try? eval_program("x")
   match unbound {
