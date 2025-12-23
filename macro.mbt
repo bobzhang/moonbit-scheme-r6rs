@@ -68,6 +68,8 @@ fn is_core_identifier(name : String) -> Bool {
     "pair?",
     "list?",
     "symbol?",
+    "symbol->string",
+    "string->symbol",
     "boolean?",
     "number?",
     "integer?",

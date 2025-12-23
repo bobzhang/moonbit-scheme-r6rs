@@ -39,6 +39,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::NullP, Primitive::NullP)
     | (Primitive::PairP, Primitive::PairP)
     | (Primitive::SymbolP, Primitive::SymbolP)
+    | (Primitive::SymbolToString, Primitive::SymbolToString)
+    | (Primitive::StringToSymbol, Primitive::StringToSymbol)
     | (Primitive::BooleanP, Primitive::BooleanP)
     | (Primitive::NumberP, Primitive::NumberP)
     | (Primitive::IntegerP, Primitive::IntegerP)
@@ -1213,6 +1215,28 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Datum(Datum::Symbol(_)) => bool_value(true)
             _ => bool_value(false)
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::SymbolToString => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::Symbol(name)) => Value::Datum(Datum::String(name))
+            _ => raise EvalError("type error: symbol expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringToSymbol => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::String(name)) => Value::Datum(Datum::Symbol(name))
+            _ => raise EvalError("type error: string expected")
           }
         }
         n => raise arity_mismatch(1, n)

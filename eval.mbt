@@ -18,6 +18,8 @@ fn init_env() -> Env {
   env_define(env, "null?", Value::Primitive(Primitive::NullP))
   env_define(env, "pair?", Value::Primitive(Primitive::PairP))
   env_define(env, "symbol?", Value::Primitive(Primitive::SymbolP))
+  env_define(env, "symbol->string", Value::Primitive(Primitive::SymbolToString))
+  env_define(env, "string->symbol", Value::Primitive(Primitive::StringToSymbol))
   env_define(env, "boolean?", Value::Primitive(Primitive::BooleanP))
   env_define(env, "number?", Value::Primitive(Primitive::NumberP))
   env_define(env, "integer?", Value::Primitive(Primitive::IntegerP))
