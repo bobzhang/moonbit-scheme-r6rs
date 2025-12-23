@@ -399,6 +399,50 @@ test "r6rs numeric: complex numbers" {
 }
 
 ///|
+test "r6rs numeric: complex literals" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(real-part 1+2i)
+      )
+    )),
+    content="1",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(imag-part 1+2i)
+      )
+    )),
+    content="2",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(imag-part -i)
+      )
+    )),
+    content="-1",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (real-part 1@0) 1.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(string->number "3+4i")
+      )
+    )),
+    content="3+4i",
+  )
+}
+
+///|
 test "r6rs numeric: elementary functions" {
   inspect(
     value_to_string(eval_program(

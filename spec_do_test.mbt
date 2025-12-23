@@ -2,9 +2,9 @@
 test "r6rs do: accumulation" {
   let program = (
     (
-      #|(do ((i 0 (+ i 1))
-      #|     (acc 0 (+ acc i)))
-      #|    ((= i 5) acc))
+      #|(do ((k 0 (+ k 1))
+      #|     (acc 0 (+ acc k)))
+      #|    ((= k 5) acc))
     )
   )
   inspect(value_to_string(eval_program(program)), content="10")
@@ -15,9 +15,9 @@ test "r6rs do: default step and commands" {
   let program = (
     (
       #|(let ((x 0))
-      #|  (do ((i 0 (+ i 1))
+      #|  (do ((k 0 (+ k 1))
       #|       (y 5))
-      #|      ((= i 3) (list x y))
+      #|      ((= k 3) (list x y))
       #|    (set! x (+ x 2))))
     )
   )

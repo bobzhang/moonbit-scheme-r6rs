@@ -44,9 +44,9 @@ test "r6rs cond: => clause" {
 test "r6rs let: named let" {
   let program = (
     (
-      #|(let loop ((i 0) (acc 0))
-      #|  (if (< i 5)
-      #|    (loop (+ i 1) (+ acc i))
+      #|(let loop ((k 0) (acc 0))
+      #|  (if (< k 5)
+      #|    (loop (+ k 1) (+ acc k))
       #|    acc))
     )
   )

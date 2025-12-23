@@ -449,8 +449,235 @@ fn datum_to_float(value : Datum) -> Float? {
   match value {
     Datum::Int(n) => Some(Float::from_int(n))
     Datum::Rat(n, d) => Some(Float::from_int(n) / Float::from_int(d))
+    Datum::Float(f) => Some(f)
     _ => None
   }
+}
+
+///|
+fn reader_datum_is_zero(value : Datum) -> Bool {
+  match value {
+    Datum::Int(n) => n == 0
+    Datum::Rat(n, _) => n == 0
+    Datum::Float(f) => f == 0.0
+    _ => false
+  }
+}
+
+///|
+fn make_complex_datum(real : Datum, imag : Datum) -> Datum {
+  if reader_datum_is_zero(imag) {
+    real
+  } else {
+    Datum::Complex(Ref::new(real), Ref::new(imag))
+  }
+}
+
+///|
+fn parse_real_token_with_settings(
+  tok : String,
+  radix : Int,
+  exactness : Char?,
+  allow_rat : Bool
+) -> Datum? {
+  if tok.length() == 0 {
+    return None
+  }
+  let mut has_dot = false
+  let mut has_exp = false
+  let mut has_slash = false
+  for ch in tok {
+    if ch == '.' {
+      has_dot = true
+    } else if ch == 'e' || ch == 'E' {
+      has_exp = true
+    } else if ch == '/' {
+      has_slash = true
+    }
+  }
+  if radix != 10 {
+    if has_dot || has_exp {
+      return None
+    }
+    if has_slash && !allow_rat {
+      return None
+    }
+    let parsed = if has_slash {
+      parse_rat_token_radix(tok, radix)
+    } else {
+      match parse_int_token_radix(tok, radix) {
+        Some(n) => Some(Datum::Int(n))
+        None => None
+      }
+    }
+    match parsed {
+      Some(datum) => {
+        match exactness {
+          Some('i') | Some('I') =>
+            match datum_to_float(datum) {
+              Some(f) => Some(Datum::Float(f))
+              None => None
+            }
+          _ => Some(datum)
+        }
+      }
+      None => None
+    }
+  } else {
+    if has_slash {
+      if !allow_rat {
+        return None
+      }
+      match parse_rat_token(tok) {
+        Some(datum) => {
+          match exactness {
+            Some('i') | Some('I') =>
+              match datum_to_float(datum) {
+                Some(f) => Some(Datum::Float(f))
+                None => None
+              }
+            _ => Some(datum)
+          }
+        }
+        None => None
+      }
+    } else if has_dot || has_exp {
+      match exactness {
+        Some('e') | Some('E') => parse_exact_decimal(tok)
+        _ => {
+          match parse_float_token_with_exp(tok) {
+            Some(f) => Some(Datum::Float(f))
+            None => None
+          }
+        }
+      }
+    } else {
+      match parse_int_token(tok) {
+        Some(n) => {
+          match exactness {
+            Some('i') | Some('I') => Some(Datum::Float(Float::from_int(n)))
+            _ => Some(Datum::Int(n))
+          }
+        }
+        None => None
+      }
+    }
+  }
+}
+
+///|
+fn parse_complex_token(
+  tok : String,
+  radix : Int,
+  exactness : Char?,
+  allow_rat : Bool
+) -> Datum? {
+  let chars : Array[Char] = []
+  for ch in tok {
+    chars.push(ch)
+  }
+  let mut at = -1
+  let mut idx = 0
+  while idx < chars.length() {
+    if chars[idx] == '@' {
+      if at != -1 {
+        return None
+      }
+      at = idx
+    }
+    idx = idx + 1
+  }
+  if at != -1 {
+    if at == 0 || at == chars.length() - 1 {
+      return None
+    }
+    let left = String::from_array(chars.sub(end=at).to_array())
+    let right = String::from_array(chars.sub(start=at + 1).to_array())
+    let r = match parse_real_token_with_settings(left, radix, exactness, allow_rat) {
+      Some(value) => value
+      None => return None
+    }
+    let theta = match parse_real_token_with_settings(right, radix, exactness, allow_rat) {
+      Some(value) => value
+      None => return None
+    }
+    let rf = match datum_to_float(r) {
+      Some(value) => value
+      None => return None
+    }
+    let tf = match datum_to_float(theta) {
+      Some(value) => value
+      None => return None
+    }
+    let real = Datum::Float(rf * @math.cosf(tf))
+    let imag = Datum::Float(rf * @math.sinf(tf))
+    return Some(make_complex_datum(real, imag))
+  }
+  if chars.length() == 0 {
+    return None
+  }
+  let last = chars[chars.length() - 1]
+  if last != 'i' && last != 'I' {
+    return None
+  }
+  let core = String::from_array(chars.sub(end=chars.length() - 1).to_array())
+  if core.length() == 0 || core == "+" || core == "-" {
+    let sign = if core == "-" { -1 } else { 1 }
+    let imag = match exactness {
+      Some('i') | Some('I') => Datum::Float(Float::from_int(sign))
+      _ => Datum::Int(sign)
+    }
+    return Some(make_complex_datum(Datum::Int(0), imag))
+  }
+  let core_chars : Array[Char] = []
+  for ch in core {
+    core_chars.push(ch)
+  }
+  let mut split = -1
+  if core_chars.length() > 1 {
+    let mut i = core_chars.length() - 1
+    while i > 0 {
+      let ch = core_chars[i]
+      if ch == '+' || ch == '-' {
+        if radix == 10 && i > 0 {
+          let prev = core_chars[i - 1]
+          if prev == 'e' || prev == 'E' {
+            i = i - 1
+            continue
+          }
+        }
+        split = i
+        break
+      }
+      i = i - 1
+    }
+  }
+  if split != -1 {
+    let real_str = String::from_array(core_chars.sub(end=split).to_array())
+    let imag_str = String::from_array(core_chars.sub(start=split).to_array())
+    let real = match parse_real_token_with_settings(real_str, radix, exactness, allow_rat) {
+      Some(value) => value
+      None => return None
+    }
+    let imag = if imag_str == "+" || imag_str == "-" {
+      let sign = if imag_str == "-" { -1 } else { 1 }
+      match exactness {
+        Some('i') | Some('I') => Datum::Float(Float::from_int(sign))
+        _ => Datum::Int(sign)
+      }
+    } else {
+      match parse_real_token_with_settings(imag_str, radix, exactness, allow_rat) {
+        Some(value) => value
+        None => return None
+      }
+    }
+    return Some(make_complex_datum(real, imag))
+  }
+  let imag = match parse_real_token_with_settings(core, radix, exactness, allow_rat) {
+    Some(value) => value
+    None => return None
+  }
+  Some(make_complex_datum(Datum::Int(0), imag))
 }
 
 ///|
@@ -497,86 +724,10 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
     return None
   }
   let rest = String::from_array(chars.sub(start=i).to_array())
-  let mut has_dot = false
-  let mut has_exp = false
-  let mut has_slash = false
-  for ch in rest {
-    if ch == '.' {
-      has_dot = true
-    } else if ch == 'e' || ch == 'E' {
-      has_exp = true
-    } else if ch == '/' {
-      has_slash = true
-    }
-  }
   let allow_rat = radix_override is None
-  if radix != 10 {
-    if has_dot || has_exp {
-      return None
-    }
-    if has_slash && !allow_rat {
-      return None
-    }
-    let parsed = if has_slash {
-      parse_rat_token_radix(rest, radix)
-    } else {
-      match parse_int_token_radix(rest, radix) {
-        Some(n) => Some(Datum::Int(n))
-        None => None
-      }
-    }
-    match parsed {
-      Some(datum) => {
-        match exactness {
-          Some('i') | Some('I') =>
-            match datum_to_float(datum) {
-              Some(f) => Some(Datum::Float(f))
-              None => None
-            }
-          _ => Some(datum)
-        }
-      }
-      None => None
-    }
-  } else {
-    if has_slash {
-      if !allow_rat {
-        return None
-      }
-      match parse_rat_token(rest) {
-        Some(datum) => {
-          match exactness {
-            Some('i') | Some('I') =>
-              match datum_to_float(datum) {
-                Some(f) => Some(Datum::Float(f))
-                None => None
-              }
-            _ => Some(datum)
-          }
-        }
-        None => None
-      }
-    } else if has_dot || has_exp {
-      match exactness {
-        Some('e') | Some('E') => parse_exact_decimal(rest)
-        _ => {
-          match parse_float_token_with_exp(rest) {
-            Some(f) => Some(Datum::Float(f))
-            None => None
-          }
-        }
-      }
-    } else {
-      match parse_int_token(rest) {
-        Some(n) => {
-          match exactness {
-            Some('i') | Some('I') => Some(Datum::Float(Float::from_int(n)))
-            _ => Some(Datum::Int(n))
-          }
-        }
-        None => None
-      }
-    }
+  match parse_complex_token(rest, radix, exactness, allow_rat) {
+    Some(datum) => Some(datum)
+    None => parse_real_token_with_settings(rest, radix, exactness, allow_rat)
   }
 }
 

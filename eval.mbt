@@ -551,10 +551,10 @@ fn stdlib_source() -> String {
     "(define (count pred lst)",
     "  (fold-left (lambda (acc x) (if (pred x) (+ acc 1) acc)) 0 lst))",
     "(define (list-index pred lst)",
-    "  (let loop ((lst lst) (i 0))",
+    "  (let loop ((lst lst) (idx 0))",
     "    (cond ((null? lst) #f)",
-    "          ((pred (car lst)) i)",
-    "          (else (loop (cdr lst) (+ i 1))))))",
+    "          ((pred (car lst)) idx)",
+    "          (else (loop (cdr lst) (+ idx 1))))))",
     "(define (partition pred lst)",
     "  (let loop ((lst lst) (yes '()) (no '()))",
     "    (if (null? lst)",
@@ -580,10 +580,10 @@ fn stdlib_source() -> String {
     "        (if (null? rest) acc",
     "            (loop (cdr rest) (string-append acc sep (car rest)))))))",
     "(define (list-tabulate n f)",
-    "  (let loop ((i 0) (acc '()))",
-    "    (if (>= i n)",
+    "  (let loop ((idx 0) (acc '()))",
+    "    (if (>= idx n)",
     "        (reverse acc)",
-    "        (loop (+ i 1) (cons (f i) acc)))))",
+    "        (loop (+ idx 1) (cons (f idx) acc)))))",
   ]
   lines.join("\n")
 }

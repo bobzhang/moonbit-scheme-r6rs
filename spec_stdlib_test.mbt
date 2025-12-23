@@ -175,7 +175,7 @@ test "stdlib: extended helpers" {
   inspect(
     value_to_string(eval_program(
       (
-        #|(list-tabulate 5 (lambda (i) (* i i)))
+        #|(list-tabulate 5 (lambda (n) (* n n)))
       )
     )),
     content="(0 1 4 9 16)",
@@ -183,7 +183,7 @@ test "stdlib: extended helpers" {
   inspect(
     value_to_string(eval_program(
       (
-        #|(list-tabulate 0 (lambda (i) i))
+        #|(list-tabulate 0 (lambda (n) n))
       )
     )),
     content="()",
