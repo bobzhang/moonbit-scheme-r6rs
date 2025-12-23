@@ -146,6 +146,8 @@ fn init_env() -> Env {
   env_define(env, "string-copy", Value::Primitive(Primitive::StringCopy))
   env_define(env, "string->list", Value::Primitive(Primitive::StringToList))
   env_define(env, "list->string", Value::Primitive(Primitive::ListToString))
+  env_define(env, "string-map", Value::Primitive(Primitive::StringMap))
+  env_define(env, "string-for-each", Value::Primitive(Primitive::StringForEach))
   env_define(env, "string-upcase", Value::Primitive(Primitive::StringUpcase))
   env_define(env, "string-downcase", Value::Primitive(Primitive::StringDowncase))
   env_define(env, "string-foldcase", Value::Primitive(Primitive::StringFoldcase))
@@ -331,6 +333,7 @@ priv enum Kont {
   CallWithValues(Value, Kont)
   MapStep(Value, Array[Datum], Array[Datum], Bool, Kont)
   VectorMapFinalize(Kont)
+  StringMapFinalize(Kont)
   WindEnter(Value, Winder, Kont)
   WindExit(Winder, Kont)
   WindActions(Array[WindAction], Value, Kont, Array[Value])
@@ -908,6 +911,13 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             let result_datum = value_as_datum(single)
             let items = datum_list_to_array(result_datum)
             state = MachineState::Apply(Value::Datum(Datum::Vector(items)), next, handlers)
+          }
+          Kont::StringMapFinalize(next) => {
+            let single = expect_single(value)
+            let result_datum = value_as_datum(single)
+            let string_value =
+              apply_primitive(Primitive::ListToString, [Value::Datum(result_datum)])
+            state = MachineState::Apply(string_value, next, handlers)
           }
           Kont::WindEnter(thunk, winder, next) => {
             wind_push(winder)
@@ -2306,6 +2316,20 @@ fn map_step(
 }
 
 ///|
+fn string_to_char_list(s : String) -> Datum raise EvalError {
+  let items : Array[Datum] = []
+  let mut i = 0
+  while i < s.length() {
+    match s.get_char(i) {
+      Some(ch) => items.push(Datum::Char(ch))
+      None => raise EvalError("index out of range")
+    }
+    i = i + 1
+  }
+  list_from_array(items)
+}
+
+///|
 fn apply_proc(
   proc : Value,
   args : Array[Value],
@@ -2473,6 +2497,48 @@ fn apply_proc(
         while k < vectors.length() {
           lists.push(list_from_array(vectors[k]))
           k = k + 1
+        }
+        map_step(proc_value, lists, [], true, kont, handlers)
+      }
+    }
+    Value::Primitive(Primitive::StringMap) => {
+      if args.length() < 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let proc_value = args[0]
+        let first = value_as_string(args[1])
+        let len = first.length()
+        let lists : Array[Datum] = []
+        lists.push(string_to_char_list(first))
+        let mut i = 2
+        while i < args.length() {
+          let s = value_as_string(args[i])
+          if s.length() != len {
+            raise EvalError("string length mismatch")
+          }
+          lists.push(string_to_char_list(s))
+          i = i + 1
+        }
+        map_step(proc_value, lists, [], false, Kont::StringMapFinalize(kont), handlers)
+      }
+    }
+    Value::Primitive(Primitive::StringForEach) => {
+      if args.length() < 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let proc_value = args[0]
+        let first = value_as_string(args[1])
+        let len = first.length()
+        let lists : Array[Datum] = []
+        lists.push(string_to_char_list(first))
+        let mut i = 2
+        while i < args.length() {
+          let s = value_as_string(args[i])
+          if s.length() != len {
+            raise EvalError("string length mismatch")
+          }
+          lists.push(string_to_char_list(s))
+          i = i + 1
         }
         map_step(proc_value, lists, [], true, kont, handlers)
       }

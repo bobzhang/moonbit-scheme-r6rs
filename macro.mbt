@@ -174,6 +174,8 @@ fn is_core_identifier(name : String) -> Bool {
     "string-copy",
     "string->list",
     "list->string",
+    "string-map",
+    "string-for-each",
     "string-upcase",
     "string-downcase",
     "string-foldcase",

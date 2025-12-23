@@ -17,6 +17,11 @@ test "r6rs char and string primitives" {
   inspect(value_to_string(eval_program("(string->list \"hi\")")), content="(#\\h #\\i)")
   inspect(value_to_string(eval_program("(list->string '(#\\h #\\i))")), content="\"hi\"")
   inspect(value_to_string(eval_program("(list->string '())")), content="\"\"")
+  inspect(value_to_string(eval_program("(string-map char-upcase \"ab\")")), content="\"AB\"")
+  inspect(value_to_string(eval_program("(string-map char-downcase \"AB\")")), content="\"ab\"")
+  let for_each_program =
+    "(let ((n 0)) (string-for-each (lambda (ch) (set! n (+ n 1))) \"abc\") n)"
+  inspect(value_to_string(eval_program(for_each_program)), content="3")
   inspect(value_to_string(eval_program("(symbol->string 'hello)")), content="\"hello\"")
   inspect(value_to_string(eval_program("(string->symbol \"hello\")")), content="hello")
   inspect(value_to_string(eval_program("(char=? #\\a #\\a #\\a)")), content="#t")
@@ -66,6 +71,12 @@ test "r6rs string-ref: errors" {
   match bad_copy {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
     _ => fail("expected EvalError for invalid string-copy range")
+  }
+
+  let bad_map = try? eval_program("(string-map char-upcase \"a\" \"bb\")")
+  match bad_map {
+    Err(err) => inspect(err, content="EvalError(\"string length mismatch\")")
+    _ => fail("expected EvalError for string length mismatch")
   }
 }
 

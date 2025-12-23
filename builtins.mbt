@@ -133,6 +133,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::StringCopy, Primitive::StringCopy)
     | (Primitive::StringToList, Primitive::StringToList)
     | (Primitive::ListToString, Primitive::ListToString)
+    | (Primitive::StringMap, Primitive::StringMap)
+    | (Primitive::StringForEach, Primitive::StringForEach)
     | (Primitive::StringUpcase, Primitive::StringUpcase)
     | (Primitive::StringDowncase, Primitive::StringDowncase)
     | (Primitive::StringFoldcase, Primitive::StringFoldcase)
@@ -1987,6 +1989,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::VectorForEach => {
       raise EvalError("internal error: vector-for-each should be handled in apply_proc")
+    }
+    Primitive::StringMap => {
+      raise EvalError("internal error: string-map should be handled in apply_proc")
+    }
+    Primitive::StringForEach => {
+      raise EvalError("internal error: string-for-each should be handled in apply_proc")
     }
     Primitive::Values => Value::Values(args)
     Primitive::CallWithValues => {
