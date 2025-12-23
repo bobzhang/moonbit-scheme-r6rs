@@ -51,6 +51,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::CallCC, Primitive::CallCC)
     | (Primitive::Values, Primitive::Values)
     | (Primitive::CallWithValues, Primitive::CallWithValues)
+    | (Primitive::MakeParameter, Primitive::MakeParameter)
+    | (Primitive::DynamicWind, Primitive::DynamicWind)
     | (Primitive::ExactToInexact, Primitive::ExactToInexact)
     | (Primitive::InexactToExact, Primitive::InexactToExact)
     | (Primitive::Numerator, Primitive::Numerator)
@@ -94,6 +96,7 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::Primitive(a), Value::Primitive(b)) => primitive_eq(a, b)
     (Value::Closure(a), Value::Closure(b)) => a.id == b.id
     (Value::CaseClosure(a), Value::CaseClosure(b)) => a.id == b.id
+    (Value::Parameter(a), Value::Parameter(b)) => a.id == b.id
     (Value::Continuation(a), Value::Continuation(b)) => a.id == b.id
     (Value::Port(a), Value::Port(b)) => a.id == b.id
     (Value::Record(a), Value::Record(b)) => a.id == b.id
@@ -701,6 +704,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Primitive(_)
             | Value::Closure(_)
             | Value::CaseClosure(_)
+            | Value::Parameter(_)
             | Value::Continuation(_)
             | Value::RecordProc(_) => bool_value(true)
             _ => bool_value(false)
@@ -952,6 +956,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::Values => Value::Values(args)
     Primitive::CallWithValues => {
       raise EvalError("internal error: call-with-values should be handled in apply_proc")
+    }
+    Primitive::MakeParameter => {
+      match args.length() {
+        1 => Value::Parameter(make_parameter(args[0]))
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::DynamicWind => {
+      raise EvalError("internal error: dynamic-wind should be handled in apply_proc")
     }
     Primitive::ListP => {
       match args.length() {

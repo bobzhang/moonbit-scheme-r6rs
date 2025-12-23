@@ -29,6 +29,8 @@ fn init_env() -> Env {
   env_define(env, "apply", Value::Primitive(Primitive::Apply))
   env_define(env, "values", Value::Primitive(Primitive::Values))
   env_define(env, "call-with-values", Value::Primitive(Primitive::CallWithValues))
+  env_define(env, "make-parameter", Value::Primitive(Primitive::MakeParameter))
+  env_define(env, "dynamic-wind", Value::Primitive(Primitive::DynamicWind))
   env_define(env, "exact->inexact", Value::Primitive(Primitive::ExactToInexact))
   env_define(env, "inexact->exact", Value::Primitive(Primitive::InexactToExact))
   env_define(env, "numerator", Value::Primitive(Primitive::Numerator))
@@ -93,6 +95,39 @@ fn make_closure(params : Array[String], body : Array[Datum], env : Env) -> Closu
 }
 
 ///|
+let parameter_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_parameter_id() -> Int {
+  let id = parameter_counter.val
+  parameter_counter.val = id + 1
+  id
+}
+
+///|
+fn make_parameter(value : Value) -> Parameter {
+  { id: next_parameter_id(), value: Ref::new(value) }
+}
+
+///|
+fn value_as_parameter(value : Value) -> Parameter raise EvalError {
+  match value {
+    Value::Parameter(param) => param
+    _ => raise EvalError("type error: parameter expected")
+  }
+}
+
+///|
+fn parameter_get(param : Parameter) -> Value {
+  param.value.val
+}
+
+///|
+fn parameter_set(param : Parameter, value : Value) -> Unit {
+  param.value.val = value
+}
+
+///|
 fn make_case_closure(clauses : Array[CaseClause], env : Env) -> CaseClosure {
   { id: next_closure_id(), clauses, env }
 }
@@ -123,9 +158,31 @@ priv enum Kont {
   )
   LetStarValues(Array[(Array[String], Datum)], Int, Env, Array[Datum], Kont)
   DefineValues(Array[String], Env, Kont)
+  ParameterizeParam(
+    Array[(Datum, Datum)],
+    Int,
+    Array[Parameter],
+    Array[Value],
+    Env,
+    Array[Datum],
+    Kont,
+  )
+  ParameterizeValue(
+    Array[(Datum, Datum)],
+    Int,
+    Array[Parameter],
+    Array[Value],
+    Env,
+    Array[Datum],
+    Kont,
+  )
   Case(Array[Datum], Env, Kont)
   CaseArrow(Value, Kont)
   CallWithValues(Value, Kont)
+  WindEnter(Value, Winder, Kont)
+  WindExit(Winder, Kont)
+  WindActions(Array[WindAction], Value, Kont, Array[Value])
+  WindPush(Winder, Array[WindAction], Value, Kont, Array[Value])
   RaiseNonCont
   RaiseCont(Kont)
   RestoreHandlers(Array[Value], Kont)
@@ -136,6 +193,33 @@ struct Continuation {
   id : Int
   kont : Kont
   handlers : Array[Value]
+  winds : Array[Winder]
+}
+
+///|
+priv struct ParamBinding {
+  param : Parameter
+  old_value : Value
+  new_value : Value
+}
+
+///|
+priv enum WinderKind {
+  Proc(Value, Value)
+  Params(Array[ParamBinding])
+}
+
+///|
+priv struct Winder {
+  id : Int
+  kind : WinderKind
+}
+
+///|
+priv enum WindAction {
+  After(Winder)
+  Before(Winder)
+  SwitchHandlers(Array[Value])
 }
 
 ///|
@@ -143,6 +227,29 @@ priv enum MachineState {
   Eval(Datum, Env, Kont, Array[Value])
   Apply(Value, Kont, Array[Value])
 }
+
+///|
+let winder_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_winder_id() -> Int {
+  let id = winder_counter.val
+  winder_counter.val = id + 1
+  id
+}
+
+///|
+fn make_proc_winder(before : Value, after : Value) -> Winder {
+  Winder::{ id: next_winder_id(), kind: WinderKind::Proc(before, after) }
+}
+
+///|
+fn make_param_winder(bindings : Array[ParamBinding]) -> Winder {
+  Winder::{ id: next_winder_id(), kind: WinderKind::Params(bindings) }
+}
+
+///|
+let wind_stack : Ref[Array[Winder]] = Ref::new([])
 
 ///|
 let continuation_counter : Ref[Int] = Ref::new(0)
@@ -179,6 +286,7 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
   let forms = parse_program(src)
   reset_library_registry()
   set_current_output_port(new_output_string_port())
+  wind_stack.val = []
   let env = init_env()
   let results : Array[Value] = []
   for form in forms {
@@ -454,6 +562,64 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             }
             state = MachineState::Apply(Value::Void, next, handlers)
           }
+          Kont::ParameterizeParam(bindings, index, params, values, env, body, next) => {
+            let param_value = expect_single(value)
+            let param = value_as_parameter(param_value)
+            let next_params : Array[Parameter] = []
+            for item in params {
+              next_params.push(item)
+            }
+            next_params.push(param)
+            let (_, expr) = bindings[index]
+            state = MachineState::Eval(
+              expr,
+              env,
+              Kont::ParameterizeValue(bindings, index, next_params, values, env, body, next),
+              handlers,
+            )
+          }
+          Kont::ParameterizeValue(bindings, index, params, values, env, body, next) => {
+            let new_value = expect_single(value)
+            let next_values : Array[Value] = []
+            for item in values {
+              next_values.push(item)
+            }
+            next_values.push(new_value)
+            let next_index = index + 1
+            if next_index < bindings.length() {
+              let (param_expr, _) = bindings[next_index]
+              state = MachineState::Eval(
+                param_expr,
+                env,
+                Kont::ParameterizeParam(
+                  bindings,
+                  next_index,
+                  params,
+                  next_values,
+                  env,
+                  body,
+                  next,
+                ),
+                handlers,
+              )
+            } else {
+              let bindings_info : Array[ParamBinding] = []
+              let mut i = 0
+              while i < params.length() {
+                let param = params[i]
+                let old_value = parameter_get(param)
+                let new_val = next_values[i]
+                bindings_info.push(
+                  ParamBinding::{ param, old_value: old_value, new_value: new_val },
+                )
+                parameter_set(param, new_val)
+                i = i + 1
+              }
+              let winder = make_param_winder(bindings_info)
+              wind_push(winder)
+              state = eval_sequence_state(body, env, Kont::WindExit(winder, next), handlers)
+            }
+          }
           Kont::Case(clauses, env, next) => {
             let key_value = expect_single(value)
             state = case_dispatch(key_value, clauses, env, next, handlers)
@@ -465,6 +631,23 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           Kont::CallWithValues(consumer, next) => {
             let values = value_to_values(value)
             state = apply_proc(consumer, values, next, handlers)
+          }
+          Kont::WindEnter(thunk, winder, next) => {
+            wind_push(winder)
+            state = apply_proc(thunk, [], Kont::WindExit(winder, next), handlers)
+          }
+          Kont::WindExit(winder, next) => {
+            let actions = [WindAction::After(winder)]
+            state = run_wind_actions(actions, value, next, handlers, handlers)
+          }
+          Kont::WindActions(actions, resume_value, final_kont, final_handlers) => {
+            let _ = value
+            state = run_wind_actions(actions, resume_value, final_kont, final_handlers, handlers)
+          }
+          Kont::WindPush(winder, actions, resume_value, final_kont, final_handlers) => {
+            let _ = value
+            wind_push(winder)
+            state = run_wind_actions(actions, resume_value, final_kont, final_handlers, handlers)
           }
           Kont::RaiseNonCont => raise EvalError("non-continuable exception")
           Kont::RaiseCont(next) => state = MachineState::Apply(value, next, handlers)
@@ -678,6 +861,21 @@ fn parse_value_bindings(expr : Datum) -> Array[(Array[String], Datum)] raise Eva
 }
 
 ///|
+fn parse_parameterize_bindings(expr : Datum) -> Array[(Datum, Datum)] raise EvalError {
+  let bindings = datum_list_to_array(expr)
+  let parsed : Array[(Datum, Datum)] = []
+  for binding in bindings {
+    let parts = datum_list_to_array(binding)
+    if parts.length() != 2 {
+      raise EvalError("invalid parameterize")
+    } else {
+      parsed.push((parts[0], parts[1]))
+    }
+  }
+  parsed
+}
+
+///|
 fn parse_symbol(expr : Datum) -> String raise EvalError {
   match expr {
     Datum::Symbol(name) => name
@@ -716,6 +914,105 @@ fn value_to_values(value : Value) -> Array[Value] {
       let values : Array[Value] = []
       values.push(value)
       values
+    }
+  }
+}
+
+///|
+fn wind_push(winder : Winder) -> Unit {
+  let next : Array[Winder] = []
+  for item in wind_stack.val {
+    next.push(item)
+  }
+  next.push(winder)
+  wind_stack.val = next
+}
+
+///|
+fn wind_pop() -> Winder {
+  let current = wind_stack.val
+  let last_index = current.length() - 1
+  let winder = current[last_index]
+  let next = current.sub(start=0, end=last_index).to_array()
+  wind_stack.val = next
+  winder
+}
+
+///|
+fn apply_winder_before(
+  winder : Winder,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  match winder.kind {
+    WinderKind::Proc(before, _) => apply_proc(before, [], kont, handlers)
+    WinderKind::Params(bindings) => {
+      for binding in bindings {
+        parameter_set(binding.param, binding.new_value)
+      }
+      MachineState::Apply(Value::Void, kont, handlers)
+    }
+  }
+}
+
+///|
+fn apply_winder_after(
+  winder : Winder,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  match winder.kind {
+    WinderKind::Proc(_, after) => apply_proc(after, [], kont, handlers)
+    WinderKind::Params(bindings) => {
+      for binding in bindings {
+        parameter_set(binding.param, binding.old_value)
+      }
+      MachineState::Apply(Value::Void, kont, handlers)
+    }
+  }
+}
+
+///|
+fn common_wind_prefix(current : Array[Winder], target : Array[Winder]) -> Int {
+  let mut i = 0
+  while i < current.length() && i < target.length() {
+    if current[i].id != target[i].id {
+      break
+    }
+    i = i + 1
+  }
+  i
+}
+
+///|
+///|
+fn run_wind_actions(
+  actions : Array[WindAction],
+  resume_value : Value,
+  final_kont : Kont,
+  final_handlers : Array[Value],
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if actions.is_empty() {
+    MachineState::Apply(resume_value, final_kont, final_handlers)
+  } else {
+    let rest = actions.sub(start=1).to_array()
+    match actions[0] {
+      WindAction::After(winder) => {
+        let _ = wind_pop()
+        apply_winder_after(
+          winder,
+          Kont::WindActions(rest, resume_value, final_kont, final_handlers),
+          handlers,
+        )
+      }
+      WindAction::Before(winder) => apply_winder_before(
+        winder,
+        Kont::WindPush(winder, rest, resume_value, final_kont, final_handlers),
+        handlers,
+      )
+      WindAction::SwitchHandlers(next_handlers) =>
+        run_wind_actions(rest, resume_value, final_kont, final_handlers, next_handlers)
     }
   }
 }
@@ -800,6 +1097,32 @@ fn eval_define_values_state(
       MachineState::Eval(args[1], env, Kont::DefineValues(names, env, kont), handlers)
     }
     n => raise arity_mismatch(2, n)
+  }
+}
+
+///|
+fn eval_parameterize_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 2 {
+    raise arity_mismatch(2, args.length())
+  } else {
+    let bindings = parse_parameterize_bindings(args[0])
+    let body = args.sub(start=1).to_array()
+    if bindings.is_empty() {
+      eval_sequence_state(body, env, kont, handlers)
+    } else {
+      let (param_expr, _) = bindings[0]
+      MachineState::Eval(
+        param_expr,
+        env,
+        Kont::ParameterizeParam(bindings, 0, [], [], env, body, kont),
+        handlers,
+      )
+    }
   }
 }
 
@@ -1529,6 +1852,7 @@ fn eval_pair(
       Some("let*") => eval_let_star_state(args, env, kont, handlers)
       Some("letrec") => eval_letrec_state(args, env, kont, handlers)
       Some("letrec*") => eval_letrec_state(args, env, kont, handlers)
+      Some("parameterize") => eval_parameterize_state(args, env, kont, handlers)
       Some("let-syntax") => eval_let_syntax_state(args, env, kont, handlers)
       Some("letrec-syntax") => eval_letrec_syntax_state(args, env, kont, handlers)
       Some("and") => eval_and_state(args, env, kont, handlers)
@@ -1566,6 +1890,17 @@ fn apply_proc(
         let producer = args[0]
         let consumer = args[1]
         apply_proc(producer, [], Kont::CallWithValues(consumer, kont), handlers)
+      }
+    }
+    Value::Primitive(Primitive::DynamicWind) => {
+      if args.length() != 3 {
+        raise arity_mismatch(3, args.length())
+      } else {
+        let before = args[0]
+        let thunk = args[1]
+        let after = args[2]
+        let winder = make_proc_winder(before, after)
+        apply_winder_before(winder, Kont::WindEnter(thunk, winder, kont), handlers)
       }
     }
     Value::Primitive(Primitive::WithExceptionHandler) => {
@@ -1607,7 +1942,16 @@ fn apply_proc(
       if args.length() != 1 {
         raise arity_mismatch(1, args.length())
       } else {
-        let cont = Continuation::{ id: next_continuation_id(), kont, handlers }
+        let winds_copy : Array[Winder] = []
+        for item in wind_stack.val {
+          winds_copy.push(item)
+        }
+        let cont = Continuation::{
+          id: next_continuation_id(),
+          kont,
+          handlers,
+          winds: winds_copy,
+        }
         apply_proc(args[0], [Value::Continuation(cont)], kont, handlers)
       }
     }
@@ -1661,12 +2005,38 @@ fn apply_proc(
       }
       eval_sequence_state(matched_body, new_env, kont, handlers)
     }
-    Value::Continuation(cont) => {
-      if args.length() == 1 {
-        MachineState::Apply(args[0], cont.kont, cont.handlers)
-      } else {
-        MachineState::Apply(Value::Values(args), cont.kont, cont.handlers)
+    Value::Parameter(param) => {
+      match args.length() {
+        0 => MachineState::Apply(parameter_get(param), kont, handlers)
+        1 => {
+          parameter_set(param, args[0])
+          MachineState::Apply(Value::Void, kont, handlers)
+        }
+        n => raise EvalError("arity mismatch: expected 0 or 1 got \{n}")
       }
+    }
+    Value::Continuation(cont) => {
+      let resume_value = if args.length() == 1 {
+        args[0]
+      } else {
+        Value::Values(args)
+      }
+      let current_winds = wind_stack.val
+      let target_winds = cont.winds
+      let actions : Array[WindAction] = []
+      let prefix = common_wind_prefix(current_winds, target_winds)
+      let mut i = current_winds.length()
+      while i > prefix {
+        i = i - 1
+        actions.push(WindAction::After(current_winds[i]))
+      }
+      actions.push(WindAction::SwitchHandlers(cont.handlers))
+      i = prefix
+      while i < target_winds.length() {
+        actions.push(WindAction::Before(target_winds[i]))
+        i = i + 1
+      }
+      run_wind_actions(actions, resume_value, cont.kont, cont.handlers, handlers)
     }
     Value::RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)
     _ => raise EvalError("type error: procedure expected")

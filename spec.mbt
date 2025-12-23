@@ -7,7 +7,8 @@
 /// - quote, quasiquote, unquote, unquote-splicing, if, begin, lambda, define,
 ///   set!, let (including named let), let*, letrec, letrec*, let-syntax,
 ///   letrec-syntax, and, or, cond (including =>), case, do, case-lambda,
-///   let-values, let*-values, define-values
+///   let-values, let*-values, define-values, parameterize
+/// - dynamic-wind
 /// - define-syntax + syntax-rules (hygienic identifiers), including "..." repetition
 /// - application with left-to-right evaluation
 /// - proper tail calls for procedure application
@@ -23,7 +24,7 @@
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
-///   values call-with-values
+///   values call-with-values make-parameter dynamic-wind parameterize
 ///   (equality is structural for datums in this subset)
 /// - printing via value_to_string (booleans as #t/#f, empty list as ())
 ///
@@ -88,6 +89,8 @@ pub enum Primitive {
   CallCC
   Values
   CallWithValues
+  MakeParameter
+  DynamicWind
   ExactToInexact
   InexactToExact
   Numerator
@@ -169,6 +172,12 @@ pub struct CaseClosure {
 }
 
 ///|
+pub struct Parameter {
+  id : Int
+  value : Ref[Value]
+}
+
+///|
 /// Runtime values produced by evaluation.
 ///|
 pub enum Value {
@@ -178,6 +187,7 @@ pub enum Value {
   Closure(Closure)
   CaseClosure(CaseClosure)
   Values(Array[Value])
+  Parameter(Parameter)
   Continuation(Continuation)
   Port(Port)
   Record(Record)
