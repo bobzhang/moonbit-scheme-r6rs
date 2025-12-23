@@ -188,6 +188,7 @@ fn is_core_identifier(name : String) -> Bool {
     "bytevector-u8-ref",
     "bytevector-u8-set!",
     "bytevector-copy",
+    "bytevector-fill!",
     "exact->inexact",
     "inexact->exact",
     "numerator",
