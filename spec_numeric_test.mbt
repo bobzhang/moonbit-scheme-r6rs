@@ -539,6 +539,22 @@ test "r6rs numeric: conversions and fractions" {
   inspect(
     value_to_string(eval_program(
       (
+        #|(inexact->exact 0.5)
+      )
+    )),
+    content="1/2",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(inexact->exact -1.25)
+      )
+    )),
+    content="-5/4",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
         #|(number->string 3)
       )
     )),

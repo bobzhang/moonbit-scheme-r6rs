@@ -282,6 +282,27 @@ fn number_to_rat(value : Datum) -> (Int, Int) raise EvalError {
 }
 
 ///|
+fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
+  if !float_is_finite(value) {
+    raise EvalError("inexact->exact: unsupported")
+  }
+  let text = value.to_string()
+  match parse_exact_decimal(text) {
+    Some(datum) => datum
+    None => raise EvalError("inexact->exact: unsupported")
+  }
+}
+
+///|
+fn inexact_component_to_exact(value : Datum) -> Datum raise EvalError {
+  match value {
+    Datum::Float(f) => float_to_exact_datum(f)
+    Datum::Int(_) | Datum::Rat(_, _) => value
+    _ => raise EvalError("type error: number expected")
+  }
+}
+
+///|
 fn normalize_rat_or_error(num : Int, den : Int) -> Datum raise EvalError {
   match normalize_rat(num, den) {
     Some(result) => result
@@ -1238,39 +1259,10 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       match args.length() {
         1 => {
           match args[0] {
-            Value::Datum(Datum::Float(f)) => {
-              let n = f.to_int()
-              if f == Float::from_int(n) {
-                Value::Datum(Datum::Int(n))
-              } else {
-                raise EvalError("inexact->exact: unsupported")
-              }
-            }
+            Value::Datum(Datum::Float(f)) => Value::Datum(float_to_exact_datum(f))
             Value::Datum(Datum::Complex(real, imag)) => {
-              let real_exact = match real.val {
-                Datum::Float(f) => {
-                  let n = f.to_int()
-                  if f == Float::from_int(n) {
-                    Datum::Int(n)
-                  } else {
-                    raise EvalError("inexact->exact: unsupported")
-                  }
-                }
-                Datum::Int(_) | Datum::Rat(_, _) => real.val
-                _ => raise EvalError("type error: number expected")
-              }
-              let imag_exact = match imag.val {
-                Datum::Float(f) => {
-                  let n = f.to_int()
-                  if f == Float::from_int(n) {
-                    Datum::Int(n)
-                  } else {
-                    raise EvalError("inexact->exact: unsupported")
-                  }
-                }
-                Datum::Int(_) | Datum::Rat(_, _) => imag.val
-                _ => raise EvalError("type error: number expected")
-              }
+              let real_exact = inexact_component_to_exact(real.val)
+              let imag_exact = inexact_component_to_exact(imag.val)
               Value::Datum(make_complex(real_exact, imag_exact))
             }
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => args[0]
