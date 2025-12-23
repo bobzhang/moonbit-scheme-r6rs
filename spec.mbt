@@ -21,7 +21,8 @@
 ///   inexact->exact numerator denominator procedure? not apply call/cc eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
 ///   reverse char? string? string-length string-append string-ref
-///   vector vector? vector-length vector-ref vector-set!
+///   vector make-vector vector? vector-length vector-ref vector-set!
+///   vector->list list->vector
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
@@ -110,10 +111,13 @@ pub enum Primitive {
   StringAppend
   StringRef
   Vector
+  MakeVector
   VectorP
   VectorLength
   VectorRef
   VectorSet
+  VectorToList
+  ListToVector
   ByteVector
   ByteVectorP
   ByteVectorLength

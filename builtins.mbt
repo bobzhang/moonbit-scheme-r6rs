@@ -70,10 +70,13 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::StringAppend, Primitive::StringAppend)
     | (Primitive::StringRef, Primitive::StringRef)
     | (Primitive::Vector, Primitive::Vector)
+    | (Primitive::MakeVector, Primitive::MakeVector)
     | (Primitive::VectorP, Primitive::VectorP)
     | (Primitive::VectorLength, Primitive::VectorLength)
     | (Primitive::VectorRef, Primitive::VectorRef)
     | (Primitive::VectorSet, Primitive::VectorSet)
+    | (Primitive::VectorToList, Primitive::VectorToList)
+    | (Primitive::ListToVector, Primitive::ListToVector)
     | (Primitive::ByteVector, Primitive::ByteVector)
     | (Primitive::ByteVectorP, Primitive::ByteVectorP)
     | (Primitive::ByteVectorLength, Primitive::ByteVectorLength)
@@ -806,6 +809,26 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
       Value::Datum(Datum::Vector(items))
     }
+    Primitive::MakeVector => {
+      match args.length() {
+        1 | 2 => {
+          let len = value_as_nonnegative_int(args[0])
+          let fill = if args.length() == 2 {
+            value_as_datum(args[1])
+          } else {
+            Datum::Nil
+          }
+          let items : Array[Datum] = []
+          let mut i = 0
+          while i < len {
+            items.push(fill)
+            i = i + 1
+          }
+          Value::Datum(Datum::Vector(items))
+        }
+        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+      }
+    }
     Primitive::VectorP => {
       match args.length() {
         1 => {
@@ -847,6 +870,25 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Void
         }
         n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::VectorToList => {
+      match args.length() {
+        1 => {
+          let items = value_as_vector(args[0])
+          Value::Datum(list_from_array(items))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ListToVector => {
+      match args.length() {
+        1 => {
+          let datum = value_as_datum(args[0])
+          let items = datum_list_to_array(datum)
+          Value::Datum(Datum::Vector(items))
+        }
+        n => raise arity_mismatch(1, n)
       }
     }
     Primitive::ByteVector => {
