@@ -49,6 +49,12 @@ test "r6rs numeric: sign and parity predicates" {
 test "r6rs numeric: conversions and fractions" {
   inspect(value_to_string(eval_program("(exact->inexact 1/2)")), content="0.5")
   inspect(value_to_string(eval_program("(inexact->exact 2.0)")), content="2")
+  inspect(value_to_string(eval_program("(number->string 3)")), content="\"3\"")
+  inspect(value_to_string(eval_program("(number->string 1/2)")), content="\"1/2\"")
+  inspect(value_to_string(eval_program("(string->number \"3\")")), content="3")
+  inspect(value_to_string(eval_program("(string->number \"1/2\")")), content="1/2")
+  inspect(value_to_string(eval_program("(string->number \"2.5\")")), content="2.5")
+  inspect(value_to_string(eval_program("(string->number \"nope\")")), content="#f")
   inspect(value_to_string(eval_program("(numerator 3/4)")), content="3")
   inspect(value_to_string(eval_program("(denominator 3/4)")), content="4")
   inspect(value_to_string(eval_program("(denominator 5)")), content="1")

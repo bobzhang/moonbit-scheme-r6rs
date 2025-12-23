@@ -210,6 +210,8 @@ fn is_core_identifier(name : String) -> Bool {
     "u8-list->bytevector",
     "exact->inexact",
     "inexact->exact",
+    "number->string",
+    "string->number",
     "numerator",
     "denominator",
     "abs",

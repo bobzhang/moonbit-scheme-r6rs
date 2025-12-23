@@ -41,6 +41,8 @@ fn init_env() -> Env {
   env_define(env, "dynamic-wind", Value::Primitive(Primitive::DynamicWind))
   env_define(env, "exact->inexact", Value::Primitive(Primitive::ExactToInexact))
   env_define(env, "inexact->exact", Value::Primitive(Primitive::InexactToExact))
+  env_define(env, "number->string", Value::Primitive(Primitive::NumberToString))
+  env_define(env, "string->number", Value::Primitive(Primitive::StringToNumber))
   env_define(env, "numerator", Value::Primitive(Primitive::Numerator))
   env_define(env, "denominator", Value::Primitive(Primitive::Denominator))
   env_define(env, "abs", Value::Primitive(Primitive::Abs))

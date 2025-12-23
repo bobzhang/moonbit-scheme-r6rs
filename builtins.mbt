@@ -63,6 +63,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::DynamicWind, Primitive::DynamicWind)
     | (Primitive::ExactToInexact, Primitive::ExactToInexact)
     | (Primitive::InexactToExact, Primitive::InexactToExact)
+    | (Primitive::NumberToString, Primitive::NumberToString)
+    | (Primitive::StringToNumber, Primitive::StringToNumber)
     | (Primitive::Numerator, Primitive::Numerator)
     | (Primitive::Denominator, Primitive::Denominator)
     | (Primitive::Abs, Primitive::Abs)
@@ -883,6 +885,38 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             }
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => args[0]
             _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::NumberToString => {
+      match args.length() {
+        1 => {
+          let num = value_as_number(args[0])
+          let text = value_to_string(Value::Datum(num))
+          Value::Datum(Datum::String(Ref::new(text)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringToNumber => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          match parse_int_token(s) {
+            Some(n) => Value::Datum(Datum::Int(n))
+            None => {
+              match parse_rat_token(s) {
+                Some(rat) => Value::Datum(rat)
+                None => {
+                  match parse_float_token(s) {
+                    Some(f) => Value::Datum(Datum::Float(f))
+                    None => Value::Datum(Datum::Bool(false))
+                  }
+                }
+              }
+            }
           }
         }
         n => raise arity_mismatch(1, n)

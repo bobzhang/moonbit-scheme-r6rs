@@ -20,7 +20,8 @@
 ///   symbol->string string->symbol
 ///   boolean? number? integer? rational? real? exact? inexact? zero? positive?
 ///   negative? odd? even? exact->inexact
-///   inexact->exact numerator denominator abs quotient remainder modulo gcd lcm
+///   inexact->exact number->string string->number
+///   numerator denominator abs quotient remainder modulo gcd lcm
 ///   max min floor ceiling truncate round
 ///   procedure? not apply call/cc eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
@@ -121,6 +122,8 @@ pub enum Primitive {
   DynamicWind
   ExactToInexact
   InexactToExact
+  NumberToString
+  StringToNumber
   Numerator
   Denominator
   Abs
