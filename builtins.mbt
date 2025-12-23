@@ -46,6 +46,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::IntegerP, Primitive::IntegerP)
     | (Primitive::RationalP, Primitive::RationalP)
     | (Primitive::RealP, Primitive::RealP)
+    | (Primitive::ComplexP, Primitive::ComplexP)
     | (Primitive::ExactP, Primitive::ExactP)
     | (Primitive::InexactP, Primitive::InexactP)
     | (Primitive::ZeroP, Primitive::ZeroP)
@@ -70,6 +71,12 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Rationalize, Primitive::Rationalize)
     | (Primitive::NumberToString, Primitive::NumberToString)
     | (Primitive::StringToNumber, Primitive::StringToNumber)
+    | (Primitive::MakeRectangular, Primitive::MakeRectangular)
+    | (Primitive::MakePolar, Primitive::MakePolar)
+    | (Primitive::RealPart, Primitive::RealPart)
+    | (Primitive::ImagPart, Primitive::ImagPart)
+    | (Primitive::Magnitude, Primitive::Magnitude)
+    | (Primitive::Angle, Primitive::Angle)
     | (Primitive::Numerator, Primitive::Numerator)
     | (Primitive::Denominator, Primitive::Denominator)
     | (Primitive::Abs, Primitive::Abs)
@@ -238,7 +245,7 @@ fn value_as_number(value : Value) -> Datum raise EvalError {
   match value {
     Value::Datum(d) => {
       match d {
-        Datum::Int(_) | Datum::Rat(_, _) | Datum::Float(_) => d
+        Datum::Int(_) | Datum::Rat(_, _) | Datum::Float(_) | Datum::Complex(_, _) => d
         _ => raise EvalError("type error: number expected")
       }
     }
@@ -248,7 +255,8 @@ fn value_as_number(value : Value) -> Datum raise EvalError {
 
 ///|
 fn number_to_float(value : Datum) -> Float raise EvalError {
-  match value {
+  let real_value = datum_to_real(value)
+  match real_value {
     Datum::Int(n) => Float::from_int(n)
     Datum::Rat(n, d) => Float::from_int(n) / Float::from_int(d)
     Datum::Float(f) => f
@@ -258,7 +266,8 @@ fn number_to_float(value : Datum) -> Float raise EvalError {
 
 ///|
 fn number_to_rat(value : Datum) -> (Int, Int) raise EvalError {
-  match value {
+  let real_value = datum_to_real(value)
+  match real_value {
     Datum::Int(n) => (n, 1)
     Datum::Rat(n, d) => (n, d)
     _ => raise EvalError("type error: number expected")
@@ -274,7 +283,55 @@ fn normalize_rat_or_error(num : Int, den : Int) -> Datum raise EvalError {
 }
 
 ///|
+fn datum_is_zero(value : Datum) -> Bool {
+  match value {
+    Datum::Int(n) => n == 0
+    Datum::Rat(n, _) => n == 0
+    Datum::Float(f) => f == 0.0
+    _ => false
+  }
+}
+
+///|
+fn datum_to_real(value : Datum) -> Datum raise EvalError {
+  match value {
+    Datum::Complex(real, imag) => {
+      if datum_is_zero(imag.val) {
+        real.val
+      } else {
+        raise EvalError("type error: real expected")
+      }
+    }
+    _ => value
+  }
+}
+
+///|
+fn datum_to_complex_parts(value : Datum) -> (Datum, Datum) {
+  match value {
+    Datum::Complex(real, imag) => (real.val, imag.val)
+    _ => (value, Datum::Int(0))
+  }
+}
+
+///|
+fn make_complex(real : Datum, imag : Datum) -> Datum {
+  if datum_is_zero(imag) {
+    real
+  } else {
+    Datum::Complex(Ref::new(real), Ref::new(imag))
+  }
+}
+
+///|
 fn num_add(left : Datum, right : Datum) -> Datum raise EvalError {
+  if left is Datum::Complex(_, _) || right is Datum::Complex(_, _) {
+    let (lr, li) = datum_to_complex_parts(left)
+    let (rr, ri) = datum_to_complex_parts(right)
+    let real = num_add(lr, rr)
+    let imag = num_add(li, ri)
+    return make_complex(real, imag)
+  }
   if left is Datum::Float(_) || right is Datum::Float(_) {
     Datum::Float(number_to_float(left) + number_to_float(right))
   } else {
@@ -286,6 +343,13 @@ fn num_add(left : Datum, right : Datum) -> Datum raise EvalError {
 
 ///|
 fn num_sub(left : Datum, right : Datum) -> Datum raise EvalError {
+  if left is Datum::Complex(_, _) || right is Datum::Complex(_, _) {
+    let (lr, li) = datum_to_complex_parts(left)
+    let (rr, ri) = datum_to_complex_parts(right)
+    let real = num_sub(lr, rr)
+    let imag = num_sub(li, ri)
+    return make_complex(real, imag)
+  }
   if left is Datum::Float(_) || right is Datum::Float(_) {
     Datum::Float(number_to_float(left) - number_to_float(right))
   } else {
@@ -297,6 +361,13 @@ fn num_sub(left : Datum, right : Datum) -> Datum raise EvalError {
 
 ///|
 fn num_mul(left : Datum, right : Datum) -> Datum raise EvalError {
+  if left is Datum::Complex(_, _) || right is Datum::Complex(_, _) {
+    let (lr, li) = datum_to_complex_parts(left)
+    let (rr, ri) = datum_to_complex_parts(right)
+    let real = num_sub(num_mul(lr, rr), num_mul(li, ri))
+    let imag = num_add(num_mul(lr, ri), num_mul(li, rr))
+    return make_complex(real, imag)
+  }
   if left is Datum::Float(_) || right is Datum::Float(_) {
     Datum::Float(number_to_float(left) * number_to_float(right))
   } else {
@@ -308,6 +379,16 @@ fn num_mul(left : Datum, right : Datum) -> Datum raise EvalError {
 
 ///|
 fn num_div(left : Datum, right : Datum) -> Datum raise EvalError {
+  if left is Datum::Complex(_, _) || right is Datum::Complex(_, _) {
+    let (lr, li) = datum_to_complex_parts(left)
+    let (rr, ri) = datum_to_complex_parts(right)
+    let denom = num_add(num_mul(rr, rr), num_mul(ri, ri))
+    let real_num = num_add(num_mul(lr, rr), num_mul(li, ri))
+    let imag_num = num_sub(num_mul(li, rr), num_mul(lr, ri))
+    let real = num_div(real_num, denom)
+    let imag = num_div(imag_num, denom)
+    return make_complex(real, imag)
+  }
   if left is Datum::Float(_) || right is Datum::Float(_) {
     let denom = number_to_float(right)
     if denom == 0.0 {
@@ -326,6 +407,11 @@ fn num_div(left : Datum, right : Datum) -> Datum raise EvalError {
 
 ///|
 fn num_equal(left : Datum, right : Datum) -> Bool raise EvalError {
+  if left is Datum::Complex(_, _) || right is Datum::Complex(_, _) {
+    let (lr, li) = datum_to_complex_parts(left)
+    let (rr, ri) = datum_to_complex_parts(right)
+    return num_equal(lr, rr) && num_equal(li, ri)
+  }
   if left is Datum::Float(_) || right is Datum::Float(_) {
     number_to_float(left) == number_to_float(right)
   } else {
@@ -337,22 +423,26 @@ fn num_equal(left : Datum, right : Datum) -> Bool raise EvalError {
 
 ///|
 fn num_less(left : Datum, right : Datum) -> Bool raise EvalError {
-  if left is Datum::Float(_) || right is Datum::Float(_) {
-    number_to_float(left) < number_to_float(right)
+  let lreal = datum_to_real(left)
+  let rreal = datum_to_real(right)
+  if lreal is Datum::Float(_) || rreal is Datum::Float(_) {
+    number_to_float(lreal) < number_to_float(rreal)
   } else {
-    let (n1, d1) = number_to_rat(left)
-    let (n2, d2) = number_to_rat(right)
+    let (n1, d1) = number_to_rat(lreal)
+    let (n2, d2) = number_to_rat(rreal)
     n1 * d2 < n2 * d1
   }
 }
 
 ///|
 fn num_greater(left : Datum, right : Datum) -> Bool raise EvalError {
-  if left is Datum::Float(_) || right is Datum::Float(_) {
-    number_to_float(left) > number_to_float(right)
+  let lreal = datum_to_real(left)
+  let rreal = datum_to_real(right)
+  if lreal is Datum::Float(_) || rreal is Datum::Float(_) {
+    number_to_float(lreal) > number_to_float(rreal)
   } else {
-    let (n1, d1) = number_to_rat(left)
-    let (n2, d2) = number_to_rat(right)
+    let (n1, d1) = number_to_rat(lreal)
+    let (n2, d2) = number_to_rat(rreal)
     n1 * d2 > n2 * d1
   }
 }
@@ -641,6 +731,16 @@ fn rationalize_float(value : Float, tol : Float) -> (Int, Int) {
 fn value_as_int_index(value : Value) -> Int raise EvalError {
   match value {
     Value::Datum(Datum::Int(n)) => n
+    Value::Datum(Datum::Complex(real, imag)) => {
+      if datum_is_zero(imag.val) {
+        match real.val {
+          Datum::Int(n) => n
+          _ => raise EvalError("type error: exact integer expected")
+        }
+      } else {
+        raise EvalError("type error: exact integer expected")
+      }
+    }
     _ => raise EvalError("type error: exact integer expected")
   }
 }
@@ -993,6 +1093,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Float(_)) => args[0]
+            Value::Datum(Datum::Complex(real, imag)) => {
+              let real_f = number_to_float(real.val)
+              let imag_f = number_to_float(imag.val)
+              Value::Datum(make_complex(Datum::Float(real_f), Datum::Float(imag_f)))
+            }
             _ => {
               let value = value_as_number(args[0])
               Value::Datum(Datum::Float(number_to_float(value)))
@@ -1013,6 +1118,33 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               } else {
                 raise EvalError("inexact->exact: unsupported")
               }
+            }
+            Value::Datum(Datum::Complex(real, imag)) => {
+              let real_exact = match real.val {
+                Datum::Float(f) => {
+                  let n = f.to_int()
+                  if f == Float::from_int(n) {
+                    Datum::Int(n)
+                  } else {
+                    raise EvalError("inexact->exact: unsupported")
+                  }
+                }
+                Datum::Int(_) | Datum::Rat(_, _) => real.val
+                _ => raise EvalError("type error: number expected")
+              }
+              let imag_exact = match imag.val {
+                Datum::Float(f) => {
+                  let n = f.to_int()
+                  if f == Float::from_int(n) {
+                    Datum::Int(n)
+                  } else {
+                    raise EvalError("inexact->exact: unsupported")
+                  }
+                }
+                Datum::Int(_) | Datum::Rat(_, _) => imag.val
+                _ => raise EvalError("type error: number expected")
+              }
+              Value::Datum(make_complex(real_exact, imag_exact))
             }
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => args[0]
             _ => raise EvalError("type error: number expected")
@@ -1072,7 +1204,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let text = int_to_string_radix(n, radix)
               Value::Datum(Datum::String(Ref::new(text)))
             }
-            Datum::Rat(_, _) | Datum::Float(_) => {
+            Datum::Rat(_, _) | Datum::Float(_) | Datum::Complex(_, _) => {
               if radix != 10 {
                 raise EvalError("type error: exact integer expected")
               }
@@ -1108,6 +1240,94 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
         }
         n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+      }
+    }
+    Primitive::MakeRectangular => {
+      match args.length() {
+        2 => {
+          let real = datum_to_real(value_as_number(args[0]))
+          let imag = datum_to_real(value_as_number(args[1]))
+          Value::Datum(make_complex(real, imag))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::MakePolar => {
+      match args.length() {
+        2 => {
+          let r = number_to_float(datum_to_real(value_as_number(args[0])))
+          let theta = number_to_float(datum_to_real(value_as_number(args[1])))
+          let real = Datum::Float(r * @math.cosf(theta))
+          let imag = Datum::Float(r * @math.sinf(theta))
+          Value::Datum(make_complex(real, imag))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::RealPart => {
+      match args.length() {
+        1 => {
+          match value_as_number(args[0]) {
+            Datum::Complex(real, _) => Value::Datum(real.val)
+            datum => Value::Datum(datum)
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ImagPart => {
+      match args.length() {
+        1 => {
+          match value_as_number(args[0]) {
+            Datum::Complex(_, imag) => Value::Datum(imag.val)
+            Datum::Float(_) => Value::Datum(Datum::Float(0.0))
+            Datum::Int(_) | Datum::Rat(_, _) => Value::Datum(Datum::Int(0))
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Magnitude => {
+      match args.length() {
+        1 => {
+          match value_as_number(args[0]) {
+            Datum::Complex(real, imag) => {
+              let real_f = number_to_float(real.val)
+              let imag_f = number_to_float(imag.val)
+              let mag = (real_f * real_f + imag_f * imag_f).sqrt()
+              Value::Datum(Datum::Float(mag))
+            }
+            Datum::Int(n) => Value::Datum(Datum::Int(int_abs(n)))
+            Datum::Rat(n, d) => Value::Datum(normalize_rat_or_error(int_abs(n), d))
+            Datum::Float(f) =>
+              if f < 0.0 {
+                Value::Datum(Datum::Float(-f))
+              } else {
+                Value::Datum(Datum::Float(f))
+              }
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Angle => {
+      match args.length() {
+        1 => {
+          match value_as_number(args[0]) {
+            Datum::Complex(real, imag) => {
+              let real_f = number_to_float(real.val)
+              let imag_f = number_to_float(imag.val)
+              Value::Datum(Datum::Float(@math.atan2f(imag_f, real_f)))
+            }
+            datum => {
+              let real_f = number_to_float(datum)
+              Value::Datum(Datum::Float(@math.atan2f(0.0, real_f)))
+            }
+          }
+        }
+        n => raise arity_mismatch(1, n)
       }
     }
     Primitive::Numerator => {
@@ -1147,6 +1367,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               } else {
                 Value::Datum(Datum::Float(f))
               }
+            Datum::Complex(real, imag) => {
+              let real_f = number_to_float(real.val)
+              let imag_f = number_to_float(imag.val)
+              let mag = (real_f * real_f + imag_f * imag_f).sqrt()
+              Value::Datum(Datum::Float(mag))
+            }
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1525,7 +1751,8 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Datum(Datum::Int(_))
             | Value::Datum(Datum::Rat(_, _))
-            | Value::Datum(Datum::Float(_)) => bool_value(true)
+            | Value::Datum(Datum::Float(_))
+            | Value::Datum(Datum::Complex(_, _)) => bool_value(true)
             _ => bool_value(false)
           }
         }
@@ -1537,6 +1764,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Int(_)) => bool_value(true)
+            Value::Datum(Datum::Complex(real, imag)) =>
+              if datum_is_zero(imag.val) {
+                match real.val {
+                  Datum::Int(_) => bool_value(true)
+                  _ => bool_value(false)
+                }
+              } else {
+                bool_value(false)
+              }
             _ => bool_value(false)
           }
         }
@@ -1548,6 +1784,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => bool_value(true)
+            Value::Datum(Datum::Complex(real, imag)) =>
+              if datum_is_zero(imag.val) {
+                match real.val {
+                  Datum::Int(_) | Datum::Rat(_, _) => bool_value(true)
+                  _ => bool_value(false)
+                }
+              } else {
+                bool_value(false)
+              }
             _ => bool_value(false)
           }
         }
@@ -1561,6 +1806,21 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Int(_))
             | Value::Datum(Datum::Rat(_, _))
             | Value::Datum(Datum::Float(_)) => bool_value(true)
+            Value::Datum(Datum::Complex(_, imag)) => bool_value(datum_is_zero(imag.val))
+            _ => bool_value(false)
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ComplexP => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::Int(_))
+            | Value::Datum(Datum::Rat(_, _))
+            | Value::Datum(Datum::Float(_))
+            | Value::Datum(Datum::Complex(_, _)) => bool_value(true)
             _ => bool_value(false)
           }
         }
@@ -1572,6 +1832,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => bool_value(true)
+            Value::Datum(Datum::Complex(real, imag)) => {
+              match (real.val, imag.val) {
+                (Datum::Int(_), Datum::Int(_)) => bool_value(true)
+                (Datum::Int(_), Datum::Rat(_, _)) => bool_value(true)
+                (Datum::Rat(_, _), Datum::Int(_)) => bool_value(true)
+                (Datum::Rat(_, _), Datum::Rat(_, _)) => bool_value(true)
+                _ => bool_value(false)
+              }
+            }
             _ => bool_value(false)
           }
         }
@@ -1583,6 +1852,13 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Float(_)) => bool_value(true)
+            Value::Datum(Datum::Complex(real, imag)) => {
+              match (real.val, imag.val) {
+                (Datum::Float(_), _) => bool_value(true)
+                (_, Datum::Float(_)) => bool_value(true)
+                _ => bool_value(false)
+              }
+            }
             _ => bool_value(false)
           }
         }
@@ -1596,6 +1872,8 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Int(n)) => bool_value(n == 0)
             Value::Datum(Datum::Rat(n, _)) => bool_value(n == 0)
             Value::Datum(Datum::Float(n)) => bool_value(n == 0.0)
+            Value::Datum(Datum::Complex(real, imag)) =>
+              bool_value(datum_is_zero(real.val) && datum_is_zero(imag.val))
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1605,10 +1883,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::PositiveP => {
       match args.length() {
         1 => {
-          match args[0] {
-            Value::Datum(Datum::Int(n)) => bool_value(n > 0)
-            Value::Datum(Datum::Rat(n, _)) => bool_value(n > 0)
-            Value::Datum(Datum::Float(n)) => bool_value(n > 0.0)
+          let value = datum_to_real(value_as_number(args[0]))
+          match value {
+            Datum::Int(n) => bool_value(n > 0)
+            Datum::Rat(n, _) => bool_value(n > 0)
+            Datum::Float(n) => bool_value(n > 0.0)
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1618,10 +1897,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::NegativeP => {
       match args.length() {
         1 => {
-          match args[0] {
-            Value::Datum(Datum::Int(n)) => bool_value(n < 0)
-            Value::Datum(Datum::Rat(n, _)) => bool_value(n < 0)
-            Value::Datum(Datum::Float(n)) => bool_value(n < 0.0)
+          let value = datum_to_real(value_as_number(args[0]))
+          match value {
+            Datum::Int(n) => bool_value(n < 0)
+            Datum::Rat(n, _) => bool_value(n < 0)
+            Datum::Float(n) => bool_value(n < 0.0)
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1631,8 +1911,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::OddP => {
       match args.length() {
         1 => {
-          let n = value_as_int_index(args[0])
-          bool_value(n % 2 != 0)
+          let value = datum_to_real(value_as_number(args[0]))
+          match value {
+            Datum::Int(n) => bool_value(n % 2 != 0)
+            _ => raise EvalError("type error: exact integer expected")
+          }
         }
         n => raise arity_mismatch(1, n)
       }
@@ -1640,8 +1923,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::EvenP => {
       match args.length() {
         1 => {
-          let n = value_as_int_index(args[0])
-          bool_value(n % 2 == 0)
+          let value = datum_to_real(value_as_number(args[0]))
+          match value {
+            Datum::Int(n) => bool_value(n % 2 == 0)
+            _ => raise EvalError("type error: exact integer expected")
+          }
         }
         n => raise arity_mismatch(1, n)
       }
@@ -1652,6 +1938,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Datum(Datum::Float(f)) => bool_value(float_is_finite(f))
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => bool_value(true)
+            Value::Datum(Datum::Complex(real, imag)) => {
+              if datum_is_zero(imag.val) {
+                match real.val {
+                  Datum::Float(f) => bool_value(float_is_finite(f))
+                  Datum::Int(_) | Datum::Rat(_, _) => bool_value(true)
+                  _ => raise EvalError("type error: number expected")
+                }
+              } else {
+                raise EvalError("type error: real expected")
+              }
+            }
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1664,6 +1961,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Datum(Datum::Float(f)) => bool_value(float_is_infinite(f))
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => bool_value(false)
+            Value::Datum(Datum::Complex(real, imag)) => {
+              if datum_is_zero(imag.val) {
+                match real.val {
+                  Datum::Float(f) => bool_value(float_is_infinite(f))
+                  Datum::Int(_) | Datum::Rat(_, _) => bool_value(false)
+                  _ => raise EvalError("type error: number expected")
+                }
+              } else {
+                raise EvalError("type error: real expected")
+              }
+            }
             _ => raise EvalError("type error: number expected")
           }
         }
@@ -1676,6 +1984,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Datum(Datum::Float(f)) => bool_value(float_is_nan(f))
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => bool_value(false)
+            Value::Datum(Datum::Complex(real, imag)) => {
+              if datum_is_zero(imag.val) {
+                match real.val {
+                  Datum::Float(f) => bool_value(float_is_nan(f))
+                  Datum::Int(_) | Datum::Rat(_, _) => bool_value(false)
+                  _ => raise EvalError("type error: number expected")
+                }
+              } else {
+                raise EvalError("type error: real expected")
+              }
+            }
             _ => raise EvalError("type error: number expected")
           }
         }

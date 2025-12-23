@@ -75,6 +75,7 @@ fn is_core_identifier(name : String) -> Bool {
     "integer?",
     "rational?",
     "real?",
+    "complex?",
     "exact?",
     "inexact?",
     "zero?",
@@ -220,6 +221,12 @@ fn is_core_identifier(name : String) -> Bool {
     "rationalize",
     "number->string",
     "string->number",
+    "make-rectangular",
+    "make-polar",
+    "real-part",
+    "imag-part",
+    "magnitude",
+    "angle",
     "numerator",
     "denominator",
     "abs",
@@ -552,6 +559,13 @@ fn match_pattern(
         _ => false
       }
     }
+    Datum::Complex(real, imag) => {
+      match input {
+        Datum::Complex(other_real, other_imag) =>
+          datum_equal(real.val, other_real.val) && datum_equal(imag.val, other_imag.val)
+        _ => false
+      }
+    }
     Datum::Float(f) => {
       match input {
         Datum::Float(of) => of == f
@@ -802,6 +816,8 @@ fn datum_equal(a : Datum, b : Datum) -> Bool {
     (Datum::Int(x), Datum::Int(y)) => x == y
     (Datum::Rat(ax, ay), Datum::Rat(bx, by)) => ax == bx && ay == by
     (Datum::Float(x), Datum::Float(y)) => x == y
+    (Datum::Complex(ar, ai), Datum::Complex(br, bi)) =>
+      datum_equal(ar.val, br.val) && datum_equal(ai.val, bi.val)
     (Datum::Char(x), Datum::Char(y)) => x == y
     (Datum::String(x), Datum::String(y)) => x.val == y.val
     (Datum::Symbol(x), Datum::Symbol(y)) => x == y

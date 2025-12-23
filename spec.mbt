@@ -67,6 +67,7 @@ pub enum Datum {
   Int(Int)
   Rat(Int, Int)
   Float(Float)
+  Complex(Ref[Datum], Ref[Datum])
   Char(Char)
   String(Ref[String])
   Symbol(String)
@@ -105,6 +106,7 @@ pub enum Primitive {
   IntegerP
   RationalP
   RealP
+  ComplexP
   ExactP
   InexactP
   ZeroP
@@ -129,6 +131,12 @@ pub enum Primitive {
   Rationalize
   NumberToString
   StringToNumber
+  MakeRectangular
+  MakePolar
+  RealPart
+  ImagPart
+  Magnitude
+  Angle
   Numerator
   Denominator
   Abs

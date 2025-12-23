@@ -299,6 +299,106 @@ test "r6rs numeric: finite/infinite/nan" {
 }
 
 ///|
+test "r6rs numeric: complex numbers" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(complex? 1)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(complex? (make-rectangular 1 2))
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(real? (make-rectangular 1 0))
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(real? (make-rectangular 1 2))
+      )
+    )),
+    content="#f",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(make-polar 1 0)
+      )
+    )),
+    content="1",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(+ (make-rectangular 1 2) (make-rectangular 3 -4))
+      )
+    )),
+    content="4-2i",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(* (make-rectangular 1 2) (make-rectangular 3 4))
+      )
+    )),
+    content="-5+10i",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(/ (make-rectangular 1 2) (make-rectangular 3 4))
+      )
+    )),
+    content="11/25+2/25i",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(real-part (make-rectangular 1 2))
+      )
+    )),
+    content="1",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(imag-part (make-rectangular 1 2))
+      )
+    )),
+    content="2",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (magnitude (make-rectangular 3 4)) 5.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (angle 1) 0.0)
+      )
+    )),
+    content="#t",
+  )
+}
+
+///|
 test "r6rs numeric: conversions and fractions" {
   inspect(
     value_to_string(eval_program(
