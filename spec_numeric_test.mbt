@@ -296,6 +296,30 @@ test "r6rs numeric: finite/infinite/nan" {
     )),
     content="#f",
   )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(infinite? +inf.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(infinite? -inf.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(nan? +nan.0)
+      )
+    )),
+    content="#t",
+  )
 }
 
 ///|

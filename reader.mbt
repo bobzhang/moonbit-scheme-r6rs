@@ -474,6 +474,27 @@ fn make_complex_datum(real : Datum, imag : Datum) -> Datum {
 }
 
 ///|
+fn parse_special_float_token(tok : String, radix : Int, exactness : Char?) -> Datum? {
+  if radix != 10 {
+    return None
+  }
+  match exactness {
+    Some('e') | Some('E') => return None
+    _ => ()
+  }
+  let lower = tok.to_lower()
+  if lower == "+inf.0" || lower == "inf.0" {
+    Some(Datum::Float(Float::from_int(1) / 0.0))
+  } else if lower == "-inf.0" {
+    Some(Datum::Float(Float::from_int(-1) / 0.0))
+  } else if lower == "+nan.0" || lower == "-nan.0" || lower == "nan.0" {
+    Some(Datum::Float(Float::from_int(0) / 0.0))
+  } else {
+    None
+  }
+}
+
+///|
 fn parse_real_token_with_settings(
   tok : String,
   radix : Int,
@@ -482,6 +503,10 @@ fn parse_real_token_with_settings(
 ) -> Datum? {
   if tok.length() == 0 {
     return None
+  }
+  match parse_special_float_token(tok, radix, exactness) {
+    Some(value) => return Some(value)
+    None => ()
   }
   let mut has_dot = false
   let mut has_exp = false
