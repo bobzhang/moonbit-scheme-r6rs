@@ -28,3 +28,31 @@ test "stdlib: list helpers" {
     content="(1 1 2 2)",
   )
 }
+
+///|
+test "stdlib: extended helpers" {
+  inspect(value_to_string(eval_program("(count odd? '(1 2 3 4 5))")), content="3")
+  inspect(
+    value_to_string(eval_program("(list-index (lambda (x) (= x 3)) '(1 2 3 4))")),
+    content="2",
+  )
+  inspect(
+    value_to_string(eval_program("(list-index (lambda (x) (= x 9)) '(1 2 3))")),
+    content="#f",
+  )
+  inspect(
+    value_to_string(eval_program("(partition odd? '(1 2 3 4))")),
+    content="((1 3) (2 4))",
+  )
+  inspect(value_to_string(eval_program("(zip '(1 2) '(a b c))")), content="((1 a) (2 b))")
+  inspect(
+    value_to_string(eval_program("(unzip '((1 a) (2 b)))")),
+    content="((1 2) (a b))",
+  )
+  inspect(value_to_string(eval_program("(last '(1 2 3))")), content="3")
+  inspect(
+    value_to_string(eval_program("(string-join '(\"a\" \"b\" \"c\") \",\")")),
+    content="\"a,b,c\"",
+  )
+  inspect(value_to_string(eval_program("(string-join '() \",\")")), content="\"\"")
+}
