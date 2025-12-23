@@ -57,6 +57,8 @@ fn is_core_identifier(name : String) -> Bool {
     "procedure?",
     "not",
     "apply",
+    "call/cc",
+    "call-with-current-continuation",
     "length",
     "append",
     "reverse",

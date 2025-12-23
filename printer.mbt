@@ -100,6 +100,7 @@ pub fn value_to_string(value : Value) -> String {
     Value::Datum(d) => datum_to_string(d)
     Value::Primitive(_) => "#<procedure>"
     Value::Closure(_) => "#<procedure>"
+    Value::Continuation(_) => "#<procedure>"
     Value::Macro(_) => "#<syntax>"
   }
 }

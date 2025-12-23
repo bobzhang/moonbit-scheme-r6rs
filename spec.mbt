@@ -9,16 +9,16 @@
 /// - define-syntax + syntax-rules (hygienic identifiers), including "..." repetition
 /// - application with left-to-right evaluation
 /// - proper tail calls for procedure application
+/// - call/cc (call-with-current-continuation)
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
-///   boolean? number? procedure? not apply eq? eqv? equal? list? length append
+///   boolean? number? procedure? not apply call/cc eq? eqv? equal? list? length append
 ///   reverse char? string? string-length string-append string-ref
 ///   vector vector? vector-length vector-ref vector-set!
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
 ///   (equality is structural for datums in this subset)
 /// - printing via value_to_string (booleans as #t/#f, empty list as ())
 ///
-/// Out of scope for now: continuations (call/cc), records, ports, exceptions,
-/// modules, and full numeric tower.
+/// Out of scope for now: records, ports, exceptions, modules, and full numeric tower.
 ///|
 pub(all) suberror ParseError String derive(Show, Eq)
 
@@ -71,6 +71,7 @@ pub enum Primitive {
   ProcedureP
   Not
   Apply
+  CallCC
   ListP
   Length
   Append
@@ -133,6 +134,7 @@ pub enum Value {
   Datum(Datum)
   Primitive(Primitive)
   Closure(Closure)
+  Continuation(Continuation)
   Macro(SyntaxRules)
 }
 
@@ -168,6 +170,7 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 /// - Proper lists print as "(a b c)"
 /// - Improper lists print as "(a b . c)"
 /// - Macros print as "#<syntax>"
+/// - Continuations print as "#<procedure>"
 ///|
 #declaration_only
 pub fn value_to_string(value : Value) -> String {

@@ -43,6 +43,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::ProcedureP, Primitive::ProcedureP)
     | (Primitive::Not, Primitive::Not)
     | (Primitive::Apply, Primitive::Apply)
+    | (Primitive::CallCC, Primitive::CallCC)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::Length, Primitive::Length)
     | (Primitive::Append, Primitive::Append)
@@ -72,6 +73,7 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::Datum(a), Value::Datum(b)) => datum_equal(a, b)
     (Value::Primitive(a), Value::Primitive(b)) => primitive_eq(a, b)
     (Value::Closure(a), Value::Closure(b)) => a.id == b.id
+    (Value::Continuation(a), Value::Continuation(b)) => a.id == b.id
     (Value::Void, Value::Void) => true
     _ => false
   }
@@ -533,7 +535,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       match args.length() {
         1 => {
           match args[0] {
-            Value::Primitive(_) | Value::Closure(_) => bool_value(true)
+            Value::Primitive(_) | Value::Closure(_) | Value::Continuation(_) => bool_value(true)
             _ => bool_value(false)
           }
         }
@@ -701,6 +703,9 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::Apply => {
       // handled by apply_proc to allow proper argument flattening
       raise EvalError("internal error: apply should be handled in apply_proc")
+    }
+    Primitive::CallCC => {
+      raise EvalError("internal error: call/cc should be handled in apply_proc")
     }
     Primitive::ListP => {
       match args.length() {
