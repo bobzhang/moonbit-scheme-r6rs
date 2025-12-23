@@ -1,7 +1,6 @@
 ///|
 fn init_env() -> Env {
   let env = env_new()
-  set_current_output_port(new_output_string_port())
   env_define(env, "+", Value::Primitive(Primitive::Add))
   env_define(env, "-", Value::Primitive(Primitive::Sub))
   env_define(env, "*", Value::Primitive(Primitive::Mul))
@@ -138,6 +137,8 @@ pub fn eval_program(src : String) -> Value raise {
 ///|
 pub fn eval_program_all(src : String) -> Array[Value] raise {
   let forms = parse_program(src)
+  reset_library_registry()
+  set_current_output_port(new_output_string_port())
   let env = init_env()
   let results : Array[Value] = []
   for form in forms {
@@ -882,6 +883,106 @@ fn apply_record_proc(
 }
 
 ///|
+fn parse_library_name(expr : Datum) -> String raise EvalError {
+  let parts = datum_list_to_array(expr)
+  if parts.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  let names = parse_symbol_list(parts)
+  names.join(".")
+}
+
+///|
+fn parse_export_clause(expr : Datum) -> Array[String] raise EvalError {
+  let items = datum_list_to_array(expr)
+  if items.is_empty() {
+    raise EvalError("invalid library")
+  }
+  match items[0] {
+    Datum::Symbol("export") => parse_symbol_list(items.sub(start=1).to_array())
+    _ => raise EvalError("invalid library")
+  }
+}
+
+///|
+fn parse_import_clause(expr : Datum) -> Array[String] raise EvalError {
+  let items = datum_list_to_array(expr)
+  if items.is_empty() {
+    raise EvalError("invalid library")
+  }
+  match items[0] {
+    Datum::Symbol("import") => {
+      let names : Array[String] = []
+      let mut i = 1
+      while i < items.length() {
+        names.push(parse_library_name(items[i]))
+        i = i + 1
+      }
+      names
+    }
+    _ => raise EvalError("invalid library")
+  }
+}
+
+///|
+fn import_library_into_env(name : String, env : Env) -> Unit raise EvalError {
+  match lookup_library(name) {
+    Some(lib) => {
+      for key in lib.exports.keys() {
+        match lib.exports.get(key) {
+          Some(value) => env_define(env, key, value)
+          None => ()
+        }
+      }
+    }
+    None => raise EvalError("unknown library: \{name}")
+  }
+}
+
+///|
+fn eval_library_state(
+  args : Array[Datum],
+  _env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 3 {
+    raise EvalError("invalid library")
+  }
+  let name = parse_library_name(args[0])
+  let exports = parse_export_clause(args[1])
+  let imports = parse_import_clause(args[2])
+  let body = args.sub(start=3).to_array()
+  let lib_env = init_env()
+  for lib_name in imports {
+    import_library_into_env(lib_name, lib_env)
+  }
+  for form in body {
+    let _ = eval_expr(form, lib_env)
+  }
+  let export_map : Map[String, Value] = {}
+  for export_name in exports {
+    export_map[export_name] = env_lookup(lib_env, export_name)
+  }
+  register_library(name, export_map)
+  MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
+fn eval_import_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  for spec in args {
+    let name = parse_library_name(spec)
+    import_library_into_env(name, env)
+  }
+  MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
 fn eval_and_state(
   args : Array[Datum],
   env : Env,
@@ -952,6 +1053,8 @@ fn eval_pair(
     let args = items.sub(start=1).to_array()
     match symbol_name(head) {
       Some("define-syntax") => MachineState::Apply(eval_define_syntax(args, env), kont, handlers)
+      Some("library") => eval_library_state(args, env, kont, handlers)
+      Some("import") => eval_import_state(args, env, kont, handlers)
       Some("define-record-type") => eval_define_record_type_state(args, env, kont, handlers)
       Some("quote") => MachineState::Apply(eval_quote(args), kont, handlers)
       Some("quasiquote") => MachineState::Apply(eval_quasiquote(args, env), kont, handlers)

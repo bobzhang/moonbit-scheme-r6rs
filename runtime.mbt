@@ -49,10 +49,16 @@ struct RecordProc {
 }
 
 ///|
+priv struct Library {
+  exports : Map[String, Value]
+}
+
+///|
 let port_counter : Ref[Int] = Ref::new(0)
 let record_type_counter : Ref[Int] = Ref::new(0)
 let record_counter : Ref[Int] = Ref::new(0)
 let record_proc_counter : Ref[Int] = Ref::new(0)
+let library_registry : Ref[Map[String, Library]] = Ref::new({})
 
 ///|
 fn next_port_id() -> Int {
@@ -99,6 +105,21 @@ fn make_record_instance(record_type : RecordType, values : Array[Value]) -> Reco
     fields.push(Ref::new(value))
   }
   Record::{ id: next_record_id(), record_type, fields }
+}
+
+///|
+fn reset_library_registry() -> Unit {
+  library_registry.val = {}
+}
+
+///|
+fn register_library(name : String, exports : Map[String, Value]) -> Unit {
+  library_registry.val[name] = Library::{ exports }
+}
+
+///|
+fn lookup_library(name : String) -> Library? {
+  library_registry.val.get(name)
 }
 
 ///|

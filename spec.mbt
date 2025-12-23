@@ -11,6 +11,7 @@
 /// - proper tail calls for procedure application
 /// - call/cc (call-with-current-continuation)
 /// - define-record-type (simple record types, no inheritance)
+/// - library and import (minimal library support)
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
 ///   boolean? number? procedure? not apply call/cc eq? eqv? equal? list? length append
 ///   reverse char? string? string-length string-append string-ref
@@ -21,7 +22,7 @@
 ///   (equality is structural for datums in this subset)
 /// - printing via value_to_string (booleans as #t/#f, empty list as ())
 ///
-/// Out of scope for now: modules and full numeric tower.
+/// Out of scope for now: full numeric tower.
 ///|
 pub(all) suberror ParseError String derive(Show, Eq)
 
