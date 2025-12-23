@@ -137,6 +137,16 @@ fn next_continuation_id() -> Int {
 }
 
 ///|
+let do_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_do_name() -> String {
+  let id = do_counter.val
+  do_counter.val = id + 1
+  "__do_loop__\{id}"
+}
+
+///|
 pub fn eval_program(src : String) -> Value raise {
   let results = eval_program_all(src)
   if results.is_empty() {
@@ -783,6 +793,102 @@ fn eval_letrec_syntax_state(
 }
 
 ///|
+fn build_begin(exprs : Array[Datum]) -> Datum {
+  let items : Array[Datum] = []
+  items.push(Datum::Symbol("begin"))
+  for expr in exprs {
+    items.push(expr)
+  }
+  list_from_array(items)
+}
+
+///|
+fn parse_do_bindings(expr : Datum) -> (Array[String], Array[Datum], Array[Datum]) raise EvalError {
+  let bindings = datum_list_to_array(expr)
+  let names : Array[String] = []
+  let inits : Array[Datum] = []
+  let steps : Array[Datum] = []
+  for binding in bindings {
+    let parts = datum_list_to_array(binding)
+    if parts.length() < 2 || parts.length() > 3 {
+      raise EvalError("invalid do")
+    }
+    let name = parse_symbol(parts[0])
+    names.push(name)
+    inits.push(parts[1])
+    if parts.length() == 3 {
+      steps.push(parts[2])
+    } else {
+      steps.push(Datum::Symbol(name))
+    }
+  }
+  (names, inits, steps)
+}
+
+///|
+fn eval_do_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 2 {
+    raise arity_mismatch(2, args.length())
+  }
+  let (names, inits, steps) = parse_do_bindings(args[0])
+  let test_parts = datum_list_to_array(args[1])
+  if test_parts.is_empty() {
+    raise EvalError("invalid do")
+  }
+  let test_expr = test_parts[0]
+  let result_exprs = test_parts.sub(start=1).to_array()
+  let command_exprs = args.sub(start=2).to_array()
+  let loop_name = next_do_name()
+  let params : Array[Datum] = []
+  for name in names {
+    params.push(Datum::Symbol(name))
+  }
+  let call_items : Array[Datum] = []
+  call_items.push(Datum::Symbol(loop_name))
+  for step in steps {
+    call_items.push(step)
+  }
+  let call_expr = list_from_array(call_items)
+  let else_body : Array[Datum] = []
+  for expr in command_exprs {
+    else_body.push(expr)
+  }
+  else_body.push(call_expr)
+  let then_expr = build_begin(result_exprs)
+  let else_expr = build_begin(else_body)
+  let if_expr = list_from_array([
+    Datum::Symbol("if"),
+    test_expr,
+    then_expr,
+    else_expr,
+  ])
+  let lambda_expr = list_from_array([
+    Datum::Symbol("lambda"),
+    list_from_array(params),
+    if_expr,
+  ])
+  let binding_expr = list_from_array([Datum::Symbol(loop_name), lambda_expr])
+  let bindings_expr = list_from_array([binding_expr])
+  let init_call_items : Array[Datum] = []
+  init_call_items.push(Datum::Symbol(loop_name))
+  for init in inits {
+    init_call_items.push(init)
+  }
+  let init_call_expr = list_from_array(init_call_items)
+  let expanded = list_from_array([
+    Datum::Symbol("letrec"),
+    bindings_expr,
+    init_call_expr,
+  ])
+  MachineState::Eval(expanded, env, kont, handlers)
+}
+
+///|
 fn eval_define_record_type_state(
   args : Array[Datum],
   env : Env,
@@ -1197,6 +1303,7 @@ fn eval_pair(
       Some("and") => eval_and_state(args, env, kont, handlers)
       Some("or") => eval_or_state(args, env, kont, handlers)
       Some("cond") => cond_start(args, env, kont, handlers)
+      Some("do") => eval_do_state(args, env, kont, handlers)
       Some("case") => eval_case_state(args, env, kont, handlers)
       Some(name) => {
         match env_get_macro(env, name) {

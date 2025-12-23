@@ -36,6 +36,7 @@ fn is_core_identifier(name : String) -> Bool {
     "and",
     "or",
     "cond",
+    "do",
     "case",
     "else",
     "=>",

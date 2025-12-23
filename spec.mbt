@@ -6,7 +6,7 @@
 ///   characters, strings, pairs/lists
 /// - quote, quasiquote, unquote, unquote-splicing, if, begin, lambda, define,
 ///   set!, let (including named let), let*, letrec, letrec*, let-syntax,
-///   letrec-syntax, and, or, cond (including =>), case
+///   letrec-syntax, and, or, cond (including =>), case, do
 /// - define-syntax + syntax-rules (hygienic identifiers), including "..." repetition
 /// - application with left-to-right evaluation
 /// - proper tail calls for procedure application
