@@ -50,6 +50,8 @@ fn init_env() -> Env {
   env_define(env, "assv", Value::Primitive(Primitive::Assv))
   env_define(env, "map", Value::Primitive(Primitive::Map))
   env_define(env, "for-each", Value::Primitive(Primitive::ForEach))
+  env_define(env, "set-car!", Value::Primitive(Primitive::SetCar))
+  env_define(env, "set-cdr!", Value::Primitive(Primitive::SetCdr))
   let cxr_chains : Array[String] = [
     "aa",
     "ad",
@@ -921,7 +923,19 @@ fn eval_quasiquote(args : Array[Datum], env : Env) -> Value raise EvalError {
 ///|
 fn unwrap_form(expr : Datum, name : String) -> Datum? {
   match expr {
-    Datum::Pair(Datum::Symbol(head), Datum::Pair(arg, Datum::Nil)) if head == name => Some(arg)
+    Datum::Pair(head, tail) =>
+      match head.val {
+        Datum::Symbol(head_name) if head_name == name =>
+          match tail.val {
+            Datum::Pair(arg, rest) =>
+              match rest.val {
+                Datum::Nil => Some(arg.val)
+                _ => None
+              }
+            _ => None
+          }
+        _ => None
+      }
     _ => None
   }
 }
@@ -959,20 +973,20 @@ fn quasiquote_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalEr
   match expr {
     Datum::Pair(car, cdr) => {
       if depth == 1 {
-        match unwrap_form(car, "unquote-splicing") {
+        match unwrap_form(car.val, "unquote-splicing") {
           Some(arg) => {
             let value = eval_expr(arg, env)
             let datum = value_as_datum(value)
             let items = datum_list_to_array(datum)
-            let tail = quasiquote_expand(cdr, env, depth)
+            let tail = quasiquote_expand(cdr.val, env, depth)
             return list_with_tail(items, tail)
           }
           None => ()
         }
       }
-      Datum::Pair(
-        quasiquote_expand(car, env, depth),
-        quasiquote_expand(cdr, env, depth),
+      pair_new(
+        quasiquote_expand(car.val, env, depth),
+        quasiquote_expand(cdr.val, env, depth),
       )
     }
     _ => expr
@@ -983,7 +997,7 @@ fn quasiquote_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalEr
 fn list_with_tail(items : Array[Datum], tail : Datum) -> Datum {
   let mut result = tail
   for item in items.rev_iter() {
-    result = Datum::Pair(item, result)
+    result = pair_new(item, result)
   }
   result
 }
@@ -2248,8 +2262,8 @@ fn map_step(
         return MachineState::Apply(Value::Datum(list_from_array(results)), kont, handlers)
       }
       Datum::Pair(car, cdr) => {
-        args.push(Value::Datum(car))
-        next_lists.push(cdr)
+        args.push(Value::Datum(car.val))
+        next_lists.push(cdr.val)
       }
       _ => raise EvalError("type error: proper list expected")
     }

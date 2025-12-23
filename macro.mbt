@@ -95,6 +95,8 @@ fn is_core_identifier(name : String) -> Bool {
     "assv",
     "map",
     "for-each",
+    "set-car!",
+    "set-cdr!",
     "caar",
     "cadr",
     "cdar",
@@ -538,8 +540,8 @@ fn match_pattern(
         _ => {
           match input {
             Datum::Pair(ia, ib) =>
-              if match_pattern(pa, ia, literals, bindings) {
-                match_pattern(pb, ib, literals, bindings)
+              if match_pattern(pa.val, ia.val, literals, bindings) {
+                match_pattern(pb.val, ib.val, literals, bindings)
               } else {
                 false
               }
@@ -677,8 +679,8 @@ fn collect_pattern_vars(pattern : Datum, literals : Array[String], names : Map[S
         None => {
           match pattern {
             Datum::Pair(a, b) => {
-              collect_pattern_vars(a, literals, names)
-              collect_pattern_vars(b, literals, names)
+              collect_pattern_vars(a.val, literals, names)
+              collect_pattern_vars(b.val, literals, names)
             }
             _ => ()
           }
@@ -702,8 +704,8 @@ fn datum_list_to_array_opt(list : Datum) -> Array[Datum]? {
     match cur {
       Datum::Nil => break
       Datum::Pair(a, b) => {
-        items.push(a)
-        cur = b
+        items.push(a.val)
+        cur = b.val
       }
       _ => return None
     }
@@ -754,7 +756,8 @@ fn datum_equal(a : Datum, b : Datum) -> Bool {
     (Datum::Char(x), Datum::Char(y)) => x == y
     (Datum::String(x), Datum::String(y)) => x == y
     (Datum::Symbol(x), Datum::Symbol(y)) => x == y
-    (Datum::Pair(ax, ay), Datum::Pair(bx, by)) => datum_equal(ax, bx) && datum_equal(ay, by)
+    (Datum::Pair(ax, ay), Datum::Pair(bx, by)) =>
+      datum_equal(ax.val, bx.val) && datum_equal(ay.val, by.val)
     (Datum::Vector(ax), Datum::Vector(bx)) => array_datum_equal(ax, bx)
     (Datum::ByteVector(ax), Datum::ByteVector(bx)) => array_int_equal(ax, bx)
     _ => false
@@ -833,8 +836,8 @@ fn collect_renames(
         None => {
           match template {
             Datum::Pair(a, b) => {
-              collect_renames(a, bindings, literals, env, renames)
-              collect_renames(b, bindings, literals, env, renames)
+              collect_renames(a.val, bindings, literals, env, renames)
+              collect_renames(b.val, bindings, literals, env, renames)
             }
             _ => ()
           }
@@ -866,8 +869,8 @@ fn collect_template_symbols(template : Datum, symbols : Map[String, Bool]) -> Un
         None => {
           match template {
             Datum::Pair(a, b) => {
-              collect_template_symbols(a, symbols)
-              collect_template_symbols(b, symbols)
+              collect_template_symbols(a.val, symbols)
+              collect_template_symbols(b.val, symbols)
             }
             _ => ()
           }
@@ -913,9 +916,9 @@ fn expand_template_indexed(
         }
         None => {
           match template {
-            Datum::Pair(a, b) => Datum::Pair(
-              expand_template_indexed(a, bindings, renames, indices),
-              expand_template_indexed(b, bindings, renames, indices),
+            Datum::Pair(a, b) => pair_new(
+              expand_template_indexed(a.val, bindings, renames, indices),
+              expand_template_indexed(b.val, bindings, renames, indices),
             )
             _ => template
           }
@@ -1048,8 +1051,8 @@ fn max_binding_len(template : Datum, bindings : Map[String, BindingVal], indices
         None => {
           match template {
             Datum::Pair(a, b) => {
-              let left = max_binding_len(a, bindings, indices)
-              let right = max_binding_len(b, bindings, indices)
+              let left = max_binding_len(a.val, bindings, indices)
+              let right = max_binding_len(b.val, bindings, indices)
               if left > right { left } else { right }
             }
             _ => 0

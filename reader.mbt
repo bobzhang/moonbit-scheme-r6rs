@@ -280,34 +280,22 @@ fn read_string(r : Reader) -> String raise ParseError {
 
 ///|
 fn make_quote(expr : Datum) -> Datum {
-  Datum::Pair(
-    Datum::Symbol("quote"),
-    Datum::Pair(expr, Datum::Nil),
-  )
+  pair_new(Datum::Symbol("quote"), pair_new(expr, Datum::Nil))
 }
 
 ///|
 fn make_quasiquote(expr : Datum) -> Datum {
-  Datum::Pair(
-    Datum::Symbol("quasiquote"),
-    Datum::Pair(expr, Datum::Nil),
-  )
+  pair_new(Datum::Symbol("quasiquote"), pair_new(expr, Datum::Nil))
 }
 
 ///|
 fn make_unquote(expr : Datum) -> Datum {
-  Datum::Pair(
-    Datum::Symbol("unquote"),
-    Datum::Pair(expr, Datum::Nil),
-  )
+  pair_new(Datum::Symbol("unquote"), pair_new(expr, Datum::Nil))
 }
 
 ///|
 fn make_unquote_splicing(expr : Datum) -> Datum {
-  Datum::Pair(
-    Datum::Symbol("unquote-splicing"),
-    Datum::Pair(expr, Datum::Nil),
-  )
+  pair_new(Datum::Symbol("unquote-splicing"), pair_new(expr, Datum::Nil))
 }
 
 ///|
@@ -353,7 +341,7 @@ fn read_list(r : Reader) -> Datum raise ParseError {
     None => Datum::Nil
   }
   for item in items.rev_iter() {
-    tail = Datum::Pair(item, tail)
+    tail = pair_new(item, tail)
   }
   tail
 }
@@ -366,8 +354,8 @@ fn datum_list_to_array_parse(list : Datum) -> Array[Datum] raise ParseError {
     match cur {
       Datum::Nil => break
       Datum::Pair(a, b) => {
-        items.push(a)
-        cur = b
+        items.push(a.val)
+        cur = b.val
       }
       _ => raise ParseError("expected proper list")
     }

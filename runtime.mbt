@@ -216,9 +216,22 @@ fn normalize_rat(num : Int, den : Int) -> Datum? {
 ///|
 fn value_as_pair(value : Value) -> (Datum, Datum) raise EvalError {
   match value {
+    Value::Datum(Datum::Pair(a, b)) => (a.val, b.val)
+    _ => raise EvalError("type error: pair expected")
+  }
+}
+
+///|
+fn value_as_pair_cells(value : Value) -> (Ref[Datum], Ref[Datum]) raise EvalError {
+  match value {
     Value::Datum(Datum::Pair(a, b)) => (a, b)
     _ => raise EvalError("type error: pair expected")
   }
+}
+
+///|
+fn pair_new(car : Datum, cdr : Datum) -> Datum {
+  Datum::Pair(Ref::new(car), Ref::new(cdr))
 }
 
 ///|
@@ -229,8 +242,8 @@ fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
     match cur {
       Datum::Nil => break
       Datum::Pair(a, b) => {
-        items.push(a)
-        cur = b
+        items.push(a.val)
+        cur = b.val
       }
       _ => raise EvalError("type error: proper list expected")
     }
@@ -246,8 +259,8 @@ fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
     match cur {
       Datum::Nil => break
       Datum::Pair(a, b) => {
-        items.push(Value::Datum(a))
-        cur = b
+        items.push(Value::Datum(a.val))
+        cur = b.val
       }
       _ => raise EvalError("type error: list expected")
     }
@@ -259,7 +272,7 @@ fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
 fn list_from_array(items : Array[Datum]) -> Datum {
   let mut tail = Datum::Nil
   for item in items.rev_iter() {
-    tail = Datum::Pair(item, tail)
+    tail = pair_new(item, tail)
   }
   tail
 }

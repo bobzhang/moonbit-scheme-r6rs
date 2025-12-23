@@ -37,6 +37,10 @@ test "r6rs list utilities" {
   let foreach_prog =
     "(let ((acc 0)) (for-each (lambda (x) (set! acc (+ acc x))) '(1 2 3)) acc)"
   inspect(value_to_string(eval_program(foreach_prog)), content="6")
+  let set_car_prog = "(let ((p (cons 1 2))) (set-car! p 9) p)"
+  inspect(value_to_string(eval_program(set_car_prog)), content="(9 . 2)")
+  let set_cdr_prog = "(let ((p (cons 1 2))) (set-cdr! p 9) p)"
+  inspect(value_to_string(eval_program(set_cdr_prog)), content="(1 . 9)")
   inspect(value_to_string(eval_program("(append)")), content="()")
   inspect(value_to_string(eval_program("(append '(1 2) '(3 4))")), content="(1 2 3 4)")
   inspect(value_to_string(eval_program("(append '(1 2) '(3 . 4))")), content="(1 2 3 . 4)")
@@ -85,5 +89,11 @@ test "r6rs list utilities: errors" {
   match bad_map {
     Err(err) => inspect(err, content="EvalError(\"type error: proper list expected\")")
     _ => fail("expected EvalError for improper list in map")
+  }
+
+  let bad_set = try? eval_program("(set-car! '() 1)")
+  match bad_set {
+    Err(err) => inspect(err, content="EvalError(\"type error: pair expected\")")
+    _ => fail("expected EvalError for set-car! on non-pair")
   }
 }

@@ -9,7 +9,7 @@ fn is_proper_list(value : Datum) -> Bool {
   while true {
     match cur {
       Datum::Nil => return true
-      Datum::Pair(_, cdr) => cur = cdr
+      Datum::Pair(_, cdr) => cur = cdr.val
       _ => return false
     }
   }
@@ -73,6 +73,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Assv, Primitive::Assv)
     | (Primitive::Map, Primitive::Map)
     | (Primitive::ForEach, Primitive::ForEach)
+    | (Primitive::SetCar, Primitive::SetCar)
+    | (Primitive::SetCdr, Primitive::SetCdr)
     | (Primitive::CharEq, Primitive::CharEq)
     | (Primitive::CharLess, Primitive::CharLess)
     | (Primitive::CharGreater, Primitive::CharGreater)
@@ -448,10 +450,10 @@ fn list_member(
     match cur {
       Datum::Nil => return bool_value(false)
       Datum::Pair(car, cdr) => {
-        if equality_match(mode, item, Value::Datum(car)) {
+        if equality_match(mode, item, Value::Datum(car.val)) {
           return Value::Datum(cur)
         }
-        cur = cdr
+        cur = cdr.val
       }
       _ => raise EvalError("type error: proper list expected")
     }
@@ -470,15 +472,16 @@ fn list_assoc(
     match cur {
       Datum::Nil => return bool_value(false)
       Datum::Pair(entry, rest) => {
-        match entry {
+        let entry_val = entry.val
+        match entry_val {
           Datum::Pair(car, _) => {
-            if equality_match(mode, key, Value::Datum(car)) {
-              return Value::Datum(entry)
+            if equality_match(mode, key, Value::Datum(car.val)) {
+              return Value::Datum(entry_val)
             }
           }
           _ => raise EvalError("type error: pair expected")
         }
-        cur = rest
+        cur = rest.val
       }
       _ => raise EvalError("type error: proper list expected")
     }
@@ -771,7 +774,27 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         2 => {
           let car = value_as_datum(args[0])
           let cdr = value_as_datum(args[1])
-          Value::Datum(Datum::Pair(car, cdr))
+          Value::Datum(pair_new(car, cdr))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::SetCar => {
+      match args.length() {
+        2 => {
+          let (car_cell, _) = value_as_pair_cells(args[0])
+          car_cell.val = value_as_datum(args[1])
+          Value::Void
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::SetCdr => {
+      match args.length() {
+        2 => {
+          let (_, cdr_cell) = value_as_pair_cells(args[0])
+          cdr_cell.val = value_as_datum(args[1])
+          Value::Void
         }
         n => raise arity_mismatch(2, n)
       }
@@ -808,8 +831,8 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             match cur {
               Datum::Pair(car, cdr) => {
                 match op {
-                  'a' => cur = car
-                  'd' => cur = cdr
+                  'a' => cur = car.val
+                  'd' => cur = cdr.val
                   _ => raise EvalError("internal error: invalid cxr")
                 }
               }
@@ -1503,7 +1526,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let items = datum_list_to_array(datum)
           let mut result = Datum::Nil
           for item in items {
-            result = Datum::Pair(item, result)
+            result = pair_new(item, result)
           }
           Value::Datum(result)
         }

@@ -80,8 +80,8 @@ fn datum_list_to_string(list : Datum) -> String {
         break
       }
       Datum::Pair(a, b) => {
-        parts.push(datum_to_string(a))
-        cur = b
+        parts.push(datum_to_string(a.val))
+        cur = b.val
       }
       _ => {
         let prefix = parts.join(" ")
