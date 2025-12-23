@@ -167,6 +167,8 @@ fn is_core_identifier(name : String) -> Bool {
     "string-ci>?",
     "string-ci<=?",
     "string-ci>=?",
+    "string",
+    "make-string",
     "string?",
     "string-length",
     "string-append",

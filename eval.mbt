@@ -139,6 +139,8 @@ fn init_env() -> Env {
   env_define(env, "string-ci>?", Value::Primitive(Primitive::StringCiGreater))
   env_define(env, "string-ci<=?", Value::Primitive(Primitive::StringCiLessEq))
   env_define(env, "string-ci>=?", Value::Primitive(Primitive::StringCiGreaterEq))
+  env_define(env, "string", Value::Primitive(Primitive::String))
+  env_define(env, "make-string", Value::Primitive(Primitive::MakeString))
   env_define(env, "string?", Value::Primitive(Primitive::StringP))
   env_define(env, "string-length", Value::Primitive(Primitive::StringLength))
   env_define(env, "string-append", Value::Primitive(Primitive::StringAppend))

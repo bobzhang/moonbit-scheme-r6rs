@@ -30,7 +30,7 @@
 ///   char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
 ///   char->integer integer->char char-alphabetic? char-numeric? char-whitespace?
 ///   char-upper-case? char-lower-case? char-upcase char-downcase char-foldcase
-///   string? string=? string<? string>? string<=? string>=?
+///   string make-string string? string=? string<? string>? string<=? string>=?
 ///   string-ci=? string-ci<? string-ci>? string-ci<=? string-ci>=?
 ///   string-length string-append string-ref string-copy string->list list->string
 ///   string-map string-for-each
@@ -183,6 +183,8 @@ pub enum Primitive {
   StringCiGreater
   StringCiLessEq
   StringCiGreaterEq
+  String
+  MakeString
   StringP
   StringLength
   StringAppend

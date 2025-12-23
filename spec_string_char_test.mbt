@@ -6,6 +6,9 @@ test "r6rs char and string primitives" {
   inspect(value_to_string(eval_program("(char? #\\a)")), content="#t")
   inspect(value_to_string(eval_program("(char? \"a\")")), content="#f")
   inspect(value_to_string(eval_program("(string? \"hi\")")), content="#t")
+  inspect(value_to_string(eval_program("(string #\\a #\\b)")), content="\"ab\"")
+  inspect(value_to_string(eval_program("(make-string 3 #\\x)")), content="\"xxx\"")
+  inspect(value_to_string(eval_program("(make-string 0)")), content="\"\"")
   inspect(value_to_string(eval_program("(string-length \"hi\")")), content="2")
   inspect(value_to_string(eval_program("(string-append \"a\" \"b\" \"c\")")), content="\"abc\"")
   inspect(value_to_string(eval_program("(string-append)")), content="\"\"")
@@ -77,6 +80,12 @@ test "r6rs string-ref: errors" {
   match bad_map {
     Err(err) => inspect(err, content="EvalError(\"string length mismatch\")")
     _ => fail("expected EvalError for string length mismatch")
+  }
+
+  let bad_make = try? eval_program("(make-string -1)")
+  match bad_make {
+    Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
+    _ => fail("expected EvalError for invalid make-string length")
   }
 }
 

@@ -126,6 +126,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::StringCiGreater, Primitive::StringCiGreater)
     | (Primitive::StringCiLessEq, Primitive::StringCiLessEq)
     | (Primitive::StringCiGreaterEq, Primitive::StringCiGreaterEq)
+    | (Primitive::String, Primitive::String)
+    | (Primitive::MakeString, Primitive::MakeString)
     | (Primitive::StringP, Primitive::StringP)
     | (Primitive::StringLength, Primitive::StringLength)
     | (Primitive::StringAppend, Primitive::StringAppend)
@@ -1520,6 +1522,39 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     Primitive::StringCiGreater => bool_value(compare_chain_string(args, CompareMode::Gt, true))
     Primitive::StringCiLessEq => bool_value(compare_chain_string(args, CompareMode::Le, true))
     Primitive::StringCiGreaterEq => bool_value(compare_chain_string(args, CompareMode::Ge, true))
+    Primitive::String => {
+      let buf = @buffer.new()
+      for arg in args {
+        let ch = value_as_char(arg)
+        buf.write_char(ch)
+      }
+      Value::Datum(Datum::String(buf.to_string()))
+    }
+    Primitive::MakeString => {
+      match args.length() {
+        1 | 2 => {
+          let len = value_as_nonnegative_int(args[0])
+          let fill =
+            if args.length() == 2 {
+              value_as_char(args[1])
+            } else {
+              let zero = 0
+              match zero.to_char() {
+                Some(ch) => ch
+                None => raise EvalError("internal error: invalid default char")
+              }
+            }
+          let buf = @buffer.new()
+          let mut i = 0
+          while i < len {
+            buf.write_char(fill)
+            i = i + 1
+          }
+          Value::Datum(Datum::String(buf.to_string()))
+        }
+        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+      }
+    }
     Primitive::StringP => {
       match args.length() {
         1 => {
