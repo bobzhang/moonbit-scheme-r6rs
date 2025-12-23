@@ -123,6 +123,7 @@ pub enum Primitive {
   ExactToInexact
   InexactToExact
   ExactIntegerSqrt
+  Rationalize
   NumberToString
   StringToNumber
   Numerator

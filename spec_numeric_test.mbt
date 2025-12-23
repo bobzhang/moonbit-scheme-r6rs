@@ -767,6 +767,34 @@ test "r6rs numeric: exact-integer-sqrt" {
 }
 
 ///|
+test "r6rs numeric: rationalize" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rationalize 3/2 0)
+      )
+    )),
+    content="3/2",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rationalize 1.25 0.01)
+      )
+    )),
+    content="5/4",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rationalize -2.5 0.1)
+      )
+    )),
+    content="-5/2",
+  )
+}
+
+///|
 test "r6rs numeric: predicate errors" {
   let bad_odd = try? eval_program(
     (
@@ -796,6 +824,16 @@ test "r6rs numeric: predicate errors" {
   match bad_exact_sqrt {
     Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
     _ => fail("expected EvalError for exact-integer-sqrt on negative")
+  }
+
+  let bad_rationalize = try? eval_program(
+    (
+      #|(rationalize 1 -1)
+    )
+  )
+  match bad_rationalize {
+    Err(err) => inspect(err, content="EvalError(\"type error: nonnegative real expected\")")
+    _ => fail("expected EvalError for rationalize on negative tolerance")
   }
 }
 

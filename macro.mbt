@@ -214,6 +214,7 @@ fn is_core_identifier(name : String) -> Bool {
     "exact->inexact",
     "inexact->exact",
     "exact-integer-sqrt",
+    "rationalize",
     "number->string",
     "string->number",
     "numerator",

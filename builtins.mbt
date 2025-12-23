@@ -64,6 +64,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::ExactToInexact, Primitive::ExactToInexact)
     | (Primitive::InexactToExact, Primitive::InexactToExact)
     | (Primitive::ExactIntegerSqrt, Primitive::ExactIntegerSqrt)
+    | (Primitive::Rationalize, Primitive::Rationalize)
     | (Primitive::NumberToString, Primitive::NumberToString)
     | (Primitive::StringToNumber, Primitive::StringToNumber)
     | (Primitive::Numerator, Primitive::Numerator)
@@ -570,6 +571,50 @@ fn exact_integer_sqrt(n : Int) -> (Int, Int) {
 }
 
 ///|
+fn rationalize_float(value : Float, tol : Float) -> (Int, Int) {
+  if value == 0.0 {
+    return (0, 1)
+  }
+  let mut sign = 1
+  let mut x = value
+  if x < 0.0 {
+    sign = -1
+    x = -x
+  }
+  let mut a = float_floor_int(x)
+  let mut p0 = 1
+  let mut q0 = 0
+  let mut p1 = a
+  let mut q1 = 1
+  let mut frac = x - Float::from_int(a)
+  let mut iter = 0
+  while iter < 64 {
+    let approx = Float::from_int(p1) / Float::from_int(q1)
+    let mut diff = x - approx
+    if diff < 0.0 {
+      diff = -diff
+    }
+    if diff <= tol || frac == 0.0 {
+      break
+    }
+    frac = 1.0 / frac
+    a = float_floor_int(frac)
+    let p2 = a * p1 + p0
+    let q2 = a * q1 + q0
+    if q2 == 0 {
+      break
+    }
+    p0 = p1
+    q0 = q1
+    p1 = p2
+    q1 = q2
+    frac = frac - Float::from_int(a)
+    iter = iter + 1
+  }
+  (sign * p1, q1)
+}
+
+///|
 fn value_as_int_index(value : Value) -> Int raise EvalError {
   match value {
     Value::Datum(Datum::Int(n)) => n
@@ -964,6 +1009,27 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           ])
         }
         n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Rationalize => {
+      match args.length() {
+        2 => {
+          let x = value_as_number(args[0])
+          let tol_value = value_as_number(args[1])
+          let tol = number_to_float(tol_value)
+          if tol < 0.0 {
+            raise EvalError("type error: nonnegative real expected")
+          }
+          match x {
+            Datum::Int(_) | Datum::Rat(_, _) => Value::Datum(x)
+            Datum::Float(f) => {
+              let (n, d) = rationalize_float(f, tol)
+              Value::Datum(normalize_rat_or_error(n, d))
+            }
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(2, n)
       }
     }
     Primitive::NumberToString => {
