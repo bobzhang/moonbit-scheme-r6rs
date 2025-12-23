@@ -19,6 +19,16 @@ test "r6rs list utilities" {
   inspect(value_to_string(eval_program("(length (make-list 4))")), content="4")
   inspect(value_to_string(eval_program("(list-ref '(a b c) 1)")), content="b")
   inspect(value_to_string(eval_program("(list-tail '(a b c d) 2)")), content="(c d)")
+  inspect(value_to_string(eval_program("(cadr '(1 2 3))")), content="2")
+  inspect(value_to_string(eval_program("(caddr '(1 2 3 4))")), content="3")
+  inspect(value_to_string(eval_program("(cddr '(1 2 3))")), content="(3)")
+  inspect(value_to_string(eval_program("(caar '((1 2) (3 4)))")), content="1")
+  inspect(value_to_string(eval_program("(member 2 '(1 2 3))")), content="(2 3)")
+  inspect(value_to_string(eval_program("(memq 2 '(1 2 3))")), content="(2 3)")
+  inspect(value_to_string(eval_program("(memv 2 '(1 2 3))")), content="(2 3)")
+  inspect(value_to_string(eval_program("(assoc 'b '((a . 1) (b . 2)))")), content="(b . 2)")
+  inspect(value_to_string(eval_program("(assq 'b '((a . 1) (b . 2)))")), content="(b . 2)")
+  inspect(value_to_string(eval_program("(assv 'b '((a . 1) (b . 2)))")), content="(b . 2)")
   inspect(value_to_string(eval_program("(append)")), content="()")
   inspect(value_to_string(eval_program("(append '(1 2) '(3 4))")), content="(1 2 3 4)")
   inspect(value_to_string(eval_program("(append '(1 2) '(3 . 4))")), content="(1 2 3 . 4)")
@@ -49,5 +59,17 @@ test "r6rs list utilities: errors" {
   match negative_len {
     Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
     _ => fail("expected EvalError for negative make-list length")
+  }
+
+  let bad_member = try? eval_program("(member 3 '(1 . 2))")
+  match bad_member {
+    Err(err) => inspect(err, content="EvalError(\"type error: proper list expected\")")
+    _ => fail("expected EvalError for improper list")
+  }
+
+  let bad_assoc = try? eval_program("(assoc 'a '(1 2))")
+  match bad_assoc {
+    Err(err) => inspect(err, content="EvalError(\"type error: pair expected\")")
+    _ => fail("expected EvalError for non-pair alist entry")
   }
 }

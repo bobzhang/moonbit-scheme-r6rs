@@ -19,6 +19,7 @@ fn is_proper_list(value : Datum) -> Bool {
 ///|
 fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
   match (left, right) {
+    (Primitive::Cxr(a), Primitive::Cxr(b)) => a == b
     (Primitive::Add, Primitive::Add)
     | (Primitive::Sub, Primitive::Sub)
     | (Primitive::Mul, Primitive::Mul)
@@ -64,6 +65,12 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Reverse, Primitive::Reverse)
     | (Primitive::ListRef, Primitive::ListRef)
     | (Primitive::ListTail, Primitive::ListTail)
+    | (Primitive::Member, Primitive::Member)
+    | (Primitive::Memq, Primitive::Memq)
+    | (Primitive::Memv, Primitive::Memv)
+    | (Primitive::Assoc, Primitive::Assoc)
+    | (Primitive::Assq, Primitive::Assq)
+    | (Primitive::Assv, Primitive::Assv)
     | (Primitive::CharEq, Primitive::CharEq)
     | (Primitive::CharLess, Primitive::CharLess)
     | (Primitive::CharGreater, Primitive::CharGreater)
@@ -415,6 +422,69 @@ fn compare_chain_string(
 }
 
 ///|
+priv enum EqualityMode {
+  Eqv
+  Equal
+}
+
+///|
+fn equality_match(mode : EqualityMode, left : Value, right : Value) -> Bool {
+  match mode {
+    EqualityMode::Eqv => value_eqv(left, right)
+    EqualityMode::Equal => value_equal(left, right)
+  }
+}
+
+///|
+fn list_member(
+  mode : EqualityMode,
+  item : Value,
+  list : Datum,
+) -> Value raise EvalError {
+  let mut cur = list
+  while true {
+    match cur {
+      Datum::Nil => return bool_value(false)
+      Datum::Pair(car, cdr) => {
+        if equality_match(mode, item, Value::Datum(car)) {
+          return Value::Datum(cur)
+        }
+        cur = cdr
+      }
+      _ => raise EvalError("type error: proper list expected")
+    }
+  }
+  bool_value(false)
+}
+
+///|
+fn list_assoc(
+  mode : EqualityMode,
+  key : Value,
+  list : Datum,
+) -> Value raise EvalError {
+  let mut cur = list
+  while true {
+    match cur {
+      Datum::Nil => return bool_value(false)
+      Datum::Pair(entry, rest) => {
+        match entry {
+          Datum::Pair(car, _) => {
+            if equality_match(mode, key, Value::Datum(car)) {
+              return Value::Datum(entry)
+            }
+          }
+          _ => raise EvalError("type error: pair expected")
+        }
+        cur = rest
+      }
+      _ => raise EvalError("type error: proper list expected")
+    }
+  }
+  bool_value(false)
+}
+
+///|
 fn value_as_vector(value : Value) -> Array[Datum] raise EvalError {
   match value {
     Value::Datum(Datum::Vector(items)) => items
@@ -718,6 +788,33 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let (_, cdr) = value_as_pair(args[0])
           Value::Datum(cdr)
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Cxr(chain) => {
+      match args.length() {
+        1 => {
+          let mut cur = value_as_datum(args[0])
+          let mut i = chain.length()
+          while i > 0 {
+            i = i - 1
+            let op = match chain.get_char(i) {
+              Some(ch) => ch
+              None => raise EvalError("internal error: invalid cxr")
+            }
+            match cur {
+              Datum::Pair(car, cdr) => {
+                match op {
+                  'a' => cur = car
+                  'd' => cur = cdr
+                  _ => raise EvalError("internal error: invalid cxr")
+                }
+              }
+              _ => raise EvalError("type error: pair expected")
+            }
+          }
+          Value::Datum(cur)
         }
         n => raise arity_mismatch(1, n)
       }
@@ -1427,6 +1524,60 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             raise EvalError("index out of range")
           }
           Value::Datum(list_from_array(items.sub(start=idx).to_array()))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Member => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_member(EqualityMode::Equal, args[0], list)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Memq => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_member(EqualityMode::Eqv, args[0], list)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Memv => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_member(EqualityMode::Eqv, args[0], list)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Assoc => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_assoc(EqualityMode::Equal, args[0], list)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Assq => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_assoc(EqualityMode::Eqv, args[0], list)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Assv => {
+      match args.length() {
+        2 => {
+          let list = value_as_datum(args[1])
+          list_assoc(EqualityMode::Eqv, args[0], list)
         }
         n => raise arity_mismatch(2, n)
       }

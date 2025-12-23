@@ -42,6 +42,45 @@ fn init_env() -> Env {
   env_define(env, "list?", Value::Primitive(Primitive::ListP))
   env_define(env, "list-ref", Value::Primitive(Primitive::ListRef))
   env_define(env, "list-tail", Value::Primitive(Primitive::ListTail))
+  env_define(env, "member", Value::Primitive(Primitive::Member))
+  env_define(env, "memq", Value::Primitive(Primitive::Memq))
+  env_define(env, "memv", Value::Primitive(Primitive::Memv))
+  env_define(env, "assoc", Value::Primitive(Primitive::Assoc))
+  env_define(env, "assq", Value::Primitive(Primitive::Assq))
+  env_define(env, "assv", Value::Primitive(Primitive::Assv))
+  let cxr_chains : Array[String] = [
+    "aa",
+    "ad",
+    "da",
+    "dd",
+    "aaa",
+    "aad",
+    "ada",
+    "add",
+    "daa",
+    "dad",
+    "dda",
+    "ddd",
+    "aaaa",
+    "aaad",
+    "aada",
+    "aadd",
+    "adaa",
+    "adad",
+    "adda",
+    "addd",
+    "daaa",
+    "daad",
+    "dada",
+    "dadd",
+    "ddaa",
+    "ddad",
+    "ddda",
+    "dddd",
+  ]
+  for chain in cxr_chains {
+    env_define(env, "c\{chain}r", Value::Primitive(Primitive::Cxr(chain)))
+  }
   env_define(env, "length", Value::Primitive(Primitive::Length))
   env_define(env, "append", Value::Primitive(Primitive::Append))
   env_define(env, "reverse", Value::Primitive(Primitive::Reverse))
