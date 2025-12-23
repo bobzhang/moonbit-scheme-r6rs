@@ -32,6 +32,20 @@ test "r6rs numeric: predicates and exactness" {
 }
 
 ///|
+test "r6rs numeric: sign and parity predicates" {
+  inspect(value_to_string(eval_program("(zero? 0)")), content="#t")
+  inspect(value_to_string(eval_program("(zero? 1/2)")), content="#f")
+  inspect(value_to_string(eval_program("(zero? 0.0)")), content="#t")
+  inspect(value_to_string(eval_program("(positive? 3)")), content="#t")
+  inspect(value_to_string(eval_program("(positive? -1/2)")), content="#f")
+  inspect(value_to_string(eval_program("(negative? -2.5)")), content="#t")
+  inspect(value_to_string(eval_program("(odd? 3)")), content="#t")
+  inspect(value_to_string(eval_program("(odd? -3)")), content="#t")
+  inspect(value_to_string(eval_program("(even? 4)")), content="#t")
+  inspect(value_to_string(eval_program("(even? -4)")), content="#t")
+}
+
+///|
 test "r6rs numeric: conversions and fractions" {
   inspect(value_to_string(eval_program("(exact->inexact 1/2)")), content="0.5")
   inspect(value_to_string(eval_program("(inexact->exact 2.0)")), content="2")
@@ -68,6 +82,21 @@ test "r6rs numeric: lcm" {
   inspect(value_to_string(eval_program("(lcm -6 8)")), content="24")
   inspect(value_to_string(eval_program("(lcm 0 10)")), content="0")
   inspect(value_to_string(eval_program("(lcm 4 6 10)")), content="60")
+}
+
+///|
+test "r6rs numeric: predicate errors" {
+  let bad_odd = try? eval_program("(odd? 1/2)")
+  match bad_odd {
+    Err(err) => inspect(err, content="EvalError(\"type error: exact integer expected\")")
+    _ => fail("expected EvalError for odd? on non-integer")
+  }
+
+  let bad_zero = try? eval_program("(zero? \"a\")")
+  match bad_zero {
+    Err(err) => inspect(err, content="EvalError(\"type error: number expected\")")
+    _ => fail("expected EvalError for zero? on non-number")
+  }
 }
 
 ///|

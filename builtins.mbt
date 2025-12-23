@@ -46,6 +46,11 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::RealP, Primitive::RealP)
     | (Primitive::ExactP, Primitive::ExactP)
     | (Primitive::InexactP, Primitive::InexactP)
+    | (Primitive::ZeroP, Primitive::ZeroP)
+    | (Primitive::PositiveP, Primitive::PositiveP)
+    | (Primitive::NegativeP, Primitive::NegativeP)
+    | (Primitive::OddP, Primitive::OddP)
+    | (Primitive::EvenP, Primitive::EvenP)
     | (Primitive::ProcedureP, Primitive::ProcedureP)
     | (Primitive::Not, Primitive::Not)
     | (Primitive::Apply, Primitive::Apply)
@@ -1080,6 +1085,63 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Float(_)) => bool_value(true)
             _ => bool_value(false)
           }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ZeroP => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::Int(n)) => bool_value(n == 0)
+            Value::Datum(Datum::Rat(n, _)) => bool_value(n == 0)
+            Value::Datum(Datum::Float(n)) => bool_value(n == 0.0)
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::PositiveP => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::Int(n)) => bool_value(n > 0)
+            Value::Datum(Datum::Rat(n, _)) => bool_value(n > 0)
+            Value::Datum(Datum::Float(n)) => bool_value(n > 0.0)
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::NegativeP => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(Datum::Int(n)) => bool_value(n < 0)
+            Value::Datum(Datum::Rat(n, _)) => bool_value(n < 0)
+            Value::Datum(Datum::Float(n)) => bool_value(n < 0.0)
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::OddP => {
+      match args.length() {
+        1 => {
+          let n = value_as_int_index(args[0])
+          bool_value(n % 2 != 0)
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EvenP => {
+      match args.length() {
+        1 => {
+          let n = value_as_int_index(args[0])
+          bool_value(n % 2 == 0)
         }
         n => raise arity_mismatch(1, n)
       }

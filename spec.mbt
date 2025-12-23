@@ -17,7 +17,8 @@
 /// - define-record-type (simple record types, no inheritance)
 /// - library and import (minimal library support)
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
-///   boolean? number? integer? rational? real? exact? inexact? exact->inexact
+///   boolean? number? integer? rational? real? exact? inexact? zero? positive?
+///   negative? odd? even? exact->inexact
 ///   inexact->exact numerator denominator abs quotient remainder modulo gcd lcm
 ///   procedure? not apply call/cc eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
@@ -98,6 +99,11 @@ pub enum Primitive {
   RealP
   ExactP
   InexactP
+  ZeroP
+  PositiveP
+  NegativeP
+  OddP
+  EvenP
   ProcedureP
   Not
   Apply
