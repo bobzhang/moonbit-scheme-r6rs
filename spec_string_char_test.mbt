@@ -2,338 +2,450 @@
 test "r6rs char and string primitives" {
   inspect(
     value_to_string(eval_program(
-      #|#\a
+      (
+        #|#\a
+      )
     )),
     content="#\\a",
   )
   inspect(
     value_to_string(eval_program(
-      #|#\space
+      (
+        #|#\space
+      )
     )),
     content="#\\space",
   )
   inspect(
     value_to_string(eval_program(
-      #|#\newline
+      (
+        #|#\newline
+      )
     )),
     content="#\\newline",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char? #\a)
+      (
+        #|(char? #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char? "a")
+      (
+        #|(char? "a")
+      )
     )),
     content="#f",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string? "hi")
+      (
+        #|(string? "hi")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string #\a #\b)
+      (
+        #|(string #\a #\b)
+      )
     )),
     content="\"ab\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(make-string 3 #\x)
+      (
+        #|(make-string 3 #\x)
+      )
     )),
     content="\"xxx\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(make-string 0)
+      (
+        #|(make-string 0)
+      )
     )),
     content="\"\"",
   )
   let set_program = (
-    #|(let ((s (string #\a #\b #\c)))
-    #|  (string-set! s 1 #\x)
-    #|  s)
+    (
+      #|(let ((s (string #\a #\b #\c)))
+      #|  (string-set! s 1 #\x)
+      #|  s)
+    )
   )
   inspect(value_to_string(eval_program(set_program)), content="\"axc\"")
   let fill_program = (
-    #|(let ((s (string #\a #\b #\c #\d)))
-    #|  (string-fill! s #\x 1 3)
-    #|  s)
+    (
+      #|(let ((s (string #\a #\b #\c #\d)))
+      #|  (string-fill! s #\x 1 3)
+      #|  s)
+    )
   )
   inspect(value_to_string(eval_program(fill_program)), content="\"axxd\"")
   let copy_program = (
-    #|(let ((to (string #\a #\b #\c #\d))
-    #|      (from (string #\x #\y #\z)))
-    #|  (string-copy! to 1 from 0 2)
-    #|  to)
+    (
+      #|(let ((to (string #\a #\b #\c #\d))
+      #|      (from (string #\x #\y #\z)))
+      #|  (string-copy! to 1 from 0 2)
+      #|  to)
+    )
   )
   inspect(value_to_string(eval_program(copy_program)), content="\"axyd\"")
   let overlap_program = (
-    #|(let ((s (string #\a #\b #\c #\d)))
-    #|  (string-copy! s 1 s 0 3)
-    #|  s)
+    (
+      #|(let ((s (string #\a #\b #\c #\d)))
+      #|  (string-copy! s 1 s 0 3)
+      #|  s)
+    )
   )
   inspect(value_to_string(eval_program(overlap_program)), content="\"aabc\"")
   inspect(
     value_to_string(eval_program(
-      #|(string-length "hi")
+      (
+        #|(string-length "hi")
+      )
     )),
     content="2",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-append "a" "b" "c")
+      (
+        #|(string-append "a" "b" "c")
+      )
     )),
     content="\"abc\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-append)
+      (
+        #|(string-append)
+      )
     )),
     content="\"\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-ref "hi" 0)
+      (
+        #|(string-ref "hi" 0)
+      )
     )),
     content="#\\h",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-ref "hi" 1)
+      (
+        #|(string-ref "hi" 1)
+      )
     )),
     content="#\\i",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-copy "hi")
+      (
+        #|(string-copy "hi")
+      )
     )),
     content="\"hi\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-copy "hello" 2)
+      (
+        #|(string-copy "hello" 2)
+      )
     )),
     content="\"llo\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-copy "hello" 1 4)
+      (
+        #|(string-copy "hello" 1 4)
+      )
     )),
     content="\"ell\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string->list "hi")
+      (
+        #|(string->list "hi")
+      )
     )),
     content="(#\\h #\\i)",
   )
   inspect(
     value_to_string(eval_program(
-      #|(list->string '(#\h #\i))
+      (
+        #|(list->string '(#\h #\i))
+      )
     )),
     content="\"hi\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(list->string '())
+      (
+        #|(list->string '())
+      )
     )),
     content="\"\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-map char-upcase "ab")
+      (
+        #|(string-map char-upcase "ab")
+      )
     )),
     content="\"AB\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-map char-downcase "AB")
+      (
+        #|(string-map char-downcase "AB")
+      )
     )),
     content="\"ab\"",
   )
   let for_each_program = (
-    #|(let ((n 0))
-    #|  (string-for-each (lambda (ch) (set! n (+ n 1))) "abc")
-    #|  n)
+    (
+      #|(let ((n 0))
+      #|  (string-for-each (lambda (ch) (set! n (+ n 1))) "abc")
+      #|  n)
+    )
   )
   inspect(value_to_string(eval_program(for_each_program)), content="3")
   inspect(
     value_to_string(eval_program(
-      #|(symbol->string 'hello)
+      (
+        #|(symbol->string 'hello)
+      )
     )),
     content="\"hello\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string->symbol "hello")
+      (
+        #|(string->symbol "hello")
+      )
     )),
     content="hello",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char=? #\a #\a #\a)
+      (
+        #|(char=? #\a #\a #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char<? #\a #\b #\c)
+      (
+        #|(char<? #\a #\b #\c)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char>? #\c #\b #\a)
+      (
+        #|(char>? #\c #\b #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char<=? #\a #\a #\b)
+      (
+        #|(char<=? #\a #\a #\b)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char>=? #\c #\c #\b)
+      (
+        #|(char>=? #\c #\c #\b)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-ci=? #\A #\a)
+      (
+        #|(char-ci=? #\A #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-ci<? #\A #\b)
+      (
+        #|(char-ci<? #\A #\b)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char->integer #\A)
+      (
+        #|(char->integer #\A)
+      )
     )),
     content="65",
   )
   inspect(
     value_to_string(eval_program(
-      #|(integer->char 97)
+      (
+        #|(integer->char 97)
+      )
     )),
     content="#\\a",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-alphabetic? #\a)
+      (
+        #|(char-alphabetic? #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-numeric? #\9)
+      (
+        #|(char-numeric? #\9)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-whitespace? #\space)
+      (
+        #|(char-whitespace? #\space)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-upper-case? #\A)
+      (
+        #|(char-upper-case? #\A)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-lower-case? #\a)
+      (
+        #|(char-lower-case? #\a)
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-upcase #\a)
+      (
+        #|(char-upcase #\a)
+      )
     )),
     content="#\\A",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-downcase #\A)
+      (
+        #|(char-downcase #\A)
+      )
     )),
     content="#\\a",
   )
   inspect(
     value_to_string(eval_program(
-      #|(char-foldcase #\A)
+      (
+        #|(char-foldcase #\A)
+      )
     )),
     content="#\\a",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string=? "hi" "hi")
+      (
+        #|(string=? "hi" "hi")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string<? "a" "ab")
+      (
+        #|(string<? "a" "ab")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string>? "b" "a")
+      (
+        #|(string>? "b" "a")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string<=? "a" "a" "b")
+      (
+        #|(string<=? "a" "a" "b")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string>=? "c" "c" "b")
+      (
+        #|(string>=? "c" "c" "b")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-ci=? "A" "a")
+      (
+        #|(string-ci=? "A" "a")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-ci<? "a" "B")
+      (
+        #|(string-ci<? "a" "B")
+      )
     )),
     content="#t",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-upcase "Abc")
+      (
+        #|(string-upcase "Abc")
+      )
     )),
     content="\"ABC\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-downcase "AbC")
+      (
+        #|(string-downcase "AbC")
+      )
     )),
     content="\"abc\"",
   )
   inspect(
     value_to_string(eval_program(
-      #|(string-foldcase "AbC")
+      (
+        #|(string-foldcase "AbC")
+      )
     )),
     content="\"abc\"",
   )
@@ -342,7 +454,9 @@ test "r6rs char and string primitives" {
 ///|
 test "r6rs string-ref: errors" {
   let out_of_range = try? eval_program(
-    #|(string-ref "a" 1)
+    (
+      #|(string-ref "a" 1)
+    )
   )
   match out_of_range {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
@@ -350,7 +464,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_char_list = try? eval_program(
-    #|(list->string '(#\a 1))
+    (
+      #|(list->string '(#\a 1))
+    )
   )
   match bad_char_list {
     Err(err) => inspect(err, content="EvalError(\"type error: char expected\")")
@@ -358,7 +474,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_copy = try? eval_program(
-    #|(string-copy "a" 1 0)
+    (
+      #|(string-copy "a" 1 0)
+    )
   )
   match bad_copy {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
@@ -366,7 +484,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_map = try? eval_program(
-    #|(string-map char-upcase "a" "bb")
+    (
+      #|(string-map char-upcase "a" "bb")
+    )
   )
   match bad_map {
     Err(err) => inspect(err, content="EvalError(\"string length mismatch\")")
@@ -374,7 +494,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_make = try? eval_program(
-    #|(make-string -1)
+    (
+      #|(make-string -1)
+    )
   )
   match bad_make {
     Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
@@ -382,7 +504,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_set = try? eval_program(
-    #|(string-set! "a" 1 #\b)
+    (
+      #|(string-set! "a" 1 #\b)
+    )
   )
   match bad_set {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
@@ -390,7 +514,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_fill = try? eval_program(
-    #|(string-fill! "a" #\b 1 0)
+    (
+      #|(string-fill! "a" #\b 1 0)
+    )
   )
   match bad_fill {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
@@ -398,7 +524,9 @@ test "r6rs string-ref: errors" {
   }
 
   let bad_copy_bang = try? eval_program(
-    #|(string-copy! "a" 0 "bc")
+    (
+      #|(string-copy! "a" 0 "bc")
+    )
   )
   match bad_copy_bang {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
@@ -409,7 +537,9 @@ test "r6rs string-ref: errors" {
 ///|
 test "r6rs char/string compare: errors" {
   let bad_char = try? eval_program(
-    #|(char=? #\a "a")
+    (
+      #|(char=? #\a "a")
+    )
   )
   match bad_char {
     Err(err) => inspect(err, content="EvalError(\"type error: char expected\")")
@@ -417,7 +547,9 @@ test "r6rs char/string compare: errors" {
   }
 
   let bad_string = try? eval_program(
-    #|(string<? "a" #\b)
+    (
+      #|(string<? "a" #\b)
+    )
   )
   match bad_string {
     Err(err) => inspect(err, content="EvalError(\"type error: string expected\")")
@@ -425,7 +557,9 @@ test "r6rs char/string compare: errors" {
   }
 
   let bad_code = try? eval_program(
-    #|(integer->char -1)
+    (
+      #|(integer->char -1)
+    )
   )
   match bad_code {
     Err(err) => inspect(err, content="EvalError(\"type error: valid scalar value expected\")")
