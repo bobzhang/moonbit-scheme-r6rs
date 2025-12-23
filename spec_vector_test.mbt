@@ -43,6 +43,10 @@ test "r6rs bytevectors" {
   let fill_range_program =
     "(let ((b (bytevector 1 2 3 4))) (bytevector-fill! b 0 1 3) b)"
   inspect(value_to_string(eval_program(fill_range_program)), content="#vu8(1 0 0 4)")
+  inspect(value_to_string(eval_program("(make-bytevector 3 7)")), content="#vu8(7 7 7)")
+  inspect(value_to_string(eval_program("(make-bytevector 0)")), content="#vu8()")
+  inspect(value_to_string(eval_program("(bytevector->u8-list #vu8(1 2 3))")), content="(1 2 3)")
+  inspect(value_to_string(eval_program("(u8-list->bytevector '(1 2 3))")), content="#vu8(1 2 3)")
   inspect(
     value_to_string(eval_program("(bytevector-copy #vu8(1 2 3))")),
     content="#vu8(1 2 3)",
@@ -111,5 +115,11 @@ test "r6rs vectors/bytevectors: errors" {
   match bad_byte {
     Err(err) => inspect(err, content="EvalError(\"type error: byte expected\")")
     _ => fail("expected EvalError for invalid byte")
+  }
+
+  let bad_u8_list = try? eval_program("(u8-list->bytevector '(1 256))")
+  match bad_u8_list {
+    Err(err) => inspect(err, content="EvalError(\"type error: byte expected\")")
+    _ => fail("expected EvalError for invalid u8 list")
   }
 }

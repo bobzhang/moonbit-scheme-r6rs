@@ -153,12 +153,15 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::VectorToList, Primitive::VectorToList)
     | (Primitive::ListToVector, Primitive::ListToVector)
     | (Primitive::ByteVector, Primitive::ByteVector)
+    | (Primitive::MakeByteVector, Primitive::MakeByteVector)
     | (Primitive::ByteVectorP, Primitive::ByteVectorP)
     | (Primitive::ByteVectorLength, Primitive::ByteVectorLength)
     | (Primitive::ByteVectorU8Ref, Primitive::ByteVectorU8Ref)
     | (Primitive::ByteVectorU8Set, Primitive::ByteVectorU8Set)
     | (Primitive::ByteVectorCopy, Primitive::ByteVectorCopy)
     | (Primitive::ByteVectorFill, Primitive::ByteVectorFill)
+    | (Primitive::ByteVectorToU8List, Primitive::ByteVectorToU8List)
+    | (Primitive::U8ListToByteVector, Primitive::U8ListToByteVector)
     | (Primitive::Display, Primitive::Display)
     | (Primitive::Write, Primitive::Write)
     | (Primitive::Newline, Primitive::Newline)
@@ -1831,6 +1834,22 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
       Value::Datum(Datum::ByteVector(items))
     }
+    Primitive::MakeByteVector => {
+      match args.length() {
+        1 | 2 => {
+          let len = value_as_nonnegative_int(args[0])
+          let fill = if args.length() == 2 { value_as_byte(args[1]) } else { 0 }
+          let items : Array[Int] = []
+          let mut i = 0
+          while i < len {
+            items.push(fill)
+            i = i + 1
+          }
+          Value::Datum(Datum::ByteVector(items))
+        }
+        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+      }
+    }
     Primitive::ByteVectorP => {
       match args.length() {
         1 => {
@@ -1923,6 +1942,41 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Void
         }
         n => raise EvalError("arity mismatch: expected 2 to 4 got \{n}")
+      }
+    }
+    Primitive::ByteVectorToU8List => {
+      match args.length() {
+        1 => {
+          let items = value_as_bytevector(args[0])
+          let datums : Array[Datum] = []
+          for byte in items {
+            datums.push(Datum::Int(byte))
+          }
+          Value::Datum(list_from_array(datums))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::U8ListToByteVector => {
+      match args.length() {
+        1 => {
+          let datum = value_as_datum(args[0])
+          let items = datum_list_to_array(datum)
+          let bytes : Array[Int] = []
+          for item in items {
+            match item {
+              Datum::Int(n) => {
+                if n < 0 || n > 255 {
+                  raise EvalError("type error: byte expected")
+                }
+                bytes.push(n)
+              }
+              _ => raise EvalError("type error: byte expected")
+            }
+          }
+          Value::Datum(Datum::ByteVector(bytes))
+        }
+        n => raise arity_mismatch(1, n)
       }
     }
     Primitive::Display => {
