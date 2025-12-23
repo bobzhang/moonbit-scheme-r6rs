@@ -64,7 +64,27 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Reverse, Primitive::Reverse)
     | (Primitive::ListRef, Primitive::ListRef)
     | (Primitive::ListTail, Primitive::ListTail)
+    | (Primitive::CharEq, Primitive::CharEq)
+    | (Primitive::CharLess, Primitive::CharLess)
+    | (Primitive::CharGreater, Primitive::CharGreater)
+    | (Primitive::CharLessEq, Primitive::CharLessEq)
+    | (Primitive::CharGreaterEq, Primitive::CharGreaterEq)
+    | (Primitive::CharCiEq, Primitive::CharCiEq)
+    | (Primitive::CharCiLess, Primitive::CharCiLess)
+    | (Primitive::CharCiGreater, Primitive::CharCiGreater)
+    | (Primitive::CharCiLessEq, Primitive::CharCiLessEq)
+    | (Primitive::CharCiGreaterEq, Primitive::CharCiGreaterEq)
     | (Primitive::CharP, Primitive::CharP)
+    | (Primitive::StringEq, Primitive::StringEq)
+    | (Primitive::StringLess, Primitive::StringLess)
+    | (Primitive::StringGreater, Primitive::StringGreater)
+    | (Primitive::StringLessEq, Primitive::StringLessEq)
+    | (Primitive::StringGreaterEq, Primitive::StringGreaterEq)
+    | (Primitive::StringCiEq, Primitive::StringCiEq)
+    | (Primitive::StringCiLess, Primitive::StringCiLess)
+    | (Primitive::StringCiGreater, Primitive::StringCiGreater)
+    | (Primitive::StringCiLessEq, Primitive::StringCiLessEq)
+    | (Primitive::StringCiGreaterEq, Primitive::StringCiGreaterEq)
     | (Primitive::StringP, Primitive::StringP)
     | (Primitive::StringLength, Primitive::StringLength)
     | (Primitive::StringAppend, Primitive::StringAppend)
@@ -94,6 +114,26 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Raise, Primitive::Raise)
     | (Primitive::RaiseContinuable, Primitive::RaiseContinuable) => true
     _ => false
+  }
+}
+
+///|
+priv enum CompareMode {
+  Eq
+  Lt
+  Gt
+  Le
+  Ge
+}
+
+///|
+fn compare_ok(mode : CompareMode, cmp : Int) -> Bool {
+  match mode {
+    CompareMode::Eq => cmp == 0
+    CompareMode::Lt => cmp < 0
+    CompareMode::Gt => cmp > 0
+    CompareMode::Le => cmp <= 0
+    CompareMode::Ge => cmp >= 0
   }
 }
 
@@ -263,6 +303,14 @@ fn value_as_string(value : Value) -> String raise EvalError {
 }
 
 ///|
+fn value_as_char(value : Value) -> Char raise EvalError {
+  match value {
+    Value::Datum(Datum::Char(ch)) => ch
+    _ => raise EvalError("type error: char expected")
+  }
+}
+
+///|
 fn value_as_int_index(value : Value) -> Int raise EvalError {
   match value {
     Value::Datum(Datum::Int(n)) => n
@@ -284,6 +332,64 @@ fn check_index(idx : Int, len : Int) -> Unit raise EvalError {
   if idx < 0 || idx >= len {
     raise EvalError("index out of range")
   }
+}
+
+///|
+fn compare_chain_char(
+  args : Array[Value],
+  mode : CompareMode,
+  case_insensitive : Bool,
+) -> Bool raise EvalError {
+  if args.length() <= 1 {
+    return true
+  }
+  let mut prev = value_as_char(args[0])
+  if case_insensitive {
+    prev = prev.to_ascii_lowercase()
+  }
+  let mut i = 1
+  while i < args.length() {
+    let mut cur = value_as_char(args[i])
+    if case_insensitive {
+      cur = cur.to_ascii_lowercase()
+    }
+    let cmp = prev.to_int().compare(cur.to_int())
+    if !compare_ok(mode, cmp) {
+      return false
+    }
+    prev = cur
+    i = i + 1
+  }
+  true
+}
+
+///|
+fn compare_chain_string(
+  args : Array[Value],
+  mode : CompareMode,
+  case_insensitive : Bool,
+) -> Bool raise EvalError {
+  if args.length() <= 1 {
+    return true
+  }
+  let mut prev = value_as_string(args[0])
+  if case_insensitive {
+    prev = prev.to_lower()
+  }
+  let mut i = 1
+  while i < args.length() {
+    let mut cur = value_as_string(args[i])
+    if case_insensitive {
+      cur = cur.to_lower()
+    }
+    let cmp = prev.lexical_compare(cur)
+    if !compare_ok(mode, cmp) {
+      return false
+    }
+    prev = cur
+    i = i + 1
+  }
+  true
 }
 
 ///|
@@ -752,6 +858,16 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         n => raise arity_mismatch(1, n)
       }
     }
+    Primitive::CharEq => bool_value(compare_chain_char(args, CompareMode::Eq, false))
+    Primitive::CharLess => bool_value(compare_chain_char(args, CompareMode::Lt, false))
+    Primitive::CharGreater => bool_value(compare_chain_char(args, CompareMode::Gt, false))
+    Primitive::CharLessEq => bool_value(compare_chain_char(args, CompareMode::Le, false))
+    Primitive::CharGreaterEq => bool_value(compare_chain_char(args, CompareMode::Ge, false))
+    Primitive::CharCiEq => bool_value(compare_chain_char(args, CompareMode::Eq, true))
+    Primitive::CharCiLess => bool_value(compare_chain_char(args, CompareMode::Lt, true))
+    Primitive::CharCiGreater => bool_value(compare_chain_char(args, CompareMode::Gt, true))
+    Primitive::CharCiLessEq => bool_value(compare_chain_char(args, CompareMode::Le, true))
+    Primitive::CharCiGreaterEq => bool_value(compare_chain_char(args, CompareMode::Ge, true))
     Primitive::CharP => {
       match args.length() {
         1 => {
@@ -763,6 +879,16 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         n => raise arity_mismatch(1, n)
       }
     }
+    Primitive::StringEq => bool_value(compare_chain_string(args, CompareMode::Eq, false))
+    Primitive::StringLess => bool_value(compare_chain_string(args, CompareMode::Lt, false))
+    Primitive::StringGreater => bool_value(compare_chain_string(args, CompareMode::Gt, false))
+    Primitive::StringLessEq => bool_value(compare_chain_string(args, CompareMode::Le, false))
+    Primitive::StringGreaterEq => bool_value(compare_chain_string(args, CompareMode::Ge, false))
+    Primitive::StringCiEq => bool_value(compare_chain_string(args, CompareMode::Eq, true))
+    Primitive::StringCiLess => bool_value(compare_chain_string(args, CompareMode::Lt, true))
+    Primitive::StringCiGreater => bool_value(compare_chain_string(args, CompareMode::Gt, true))
+    Primitive::StringCiLessEq => bool_value(compare_chain_string(args, CompareMode::Le, true))
+    Primitive::StringCiGreaterEq => bool_value(compare_chain_string(args, CompareMode::Ge, true))
     Primitive::StringP => {
       match args.length() {
         1 => {

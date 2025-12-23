@@ -20,8 +20,11 @@
 ///   boolean? number? integer? rational? real? exact? inexact? exact->inexact
 ///   inexact->exact numerator denominator procedure? not apply call/cc eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
-///   reverse char? string? string-length string-append string-ref
-///   string->list list->string
+///   reverse char? char=? char<? char>? char<=? char>=?
+///   char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
+///   string? string=? string<? string>? string<=? string>=?
+///   string-ci=? string-ci<? string-ci>? string-ci<=? string-ci>=?
+///   string-length string-append string-ref string->list list->string
 ///   vector make-vector vector? vector-length vector-ref vector-set!
 ///   vector->list list->vector
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
@@ -106,7 +109,27 @@ pub enum Primitive {
   Reverse
   ListRef
   ListTail
+  CharEq
+  CharLess
+  CharGreater
+  CharLessEq
+  CharGreaterEq
+  CharCiEq
+  CharCiLess
+  CharCiGreater
+  CharCiLessEq
+  CharCiGreaterEq
   CharP
+  StringEq
+  StringLess
+  StringGreater
+  StringLessEq
+  StringGreaterEq
+  StringCiEq
+  StringCiLess
+  StringCiGreater
+  StringCiLessEq
+  StringCiGreaterEq
   StringP
   StringLength
   StringAppend

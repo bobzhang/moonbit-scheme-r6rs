@@ -14,6 +14,20 @@ test "r6rs char and string primitives" {
   inspect(value_to_string(eval_program("(string->list \"hi\")")), content="(#\\h #\\i)")
   inspect(value_to_string(eval_program("(list->string '(#\\h #\\i))")), content="\"hi\"")
   inspect(value_to_string(eval_program("(list->string '())")), content="\"\"")
+  inspect(value_to_string(eval_program("(char=? #\\a #\\a #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(char<? #\\a #\\b #\\c)")), content="#t")
+  inspect(value_to_string(eval_program("(char>? #\\c #\\b #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(char<=? #\\a #\\a #\\b)")), content="#t")
+  inspect(value_to_string(eval_program("(char>=? #\\c #\\c #\\b)")), content="#t")
+  inspect(value_to_string(eval_program("(char-ci=? #\\A #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(char-ci<? #\\A #\\b)")), content="#t")
+  inspect(value_to_string(eval_program("(string=? \"hi\" \"hi\")")), content="#t")
+  inspect(value_to_string(eval_program("(string<? \"a\" \"ab\")")), content="#t")
+  inspect(value_to_string(eval_program("(string>? \"b\" \"a\")")), content="#t")
+  inspect(value_to_string(eval_program("(string<=? \"a\" \"a\" \"b\")")), content="#t")
+  inspect(value_to_string(eval_program("(string>=? \"c\" \"c\" \"b\")")), content="#t")
+  inspect(value_to_string(eval_program("(string-ci=? \"A\" \"a\")")), content="#t")
+  inspect(value_to_string(eval_program("(string-ci<? \"a\" \"B\")")), content="#t")
 }
 
 ///|
@@ -28,5 +42,20 @@ test "r6rs string-ref: errors" {
   match bad_char_list {
     Err(err) => inspect(err, content="EvalError(\"type error: char expected\")")
     _ => fail("expected EvalError for non-char list->string")
+  }
+}
+
+///|
+test "r6rs char/string compare: errors" {
+  let bad_char = try? eval_program("(char=? #\\a \"a\")")
+  match bad_char {
+    Err(err) => inspect(err, content="EvalError(\"type error: char expected\")")
+    _ => fail("expected EvalError for non-char")
+  }
+
+  let bad_string = try? eval_program("(string<? \"a\" #\\b)")
+  match bad_string {
+    Err(err) => inspect(err, content="EvalError(\"type error: string expected\")")
+    _ => fail("expected EvalError for non-string")
   }
 }
