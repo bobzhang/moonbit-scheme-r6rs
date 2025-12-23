@@ -175,6 +175,7 @@ fn is_core_identifier(name : String) -> Bool {
     "vector-length",
     "vector-ref",
     "vector-set!",
+    "vector-copy",
     "vector->list",
     "list->vector",
     "bytevector",

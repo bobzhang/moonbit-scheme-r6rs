@@ -9,6 +9,9 @@ test "r6rs vectors" {
   inspect(value_to_string(eval_program("(vector-ref #(1 2 3) 1)")), content="2")
   let program = "(let ((v (vector 1 2 3))) (vector-set! v 1 9) v)"
   inspect(value_to_string(eval_program(program)), content="#(1 9 3)")
+  inspect(value_to_string(eval_program("(vector-copy #(1 2 3))")), content="#(1 2 3)")
+  inspect(value_to_string(eval_program("(vector-copy #(1 2 3) 1)")), content="#(2 3)")
+  inspect(value_to_string(eval_program("(vector-copy #(1 2 3) 1 2)")), content="#(2)")
   inspect(value_to_string(eval_program("(vector->list #(1 2 3))")), content="(1 2 3)")
   inspect(value_to_string(eval_program("(list->vector '(1 2 3))")), content="#(1 2 3)")
 }
@@ -36,6 +39,12 @@ test "r6rs vectors/bytevectors: errors" {
   match bad_make {
     Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
     _ => fail("expected EvalError for negative length")
+  }
+
+  let bad_copy = try? eval_program("(vector-copy #(1 2 3) 2 1)")
+  match bad_copy {
+    Err(err) => inspect(err, content="EvalError(\"index out of range\")")
+    _ => fail("expected EvalError for invalid range")
   }
 
   let bad_list = try? eval_program("(list->vector '(1 . 2))")
