@@ -145,6 +145,7 @@ fn init_env() -> Env {
   env_define(env, "bytevector-length", Value::Primitive(Primitive::ByteVectorLength))
   env_define(env, "bytevector-u8-ref", Value::Primitive(Primitive::ByteVectorU8Ref))
   env_define(env, "bytevector-u8-set!", Value::Primitive(Primitive::ByteVectorU8Set))
+  env_define(env, "bytevector-copy", Value::Primitive(Primitive::ByteVectorCopy))
   env_define(env, "display", Value::Primitive(Primitive::Display))
   env_define(env, "write", Value::Primitive(Primitive::Write))
   env_define(env, "newline", Value::Primitive(Primitive::Newline))

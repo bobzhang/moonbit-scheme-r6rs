@@ -132,6 +132,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::ByteVectorLength, Primitive::ByteVectorLength)
     | (Primitive::ByteVectorU8Ref, Primitive::ByteVectorU8Ref)
     | (Primitive::ByteVectorU8Set, Primitive::ByteVectorU8Set)
+    | (Primitive::ByteVectorCopy, Primitive::ByteVectorCopy)
     | (Primitive::Display, Primitive::Display)
     | (Primitive::Write, Primitive::Write)
     | (Primitive::Newline, Primitive::Newline)
@@ -1444,6 +1445,29 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Void
         }
         n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::ByteVectorCopy => {
+      match args.length() {
+        1 | 2 | 3 => {
+          let items = value_as_bytevector(args[0])
+          let start = if args.length() >= 2 {
+            value_as_int_index(args[1])
+          } else {
+            0
+          }
+          let end = if args.length() == 3 {
+            value_as_int_index(args[2])
+          } else {
+            items.length()
+          }
+          if start < 0 || end < start || end > items.length() {
+            raise EvalError("index out of range")
+          }
+          let slice = items.sub(start=start, end=end).to_array()
+          Value::Datum(Datum::ByteVector(slice))
+        }
+        n => raise EvalError("arity mismatch: expected 1 to 3 got \{n}")
       }
     }
     Primitive::Display => {

@@ -34,6 +34,7 @@
 ///   vector-copy vector-fill!
 ///   vector->list list->vector
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
+///   bytevector-copy
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
 ///   values call-with-values make-parameter dynamic-wind parameterize
@@ -183,6 +184,7 @@ pub enum Primitive {
   ByteVectorLength
   ByteVectorU8Ref
   ByteVectorU8Set
+  ByteVectorCopy
   Display
   Write
   Newline
