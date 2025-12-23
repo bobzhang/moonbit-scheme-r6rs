@@ -481,6 +481,37 @@ fn next_do_name() -> String {
 }
 
 ///|
+let protocol_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_protocol_symbol(prefix : String) -> String {
+  let id = protocol_counter.val
+  protocol_counter.val = id + 1
+  "\{prefix}\{id}"
+}
+
+///|
+fn apply_protocol(protocol_expr : Datum, base_ctor : Value, env : Env) -> Value raise EvalError {
+  let protocol_proc = eval_expr(protocol_expr, env)
+  let proc_name = next_protocol_symbol("__protocol_proc__")
+  let ctor_name = next_protocol_symbol("__protocol_ctor__")
+  let protocol_env = env_extend(env)
+  env_define(protocol_env, proc_name, protocol_proc)
+  env_define(protocol_env, ctor_name, base_ctor)
+  let app = list_from_array([Datum::Symbol(proc_name), Datum::Symbol(ctor_name)])
+  let ctor_value = eval_expr(app, protocol_env)
+  match ctor_value {
+    Value::Primitive(_)
+    | Value::Closure(_)
+    | Value::CaseClosure(_)
+    | Value::Parameter(_)
+    | Value::Continuation(_)
+    | Value::RecordProc(_) => ctor_value
+    _ => raise EvalError("type error: procedure expected")
+  }
+}
+
+///|
 pub fn eval_program(src : String) -> Value raise {
   let results = eval_program_all(src)
   if results.is_empty() {
@@ -494,6 +525,7 @@ pub fn eval_program(src : String) -> Value raise {
 pub fn eval_program_all(src : String) -> Array[Value] raise {
   let forms = parse_program(src)
   reset_library_registry()
+  reset_record_type_registry()
   set_current_output_port(new_output_string_port())
   wind_stack.val = []
   let env = init_env()
@@ -1996,19 +2028,63 @@ fn eval_define_record_type_state(
   let ctor_name = parse_symbol(ctor_parts[0])
   let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1).to_array())
   let pred_name = parse_symbol(args[2])
-  let field_specs = args.sub(start=3).to_array()
-  if field_specs.length() != ctor_fields.length() {
-    raise EvalError("invalid define-record-type")
+  let raw_specs = args.sub(start=3).to_array()
+  let mut parent_name : String? = None
+  let mut protocol_expr : Datum? = None
+  let field_specs : Array[Datum] = []
+  for spec in raw_specs {
+    let parts = datum_list_to_array(spec)
+    if parts.length() == 2 {
+      match symbol_name(parts[0]) {
+        Some("parent") => {
+          if parent_name is Some(_) {
+            raise EvalError("invalid define-record-type")
+          }
+          parent_name = Some(parse_symbol(parts[1]))
+          continue
+        }
+        Some("protocol") => {
+          if protocol_expr is Some(_) {
+            raise EvalError("invalid define-record-type")
+          }
+          protocol_expr = Some(parts[1])
+          continue
+        }
+        _ => ()
+      }
+    }
+    field_specs.push(spec)
+  }
+  let parent_type = match parent_name {
+    Some(name) =>
+      match lookup_record_type(name) {
+        Some(record_type) => Some(record_type)
+        None => raise EvalError("invalid define-record-type")
+      }
+    None => None
+  }
+  let parent_fields = match parent_type {
+    Some(record_type) => record_type.fields
+    None => []
+  }
+  let parent_count = parent_fields.length()
+  let parent_field_names : Array[String] = []
+  for field in parent_fields {
+    parent_field_names.push(field.name)
   }
   let accessors : Map[String, String] = {}
   let mutators : Map[String, String] = {}
   let mutable : Map[String, Bool] = {}
+  let new_field_names : Array[String] = []
   for spec in field_specs {
     let parts = datum_list_to_array(spec)
     if parts.length() < 2 || parts.length() > 3 {
       raise EvalError("invalid define-record-type")
     }
     let field_name = parse_symbol(parts[0])
+    if array_contains_name(parent_field_names, field_name) {
+      raise EvalError("invalid define-record-type")
+    }
     if accessors.contains(field_name) {
       raise EvalError("invalid define-record-type")
     }
@@ -2021,36 +2097,55 @@ fn eval_define_record_type_state(
     } else {
       mutable[field_name] = false
     }
+    new_field_names.push(field_name)
+  }
+  if parent_count == 0 {
+    if ctor_fields.length() != new_field_names.length() {
+      raise EvalError("invalid define-record-type")
+    }
+  } else {
+    if ctor_fields.length() != parent_count + new_field_names.length() {
+      raise EvalError("invalid define-record-type")
+    }
   }
   let fields : Array[RecordField] = []
   let field_index : Map[String, Int] = {}
   let mut i = 0
   while i < ctor_fields.length() {
     let field_name = ctor_fields[i]
-    match accessors.get(field_name) {
-      Some(_) => ()
-      None => raise EvalError("invalid define-record-type")
+    if field_index.contains(field_name) {
+      raise EvalError("invalid define-record-type")
     }
-    let is_mutable = match mutable.get(field_name) {
-      Some(flag) => flag
-      None => false
+    if i < parent_count {
+      let parent_field = parent_fields[i]
+      if parent_field.name != field_name {
+        raise EvalError("invalid define-record-type")
+      }
+      fields.push(parent_field)
+    } else {
+      let is_mutable = match mutable.get(field_name) {
+        Some(flag) => flag
+        None => raise EvalError("invalid define-record-type")
+      }
+      fields.push(RecordField::{ name: field_name, mutable: is_mutable })
     }
-    fields.push(RecordField::{ name: field_name, mutable: is_mutable })
     field_index[field_name] = i
     i = i + 1
   }
-  let record_type = make_record_type(record_name, fields)
-  env_define(
-    env,
-    ctor_name,
-    Value::RecordProc(make_record_proc(RecordProcKind::Constructor(record_type))),
-  )
+  let record_type = make_record_type(record_name, parent_type, fields)
+  register_record_type(record_name, record_type)
+  let base_ctor = Value::RecordProc(make_record_proc(RecordProcKind::Constructor(record_type)))
+  let ctor_value = match protocol_expr {
+    Some(expr) => apply_protocol(expr, base_ctor, env)
+    None => base_ctor
+  }
+  env_define(env, ctor_name, ctor_value)
   env_define(
     env,
     pred_name,
     Value::RecordProc(make_record_proc(RecordProcKind::Predicate(record_type))),
   )
-  for field_name in ctor_fields {
+  for field_name in new_field_names {
     let idx = match field_index.get(field_name) {
       Some(value) => value
       None => raise EvalError("invalid define-record-type")
@@ -2076,6 +2171,33 @@ fn eval_define_record_type_state(
     }
   }
   MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
+fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
+  let mut cur : RecordType? = Some(actual)
+  while true {
+    match cur {
+      Some(rt) => {
+        if rt.id == target.id {
+          return true
+        }
+        cur = rt.parent
+      }
+      None => return false
+    }
+  }
+  false
+}
+
+///|
+fn array_contains_name(items : Array[String], name : String) -> Bool {
+  for item in items {
+    if item == name {
+      return true
+    }
+  }
+  false
 }
 
 ///|
@@ -2108,7 +2230,7 @@ fn apply_record_proc(
         raise arity_mismatch(1, args.length())
       } else {
         let result = match args[0] {
-          Value::Record(record) => record.record_type.id == record_type.id
+          Value::Record(record) => record_type_is_a(record.record_type, record_type)
           _ => false
         }
         MachineState::Apply(bool_value(result), kont, handlers)
@@ -2119,7 +2241,7 @@ fn apply_record_proc(
         raise arity_mismatch(1, args.length())
       } else {
         let record = value_as_record(args[0])
-        if record.record_type.id != record_type.id {
+        if !record_type_is_a(record.record_type, record_type) {
           raise EvalError("type error: record type mismatch: expected \{record_type.name}")
         }
         MachineState::Apply(record.fields[idx].val, kont, handlers)
@@ -2130,7 +2252,7 @@ fn apply_record_proc(
         raise arity_mismatch(2, args.length())
       } else {
         let record = value_as_record(args[0])
-        if record.record_type.id != record_type.id {
+        if !record_type_is_a(record.record_type, record_type) {
           raise EvalError("type error: record type mismatch: expected \{record_type.name}")
         }
         let field = record.record_type.fields[idx]

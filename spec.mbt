@@ -14,7 +14,7 @@
 /// - application with left-to-right evaluation
 /// - proper tail calls for procedure application
 /// - call/cc (call-with-current-continuation)
-/// - define-record-type (simple record types, no inheritance)
+/// - define-record-type (records with inheritance and protocol)
 /// - library and import (minimal library support)
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
 ///   identifier? symbol->string string->symbol syntax syntax->datum datum->syntax

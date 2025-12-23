@@ -45,3 +45,46 @@ test "r6rs records: predicate false" {
   )
   inspect(value_to_string(eval_program(program)), content="#f")
 }
+
+///|
+test "r6rs records: inheritance" {
+  let program = (
+    (
+      #|(define-record-type point
+      #|  (make-point x y)
+      #|  point?
+      #|  (x point-x)
+      #|  (y point-y))
+      #|(define-record-type color-point
+      #|  (make-color-point x y color)
+      #|  color-point?
+      #|  (parent point)
+      #|  (color color-point-color))
+      #|(let ((p (make-color-point 1 2 'red)))
+      #|  (list (point? p) (color-point? p) (point-x p) (color-point-color p)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(#t #t 1 red)")
+}
+
+///|
+test "r6rs records: protocol" {
+  let program = (
+    (
+      #|(define-record-type point
+      #|  (make-point x y)
+      #|  point?
+      #|  (x point-x)
+      #|  (y point-y))
+      #|(define-record-type color-point
+      #|  (make-color-point x y color)
+      #|  color-point?
+      #|  (parent point)
+      #|  (protocol (lambda (p) (lambda (x y) (p x y 'blue))))
+      #|  (color color-point-color))
+      #|(let ((p (make-color-point 1 2)))
+      #|  (color-point-color p))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="blue")
+}

@@ -24,6 +24,7 @@ priv struct RecordField {
 priv struct RecordType {
   id : Int
   name : String
+  parent : RecordType?
   fields : Array[RecordField]
 }
 
@@ -59,6 +60,7 @@ let record_type_counter : Ref[Int] = Ref::new(0)
 let record_counter : Ref[Int] = Ref::new(0)
 let record_proc_counter : Ref[Int] = Ref::new(0)
 let library_registry : Ref[Map[String, Library]] = Ref::new({})
+let record_type_registry : Ref[Map[String, RecordType]] = Ref::new({})
 
 ///|
 fn next_port_id() -> Int {
@@ -89,8 +91,8 @@ fn next_record_proc_id() -> Int {
 }
 
 ///|
-fn make_record_type(name : String, fields : Array[RecordField]) -> RecordType {
-  RecordType::{ id: next_record_type_id(), name, fields }
+fn make_record_type(name : String, parent : RecordType?, fields : Array[RecordField]) -> RecordType {
+  RecordType::{ id: next_record_type_id(), name, parent, fields }
 }
 
 ///|
@@ -110,6 +112,21 @@ fn make_record_instance(record_type : RecordType, values : Array[Value]) -> Reco
 ///|
 fn reset_library_registry() -> Unit {
   library_registry.val = {}
+}
+
+///|
+fn reset_record_type_registry() -> Unit {
+  record_type_registry.val = {}
+}
+
+///|
+fn register_record_type(name : String, record_type : RecordType) -> Unit {
+  record_type_registry.val[name] = record_type
+}
+
+///|
+fn lookup_record_type(name : String) -> RecordType? {
+  record_type_registry.val.get(name)
 }
 
 ///|
