@@ -739,6 +739,34 @@ test "r6rs numeric: rounding" {
 }
 
 ///|
+test "r6rs numeric: exact-integer-sqrt" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(call-with-values (lambda () (exact-integer-sqrt 10)) (lambda (s r) (list s r)))
+      )
+    )),
+    content="(3 1)",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(call-with-values (lambda () (exact-integer-sqrt 9)) (lambda (s r) (list s r)))
+      )
+    )),
+    content="(3 0)",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(call-with-values (lambda () (exact-integer-sqrt 0)) (lambda (s r) (list s r)))
+      )
+    )),
+    content="(0 0)",
+  )
+}
+
+///|
 test "r6rs numeric: predicate errors" {
   let bad_odd = try? eval_program(
     (
@@ -758,6 +786,16 @@ test "r6rs numeric: predicate errors" {
   match bad_zero {
     Err(err) => inspect(err, content="EvalError(\"type error: number expected\")")
     _ => fail("expected EvalError for zero? on non-number")
+  }
+
+  let bad_exact_sqrt = try? eval_program(
+    (
+      #|(exact-integer-sqrt -1)
+    )
+  )
+  match bad_exact_sqrt {
+    Err(err) => inspect(err, content="EvalError(\"type error: exact nonnegative integer expected\")")
+    _ => fail("expected EvalError for exact-integer-sqrt on negative")
   }
 }
 

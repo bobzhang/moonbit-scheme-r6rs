@@ -63,6 +63,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::DynamicWind, Primitive::DynamicWind)
     | (Primitive::ExactToInexact, Primitive::ExactToInexact)
     | (Primitive::InexactToExact, Primitive::InexactToExact)
+    | (Primitive::ExactIntegerSqrt, Primitive::ExactIntegerSqrt)
     | (Primitive::NumberToString, Primitive::NumberToString)
     | (Primitive::StringToNumber, Primitive::StringToNumber)
     | (Primitive::Numerator, Primitive::Numerator)
@@ -538,6 +539,37 @@ fn char_from_int_value(value : Value) -> Char raise EvalError {
 }
 
 ///|
+fn exact_integer_sqrt(n : Int) -> (Int, Int) {
+  if n <= 0 {
+    if n == 0 {
+      return (0, 0)
+    }
+    // Caller ensures nonnegative; keep a safe fallback.
+    return (0, n)
+  }
+  let mut low = 0
+  let mut high = n
+  let mut ans = 0
+  while low <= high {
+    let mid = (low + high) / 2
+    if mid == 0 {
+      ans = 0
+      low = 1
+    } else {
+      let div = n / mid
+      if mid <= div {
+        ans = mid
+        low = mid + 1
+      } else {
+        high = mid - 1
+      }
+    }
+  }
+  let rem = n - (ans * ans)
+  (ans, rem)
+}
+
+///|
 fn value_as_int_index(value : Value) -> Int raise EvalError {
   match value {
     Value::Datum(Datum::Int(n)) => n
@@ -917,6 +949,19 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Int(_)) | Value::Datum(Datum::Rat(_, _)) => args[0]
             _ => raise EvalError("type error: number expected")
           }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ExactIntegerSqrt => {
+      match args.length() {
+        1 => {
+          let n = value_as_nonnegative_int(args[0])
+          let (s, r) = exact_integer_sqrt(n)
+          Value::Values([
+            Value::Datum(Datum::Int(s)),
+            Value::Datum(Datum::Int(r)),
+          ])
         }
         n => raise arity_mismatch(1, n)
       }
