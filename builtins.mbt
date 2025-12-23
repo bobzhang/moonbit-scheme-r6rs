@@ -61,6 +61,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Abs, Primitive::Abs)
     | (Primitive::Quotient, Primitive::Quotient)
     | (Primitive::Remainder, Primitive::Remainder)
+    | (Primitive::Modulo, Primitive::Modulo)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
@@ -800,6 +801,26 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             raise EvalError("division by zero")
           }
           Value::Datum(Datum::Int(left % right))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Modulo => {
+      match args.length() {
+        2 => {
+          let left = value_as_int_index(args[0])
+          let right = value_as_int_index(args[1])
+          if right == 0 {
+            raise EvalError("division by zero")
+          }
+          let rem = left % right
+          let result =
+            if rem == 0 || (rem > 0 && right > 0) || (rem < 0 && right < 0) {
+              rem
+            } else {
+              rem + right
+            }
+          Value::Datum(Datum::Int(result))
         }
         n => raise arity_mismatch(2, n)
       }
