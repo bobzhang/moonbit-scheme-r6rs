@@ -58,9 +58,12 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Numerator, Primitive::Numerator)
     | (Primitive::Denominator, Primitive::Denominator)
     | (Primitive::ListP, Primitive::ListP)
+    | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
     | (Primitive::Append, Primitive::Append)
     | (Primitive::Reverse, Primitive::Reverse)
+    | (Primitive::ListRef, Primitive::ListRef)
+    | (Primitive::ListTail, Primitive::ListTail)
     | (Primitive::CharP, Primitive::CharP)
     | (Primitive::StringP, Primitive::StringP)
     | (Primitive::StringLength, Primitive::StringLength)
@@ -260,6 +263,15 @@ fn value_as_int_index(value : Value) -> Int raise EvalError {
     Value::Datum(Datum::Int(n)) => n
     _ => raise EvalError("type error: exact integer expected")
   }
+}
+
+///|
+fn value_as_nonnegative_int(value : Value) -> Int raise EvalError {
+  let n = value_as_int_index(value)
+  if n < 0 {
+    raise EvalError("type error: exact nonnegative integer expected")
+  }
+  n
 }
 
 ///|
@@ -583,6 +595,26 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         items.push(value_as_datum(arg))
       }
       Value::Datum(list_from_array(items))
+    }
+    Primitive::MakeList => {
+      match args.length() {
+        1 | 2 => {
+          let len = value_as_nonnegative_int(args[0])
+          let fill = if args.length() == 2 {
+            value_as_datum(args[1])
+          } else {
+            Datum::Nil
+          }
+          let items : Array[Datum] = []
+          let mut i = 0
+          while i < len {
+            items.push(fill)
+            i = i + 1
+          }
+          Value::Datum(list_from_array(items))
+        }
+        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+      }
     }
     Primitive::NullP => {
       match args.length() {
@@ -1027,6 +1059,32 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Datum(result)
         }
         n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ListRef => {
+      match args.length() {
+        2 => {
+          let datum = value_as_datum(args[0])
+          let idx = value_as_int_index(args[1])
+          let items = datum_list_to_array(datum)
+          check_index(idx, items.length())
+          Value::Datum(items[idx])
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::ListTail => {
+      match args.length() {
+        2 => {
+          let datum = value_as_datum(args[0])
+          let idx = value_as_int_index(args[1])
+          let items = datum_list_to_array(datum)
+          if idx < 0 || idx > items.length() {
+            raise EvalError("index out of range")
+          }
+          Value::Datum(list_from_array(items.sub(start=idx).to_array()))
+        }
+        n => raise arity_mismatch(2, n)
       }
     }
   }

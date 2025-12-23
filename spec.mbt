@@ -19,7 +19,7 @@
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
 ///   boolean? number? integer? rational? real? exact? inexact? exact->inexact
 ///   inexact->exact numerator denominator procedure? not apply call/cc eq? eqv?
-///   equal? list? length append
+///   equal? list? make-list list-ref list-tail length append
 ///   reverse char? string? string-length string-append string-ref
 ///   vector vector? vector-length vector-ref vector-set!
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
@@ -98,9 +98,12 @@ pub enum Primitive {
   Numerator
   Denominator
   ListP
+  MakeList
   Length
   Append
   Reverse
+  ListRef
+  ListTail
   CharP
   StringP
   StringLength
