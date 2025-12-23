@@ -25,6 +25,8 @@ fn is_core_identifier(name : String) -> Bool {
     "library",
     "import",
     "export",
+    "syntax-case",
+    "identifier-syntax",
     "syntax-rules",
     "set!",
     "let",
@@ -44,6 +46,7 @@ fn is_core_identifier(name : String) -> Bool {
     "case",
     "else",
     "=>",
+    "guard",
     "+",
     "-",
     "*",
@@ -148,6 +151,103 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
 }
 
 ///|
+fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise EvalError {
+  let parts = datum_list_to_array(expr)
+  if parts.length() < 2 {
+    raise EvalError("invalid identifier-syntax")
+  }
+  match parts[0] {
+    Datum::Symbol("identifier-syntax") => ()
+    _ => raise EvalError("invalid identifier-syntax")
+  }
+  let rules : Array[SyntaxRule] = []
+  if parts.length() == 2 {
+    rules.push({ pattern: Datum::Symbol(name), template: parts[1] })
+  } else {
+    let mut i = 1
+    while i < parts.length() {
+      let rule_parts = datum_list_to_array(parts[i])
+      if rule_parts.length() != 2 {
+        raise EvalError("invalid identifier-syntax")
+      }
+      rules.push({ pattern: rule_parts[0], template: rule_parts[1] })
+      i = i + 1
+    }
+  }
+  let pattern_vars : Map[String, Bool] = {}
+  let pattern_literals = ["set!"]
+  for rule in rules {
+    collect_pattern_vars(rule.pattern, pattern_literals, pattern_vars)
+  }
+  let literal_set : Map[String, Bool] = {}
+  for rule in rules {
+    collect_template_symbols(rule.template, literal_set)
+  }
+  let literals : Array[String] = []
+  for key in literal_set.keys() {
+    if !pattern_vars.contains(key) {
+      literals.push(key)
+    }
+  }
+  { literals, rules }
+}
+
+///|
+fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
+  let parts = datum_list_to_array(expr)
+  if parts.length() < 3 {
+    raise EvalError("invalid syntax-case")
+  }
+  match parts[0] {
+    Datum::Symbol("lambda") => ()
+    _ => raise EvalError("invalid syntax-case")
+  }
+  let params = datum_list_to_array(parts[1])
+  if params.length() != 1 {
+    raise EvalError("invalid syntax-case")
+  }
+  let _ = parse_symbol_name(params[0])
+  let body = parts.sub(start=2).to_array()
+  if body.length() != 1 {
+    raise EvalError("invalid syntax-case")
+  }
+  let sc_parts = datum_list_to_array(body[0])
+  if sc_parts.length() < 4 {
+    raise EvalError("invalid syntax-case")
+  }
+  match sc_parts[0] {
+    Datum::Symbol("syntax-case") => ()
+    _ => raise EvalError("invalid syntax-case")
+  }
+  let literals = parse_literal_list(sc_parts[2])
+  let rules : Array[SyntaxRule] = []
+  let mut i = 3
+  while i < sc_parts.length() {
+    let rule_parts = datum_list_to_array(sc_parts[i])
+    if rule_parts.length() != 2 {
+      raise EvalError("unsupported syntax-case clause")
+    }
+    rules.push({ pattern: rule_parts[0], template: rule_parts[1] })
+    i = i + 1
+  }
+  { literals, rules }
+}
+
+///|
+fn parse_transformer(expr : Datum, name : String) -> SyntaxRules raise EvalError {
+  let parts = datum_list_to_array(expr)
+  if parts.is_empty() {
+    raise EvalError("invalid syntax transformer")
+  }
+  match parts[0] {
+    Datum::Symbol("syntax-rules") => parse_syntax_rules(expr)
+    Datum::Symbol("identifier-syntax") => parse_identifier_syntax(expr, name)
+    Datum::Symbol("lambda") => parse_syntax_case_transformer(expr)
+    _ => raise EvalError("invalid syntax transformer")
+  }
+}
+
+///|
 fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
   let items = datum_list_to_array(expr)
   let literals : Array[String] = []
@@ -158,6 +258,14 @@ fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
     }
   }
   literals
+}
+
+///|
+fn parse_symbol_name(expr : Datum) -> String raise EvalError {
+  match expr {
+    Datum::Symbol(name) => name
+    _ => raise EvalError("invalid syntax-case")
+  }
 }
 
 ///|
@@ -262,9 +370,15 @@ fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise Eva
   while i < rules.rules.length() {
     let rule = rules.rules[i]
     let bindings : Map[String, BindingVal] = {}
-    if match_pattern(rule.pattern, call, rules.literals, bindings) {
-      let renames = build_rename_map(rule.template, bindings, rules.literals, env)
-      return expand_template(rule.template, bindings, renames)
+    match (rule.pattern, call) {
+      (Datum::Symbol(_), Datum::Pair(_, _)) => ()
+      (Datum::Pair(_, _), Datum::Symbol(_)) => ()
+      _ => {
+        if match_pattern(rule.pattern, call, rules.literals, bindings) {
+          let renames = build_rename_map(rule.template, bindings, rules.literals, env)
+          return expand_template(rule.template, bindings, renames)
+        }
+      }
     }
     i = i + 1
   }
@@ -653,6 +767,39 @@ fn collect_renames(
     Datum::Vector(items) => {
       for item in items {
         collect_renames(item, bindings, literals, env, renames)
+      }
+    }
+    _ => ()
+  }
+}
+
+///|
+fn collect_template_symbols(template : Datum, symbols : Map[String, Bool]) -> Unit {
+  match template {
+    Datum::Symbol(name) => symbols[name] = true
+    Datum::Pair(_, _) => {
+      match datum_list_to_array_opt(template) {
+        Some(items) => {
+          if !is_quote_form(items) {
+            for item in items {
+              collect_template_symbols(item, symbols)
+            }
+          }
+        }
+        None => {
+          match template {
+            Datum::Pair(a, b) => {
+              collect_template_symbols(a, symbols)
+              collect_template_symbols(b, symbols)
+            }
+            _ => ()
+          }
+        }
+      }
+    }
+    Datum::Vector(items) => {
+      for item in items {
+        collect_template_symbols(item, symbols)
       }
     }
     _ => ()

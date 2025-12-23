@@ -96,6 +96,7 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::Primitive(a), Value::Primitive(b)) => primitive_eq(a, b)
     (Value::Closure(a), Value::Closure(b)) => a.id == b.id
     (Value::CaseClosure(a), Value::CaseClosure(b)) => a.id == b.id
+    (Value::GuardHandler(a), Value::GuardHandler(b)) => a.id == b.id
     (Value::Parameter(a), Value::Parameter(b)) => a.id == b.id
     (Value::Continuation(a), Value::Continuation(b)) => a.id == b.id
     (Value::Port(a), Value::Port(b)) => a.id == b.id
@@ -704,6 +705,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Primitive(_)
             | Value::Closure(_)
             | Value::CaseClosure(_)
+            | Value::GuardHandler(_)
             | Value::Parameter(_)
             | Value::Continuation(_)
             | Value::RecordProc(_) => bool_value(true)

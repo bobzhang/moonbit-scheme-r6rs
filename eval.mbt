@@ -138,6 +138,26 @@ fn make_case_closure(clauses : Array[CaseClause], env : Env) -> CaseClosure {
 }
 
 ///|
+fn make_guard_handler(
+  name : String,
+  clauses : Array[Datum],
+  env : Env,
+  resume_value : Value,
+  handlers : Array[Value],
+) -> GuardHandler {
+  GuardHandler::{ id: next_guard_handler_id(), name, clauses, env, resume_value, handlers }
+}
+
+///|
+fn capture_continuation(kont : Kont, handlers : Array[Value]) -> Continuation {
+  let winds_copy : Array[Winder] = []
+  for item in wind_stack.val {
+    winds_copy.push(item)
+  }
+  Continuation::{ id: next_continuation_id(), kont, handlers, winds: winds_copy }
+}
+
+///|
 priv enum Kont {
   Halt
   If(Datum, Datum, Env, Kont)
@@ -192,6 +212,9 @@ priv enum Kont {
   )
   MakeParameter(Value, Kont)
   SetParameter(Parameter, Kont)
+  GuardResult(GuardInfo)
+  GuardCond(Array[Datum], Array[Datum], Env, GuardInfo)
+  GuardCondArrow(Value, GuardInfo)
   Case(Array[Datum], Env, Kont)
   CaseArrow(Value, Kont)
   CallWithValues(Value, Kont)
@@ -217,6 +240,15 @@ priv struct ParamBinding {
   param : Parameter
   old_value : Value
   new_value : Value
+}
+
+///|
+priv struct GuardInfo {
+  condition : Value
+  resume_value : Value
+  handlers : Array[Value]
+  raise_kont : Kont
+  continuable : Bool
 }
 
 ///|
@@ -269,11 +301,19 @@ let wind_stack : Ref[Array[Winder]] = Ref::new([])
 
 ///|
 let continuation_counter : Ref[Int] = Ref::new(0)
+let guard_handler_counter : Ref[Int] = Ref::new(0)
 
 ///|
 fn next_continuation_id() -> Int {
   let id = continuation_counter.val
   continuation_counter.val = id + 1
+  id
+}
+
+///|
+fn next_guard_handler_id() -> Int {
+  let id = guard_handler_counter.val
+  guard_handler_counter.val = id + 1
   id
 }
 
@@ -331,9 +371,15 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           | Datum::ByteVector(_) =>
             state = MachineState::Apply(Value::Datum(current_expr), kont, handlers)
           Datum::Symbol(name) => {
-            match env_lookup(current_env, name) {
-              Value::Macro(_) => raise EvalError("macro used as value")
-              value => state = MachineState::Apply(value, kont, handlers)
+            match env_get_macro(current_env, name) {
+              Some(rules) => {
+                let expanded = expand_macro(rules, Datum::Symbol(name), current_env)
+                state = MachineState::Eval(expanded, current_env, kont, handlers)
+              }
+              None => {
+                let value = env_lookup(current_env, name)
+                state = MachineState::Apply(value, kont, handlers)
+              }
             }
           }
           Datum::Pair(_, _) => state = eval_pair(current_expr, current_env, kont, handlers)
@@ -700,6 +746,30 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             parameter_set(param, converted)
             state = MachineState::Apply(Value::Void, next, handlers)
           }
+          Kont::GuardResult(info) => {
+            let guard_value = expect_single(value)
+            state = apply_proc(info.resume_value, [guard_value], kont, info.handlers)
+          }
+          Kont::GuardCond(parts, rest, env, info) => {
+            let test_value = expect_single(value)
+            if is_false(test_value) {
+              state = guard_start(rest, env, info, handlers)
+            } else if parts.length() == 1 {
+              state = apply_proc(info.resume_value, [test_value], kont, info.handlers)
+            } else if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
+              if parts.length() != 3 {
+                raise EvalError("invalid guard")
+              }
+              state = MachineState::Eval(parts[2], env, Kont::GuardCondArrow(test_value, info), handlers)
+            } else {
+              let body = parts.sub(start=1).to_array()
+              state = eval_sequence_state(body, env, Kont::GuardResult(info), handlers)
+            }
+          }
+          Kont::GuardCondArrow(test_value, info) => {
+            let proc_value = expect_single(value)
+            state = apply_proc(proc_value, [test_value], Kont::GuardResult(info), handlers)
+          }
           Kont::Case(clauses, env, next) => {
             let key_value = expect_single(value)
             state = case_dispatch(key_value, clauses, env, next, handlers)
@@ -874,7 +944,7 @@ fn eval_define_syntax(args : Array[Datum], env : Env) -> Value raise EvalError {
     2 => {
       match args[0] {
         Datum::Symbol(name) => {
-          let rules = parse_syntax_rules(args[1])
+          let rules = parse_transformer(args[1], name)
           env_define(env, name, Value::Macro(rules))
           Value::Void
         }
@@ -896,7 +966,7 @@ fn parse_syntax_bindings(expr : Datum) -> Array[(String, SyntaxRules)] raise Eva
     } else {
       match parts[0] {
         Datum::Symbol(name) => {
-          let rules = parse_syntax_rules(parts[1])
+          let rules = parse_transformer(parts[1], name)
           parsed.push((name, rules))
         }
         _ => raise EvalError("type error: symbol expected")
@@ -996,6 +1066,70 @@ fn value_to_values(value : Value) -> Array[Value] {
       values
     }
   }
+}
+
+///|
+fn raise_to_handlers(
+  condition : Value,
+  handlers : Array[Value],
+  kont : Kont,
+  continuable : Bool,
+) -> MachineState raise EvalError {
+  if handlers.is_empty() {
+    raise EvalError("uncaught exception")
+  } else {
+    let handler = handlers[handlers.length() - 1]
+    if continuable {
+      apply_proc(handler, [condition], Kont::RaiseCont(kont), handlers)
+    } else {
+      apply_proc(handler, [condition], Kont::RaiseNonCont, handlers)
+    }
+  }
+}
+
+///|
+fn guard_start(
+  clauses : Array[Datum],
+  env : Env,
+  info : GuardInfo,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  let mut i = 0
+  while i < clauses.length() {
+    let parts = datum_list_to_array(clauses[i])
+    if parts.is_empty() {
+      i = i + 1
+    } else {
+      let head = symbol_name(parts[0])
+      if head is Some("else") {
+        let body = parts.sub(start=1).to_array()
+        return eval_sequence_state(body, env, Kont::GuardResult(info), handlers)
+      } else {
+        let rest = clauses.sub(start=i + 1).to_array()
+        return MachineState::Eval(parts[0], env, Kont::GuardCond(parts, rest, env, info), handlers)
+      }
+    }
+  }
+  raise_to_handlers(info.condition, info.handlers, info.raise_kont, info.continuable)
+}
+
+///|
+fn handle_guard(
+  handler : GuardHandler,
+  condition : Value,
+  raise_kont : Kont,
+  continuable : Bool,
+) -> MachineState raise EvalError {
+  let guard_env = env_extend(handler.env)
+  env_define(guard_env, handler.name, condition)
+  let info = GuardInfo::{
+    condition,
+    resume_value: handler.resume_value,
+    handlers: handler.handlers,
+    raise_kont,
+    continuable,
+  }
+  guard_start(handler.clauses, guard_env, info, handler.handlers)
 }
 
 ///|
@@ -1181,6 +1315,40 @@ fn eval_define_values_state(
 }
 
 ///|
+fn eval_guard_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 2 {
+    raise arity_mismatch(2, args.length())
+  } else {
+    let spec = datum_list_to_array(args[0])
+    if spec.is_empty() {
+      raise EvalError("invalid guard")
+    }
+    let name = parse_symbol(spec[0])
+    let clauses = spec.sub(start=1).to_array()
+    let body = args.sub(start=1).to_array()
+    let resume_value = Value::Continuation(capture_continuation(kont, handlers))
+    let guard_handlers : Array[Value] = []
+    for item in handlers {
+      guard_handlers.push(item)
+    }
+    let handler = Value::GuardHandler(
+      make_guard_handler(name, clauses, env, resume_value, guard_handlers),
+    )
+    let next_handlers : Array[Value] = []
+    for item in handlers {
+      next_handlers.push(item)
+    }
+    next_handlers.push(handler)
+    eval_sequence_state(body, env, Kont::RestoreHandlers(handlers, kont), next_handlers)
+  }
+}
+
+///|
 fn eval_parameterize_state(
   args : Array[Datum],
   env : Env,
@@ -1216,8 +1384,19 @@ fn eval_set_state(
   match args.length() {
     2 => {
       match args[0] {
-        Datum::Symbol(name) =>
-          MachineState::Eval(args[1], env, Kont::Set(name, env, kont), handlers)
+        Datum::Symbol(name) => {
+          match env_get_macro(env, name) {
+            Some(rules) => {
+              let expanded = expand_macro(
+                rules,
+                list_from_array([Datum::Symbol("set!"), Datum::Symbol(name), args[1]]),
+                env,
+              )
+              MachineState::Eval(expanded, env, kont, handlers)
+            }
+            None => MachineState::Eval(args[1], env, Kont::Set(name, env, kont), handlers)
+          }
+        }
         _ => raise EvalError("type error: symbol expected")
       }
     }
@@ -1938,6 +2117,7 @@ fn eval_pair(
       Some("and") => eval_and_state(args, env, kont, handlers)
       Some("or") => eval_or_state(args, env, kont, handlers)
       Some("cond") => cond_start(args, env, kont, handlers)
+      Some("guard") => eval_guard_state(args, env, kont, handlers)
       Some("do") => eval_do_state(args, env, kont, handlers)
       Some("case") => eval_case_state(args, env, kont, handlers)
       Some(name) => {
@@ -2015,7 +2195,10 @@ fn apply_proc(
         raise EvalError("uncaught exception")
       } else {
         let handler = handlers[handlers.length() - 1]
-        apply_proc(handler, [args[0]], Kont::RaiseNonCont, handlers)
+        match handler {
+          Value::GuardHandler(guard_handler) => handle_guard(guard_handler, args[0], kont, false)
+          _ => apply_proc(handler, [args[0]], Kont::RaiseNonCont, handlers)
+        }
       }
     }
     Value::Primitive(Primitive::RaiseContinuable) => {
@@ -2025,23 +2208,17 @@ fn apply_proc(
         raise EvalError("uncaught exception")
       } else {
         let handler = handlers[handlers.length() - 1]
-        apply_proc(handler, [args[0]], Kont::RaiseCont(kont), handlers)
+        match handler {
+          Value::GuardHandler(guard_handler) => handle_guard(guard_handler, args[0], kont, true)
+          _ => apply_proc(handler, [args[0]], Kont::RaiseCont(kont), handlers)
+        }
       }
     }
     Value::Primitive(Primitive::CallCC) => {
       if args.length() != 1 {
         raise arity_mismatch(1, args.length())
       } else {
-        let winds_copy : Array[Winder] = []
-        for item in wind_stack.val {
-          winds_copy.push(item)
-        }
-        let cont = Continuation::{
-          id: next_continuation_id(),
-          kont,
-          handlers,
-          winds: winds_copy,
-        }
+        let cont = capture_continuation(kont, handlers)
         apply_proc(args[0], [Value::Continuation(cont)], kont, handlers)
       }
     }

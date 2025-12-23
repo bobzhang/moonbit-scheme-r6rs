@@ -102,6 +102,7 @@ pub fn value_to_string(value : Value) -> String {
     Value::Closure(_) => "#<procedure>"
     Value::CaseClosure(_) => "#<procedure>"
     Value::Values(_) => "#<values>"
+    Value::GuardHandler(_) => "#<procedure>"
     Value::Parameter(_) => "#<procedure>"
     Value::Continuation(_) => "#<procedure>"
     Value::Port(_) => "#<port>"

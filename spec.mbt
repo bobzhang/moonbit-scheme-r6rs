@@ -7,7 +7,8 @@
 /// - quote, quasiquote, unquote, unquote-splicing, if, begin, lambda, define,
 ///   set!, let (including named let), let*, letrec, letrec*, let-syntax,
 ///   letrec-syntax, and, or, cond (including =>), case, do, case-lambda,
-///   let-values, let*-values, define-values, parameterize
+///   let-values, let*-values, define-values, parameterize, guard,
+///   syntax-case (limited), identifier-syntax
 /// - dynamic-wind
 /// - define-syntax + syntax-rules (hygienic identifiers), including "..." repetition
 /// - application with left-to-right evaluation
@@ -25,6 +26,7 @@
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
 ///   values call-with-values make-parameter dynamic-wind parameterize
+///   guard
 ///   (equality is structural for datums in this subset)
 /// - printing via value_to_string (booleans as #t/#f, empty list as ())
 ///
@@ -172,6 +174,16 @@ pub struct CaseClosure {
 }
 
 ///|
+pub struct GuardHandler {
+  id : Int
+  name : String
+  clauses : Array[Datum]
+  env : Env
+  resume_value : Value
+  handlers : Array[Value]
+}
+
+///|
 pub struct Parameter {
   id : Int
   value : Ref[Value]
@@ -188,6 +200,7 @@ pub enum Value {
   Closure(Closure)
   CaseClosure(CaseClosure)
   Values(Array[Value])
+  GuardHandler(GuardHandler)
   Parameter(Parameter)
   Continuation(Continuation)
   Port(Port)
