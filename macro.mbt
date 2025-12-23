@@ -178,6 +178,8 @@ fn is_core_identifier(name : String) -> Bool {
     "vector-set!",
     "vector-fill!",
     "vector-copy",
+    "vector-map",
+    "vector-for-each",
     "vector->list",
     "list->vector",
     "bytevector",

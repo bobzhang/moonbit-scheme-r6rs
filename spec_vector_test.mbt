@@ -17,6 +17,14 @@ test "r6rs vectors" {
   inspect(value_to_string(eval_program("(vector-copy #(1 2 3))")), content="#(1 2 3)")
   inspect(value_to_string(eval_program("(vector-copy #(1 2 3) 1)")), content="#(2 3)")
   inspect(value_to_string(eval_program("(vector-copy #(1 2 3) 1 2)")), content="#(2)")
+  inspect(
+    value_to_string(eval_program("(vector-map (lambda (x) (+ x 1)) #(1 2 3))")),
+    content="#(2 3 4)",
+  )
+  inspect(value_to_string(eval_program("(vector-map + #(1 2) #(3 4))")), content="#(4 6)")
+  let for_each_program =
+    "(let ((acc 0)) (vector-for-each (lambda (x) (set! acc (+ acc x))) #(1 2 3)) acc)"
+  inspect(value_to_string(eval_program(for_each_program)), content="6")
   inspect(value_to_string(eval_program("(vector->list #(1 2 3))")), content="(1 2 3)")
   inspect(value_to_string(eval_program("(list->vector '(1 2 3))")), content="#(1 2 3)")
 }
@@ -62,6 +70,12 @@ test "r6rs vectors/bytevectors: errors" {
   match bad_copy {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
     _ => fail("expected EvalError for invalid range")
+  }
+
+  let bad_vector_map = try? eval_program("(vector-map + #(1 2) #(3))")
+  match bad_vector_map {
+    Err(err) => inspect(err, content="EvalError(\"vector length mismatch\")")
+    _ => fail("expected EvalError for vector length mismatch")
   }
 
   let bad_fill = try? eval_program("(vector-fill! #(1 2 3) 0 3 2)")

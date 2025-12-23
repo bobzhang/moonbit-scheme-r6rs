@@ -131,6 +131,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::VectorSet, Primitive::VectorSet)
     | (Primitive::VectorFill, Primitive::VectorFill)
     | (Primitive::VectorCopy, Primitive::VectorCopy)
+    | (Primitive::VectorMap, Primitive::VectorMap)
+    | (Primitive::VectorForEach, Primitive::VectorForEach)
     | (Primitive::VectorToList, Primitive::VectorToList)
     | (Primitive::ListToVector, Primitive::ListToVector)
     | (Primitive::ByteVector, Primitive::ByteVector)
@@ -1654,6 +1656,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::ForEach => {
       raise EvalError("internal error: for-each should be handled in apply_proc")
+    }
+    Primitive::VectorMap => {
+      raise EvalError("internal error: vector-map should be handled in apply_proc")
+    }
+    Primitive::VectorForEach => {
+      raise EvalError("internal error: vector-for-each should be handled in apply_proc")
     }
     Primitive::Values => Value::Values(args)
     Primitive::CallWithValues => {

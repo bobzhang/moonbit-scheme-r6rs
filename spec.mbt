@@ -32,7 +32,7 @@
 ///   string-length string-append string-ref string-copy string->list list->string
 ///   string-upcase string-downcase string-foldcase
 ///   vector make-vector vector? vector-length vector-ref vector-set!
-///   vector-copy vector-fill!
+///   vector-copy vector-fill! vector-map vector-for-each
 ///   vector->list list->vector
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
 ///   bytevector-copy
@@ -186,6 +186,8 @@ pub enum Primitive {
   VectorToList
   ListToVector
   VectorCopy
+  VectorMap
+  VectorForEach
   ByteVector
   ByteVectorP
   ByteVectorLength

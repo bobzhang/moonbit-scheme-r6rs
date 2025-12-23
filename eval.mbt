@@ -144,6 +144,8 @@ fn init_env() -> Env {
   env_define(env, "vector-set!", Value::Primitive(Primitive::VectorSet))
   env_define(env, "vector-fill!", Value::Primitive(Primitive::VectorFill))
   env_define(env, "vector-copy", Value::Primitive(Primitive::VectorCopy))
+  env_define(env, "vector-map", Value::Primitive(Primitive::VectorMap))
+  env_define(env, "vector-for-each", Value::Primitive(Primitive::VectorForEach))
   env_define(env, "vector->list", Value::Primitive(Primitive::VectorToList))
   env_define(env, "list->vector", Value::Primitive(Primitive::ListToVector))
   env_define(env, "bytevector", Value::Primitive(Primitive::ByteVector))
@@ -314,6 +316,7 @@ priv enum Kont {
   CaseArrow(Value, Kont)
   CallWithValues(Value, Kont)
   MapStep(Value, Array[Datum], Array[Datum], Bool, Kont)
+  VectorMapFinalize(Kont)
   WindEnter(Value, Winder, Kont)
   WindExit(Winder, Kont)
   WindActions(Array[WindAction], Value, Kont, Array[Value])
@@ -885,6 +888,12 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               next_results.push(value_as_datum(single))
             }
             state = map_step(proc, lists, next_results, for_each, next, handlers)
+          }
+          Kont::VectorMapFinalize(next) => {
+            let single = expect_single(value)
+            let result_datum = value_as_datum(single)
+            let items = datum_list_to_array(result_datum)
+            state = MachineState::Apply(Value::Datum(Datum::Vector(items)), next, handlers)
           }
           Kont::WindEnter(thunk, winder, next) => {
             wind_push(winder)
@@ -2394,6 +2403,62 @@ fn apply_proc(
         while i < args.length() {
           lists.push(value_as_datum(args[i]))
           i = i + 1
+        }
+        map_step(proc_value, lists, [], true, kont, handlers)
+      }
+    }
+    Value::Primitive(Primitive::VectorMap) => {
+      if args.length() < 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let proc_value = args[0]
+        let vectors : Array[Array[Datum]] = []
+        let mut i = 1
+        while i < args.length() {
+          vectors.push(value_as_vector(args[i]))
+          i = i + 1
+        }
+        let len = vectors[0].length()
+        let mut j = 0
+        while j < vectors.length() {
+          if vectors[j].length() != len {
+            raise EvalError("vector length mismatch")
+          }
+          j = j + 1
+        }
+        let lists : Array[Datum] = []
+        let mut k = 0
+        while k < vectors.length() {
+          lists.push(list_from_array(vectors[k]))
+          k = k + 1
+        }
+        map_step(proc_value, lists, [], false, Kont::VectorMapFinalize(kont), handlers)
+      }
+    }
+    Value::Primitive(Primitive::VectorForEach) => {
+      if args.length() < 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let proc_value = args[0]
+        let vectors : Array[Array[Datum]] = []
+        let mut i = 1
+        while i < args.length() {
+          vectors.push(value_as_vector(args[i]))
+          i = i + 1
+        }
+        let len = vectors[0].length()
+        let mut j = 0
+        while j < vectors.length() {
+          if vectors[j].length() != len {
+            raise EvalError("vector length mismatch")
+          }
+          j = j + 1
+        }
+        let lists : Array[Datum] = []
+        let mut k = 0
+        while k < vectors.length() {
+          lists.push(list_from_array(vectors[k]))
+          k = k + 1
         }
         map_step(proc_value, lists, [], true, kont, handlers)
       }
