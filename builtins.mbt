@@ -49,6 +49,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Not, Primitive::Not)
     | (Primitive::Apply, Primitive::Apply)
     | (Primitive::CallCC, Primitive::CallCC)
+    | (Primitive::Values, Primitive::Values)
+    | (Primitive::CallWithValues, Primitive::CallWithValues)
     | (Primitive::ExactToInexact, Primitive::ExactToInexact)
     | (Primitive::InexactToExact, Primitive::InexactToExact)
     | (Primitive::Numerator, Primitive::Numerator)
@@ -946,6 +948,10 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::CallCC => {
       raise EvalError("internal error: call/cc should be handled in apply_proc")
+    }
+    Primitive::Values => Value::Values(args)
+    Primitive::CallWithValues => {
+      raise EvalError("internal error: call-with-values should be handled in apply_proc")
     }
     Primitive::ListP => {
       match args.length() {

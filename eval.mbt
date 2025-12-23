@@ -27,6 +27,8 @@ fn init_env() -> Env {
   env_define(env, "procedure?", Value::Primitive(Primitive::ProcedureP))
   env_define(env, "not", Value::Primitive(Primitive::Not))
   env_define(env, "apply", Value::Primitive(Primitive::Apply))
+  env_define(env, "values", Value::Primitive(Primitive::Values))
+  env_define(env, "call-with-values", Value::Primitive(Primitive::CallWithValues))
   env_define(env, "exact->inexact", Value::Primitive(Primitive::ExactToInexact))
   env_define(env, "inexact->exact", Value::Primitive(Primitive::InexactToExact))
   env_define(env, "numerator", Value::Primitive(Primitive::Numerator))
@@ -111,8 +113,19 @@ priv enum Kont {
   Let(Array[(String, Datum)], Int, Array[Value], Env, Array[Datum], Kont)
   LetStar(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
   LetRec(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
+  LetValues(
+    Array[(Array[String], Datum)],
+    Int,
+    Array[Array[Value]],
+    Env,
+    Array[Datum],
+    Kont,
+  )
+  LetStarValues(Array[(Array[String], Datum)], Int, Env, Array[Datum], Kont)
+  DefineValues(Array[String], Env, Kont)
   Case(Array[Datum], Env, Kont)
   CaseArrow(Value, Kont)
+  CallWithValues(Value, Kont)
   RaiseNonCont
   RaiseCont(Kont)
   RestoreHandlers(Array[Value], Kont)
@@ -206,7 +219,8 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
         match kont {
           Kont::Halt => return value
           Kont::If(then_expr, else_expr, env, next) => {
-            if is_false(value) {
+            let test_value = expect_single(value)
+            if is_false(test_value) {
               state = MachineState::Eval(else_expr, env, next, handlers)
             } else {
               state = MachineState::Eval(then_expr, env, next, handlers)
@@ -221,32 +235,36 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             }
           }
           Kont::Set(name, env, next) => {
-            env_set(env, name, value)
+            let single = expect_single(value)
+            env_set(env, name, single)
             state = MachineState::Apply(Value::Void, next, handlers)
           }
           Kont::Define(name, env, next) => {
-            env_define(env, name, value)
+            let single = expect_single(value)
+            env_define(env, name, single)
             state = MachineState::Apply(Value::Void, next, handlers)
           }
           Kont::AppFun(args, env, next) => {
+            let proc_value = expect_single(value)
             if args.is_empty() {
-              state = apply_proc(value, [], next, handlers)
+              state = apply_proc(proc_value, [], next, handlers)
             } else {
               let rest = args.sub(start=1).to_array()
               state = MachineState::Eval(
                 args[0],
                 env,
-                Kont::AppArgs(value, [], rest, env, next),
+                Kont::AppArgs(proc_value, [], rest, env, next),
                 handlers,
               )
             }
           }
           Kont::AppArgs(proc, evaluated, remaining, env, next) => {
+            let arg_value = expect_single(value)
             let next_values : Array[Value] = []
             for item in evaluated {
               next_values.push(item)
             }
-            next_values.push(value)
+            next_values.push(arg_value)
             if remaining.is_empty() {
               state = apply_proc(proc, next_values, next, handlers)
             } else {
@@ -260,49 +278,54 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             }
           }
           Kont::And(rest, env, next) => {
-            if is_false(value) {
-              state = MachineState::Apply(value, next, handlers)
+            let test_value = expect_single(value)
+            if is_false(test_value) {
+              state = MachineState::Apply(test_value, next, handlers)
             } else if rest.is_empty() {
-              state = MachineState::Apply(value, next, handlers)
+              state = MachineState::Apply(test_value, next, handlers)
             } else {
               let tail = rest.sub(start=1).to_array()
               state = MachineState::Eval(rest[0], env, Kont::And(tail, env, next), handlers)
             }
           }
           Kont::Or(rest, env, next) => {
-            if !is_false(value) {
-              state = MachineState::Apply(value, next, handlers)
+            let test_value = expect_single(value)
+            if !is_false(test_value) {
+              state = MachineState::Apply(test_value, next, handlers)
             } else if rest.is_empty() {
-              state = MachineState::Apply(value, next, handlers)
+              state = MachineState::Apply(test_value, next, handlers)
             } else {
               let tail = rest.sub(start=1).to_array()
               state = MachineState::Eval(rest[0], env, Kont::Or(tail, env, next), handlers)
             }
           }
           Kont::Cond(parts, rest, env, next) => {
-            if is_false(value) {
+            let test_value = expect_single(value)
+            if is_false(test_value) {
               state = cond_start(rest, env, next, handlers)
             } else if parts.length() == 1 {
-              state = MachineState::Apply(value, next, handlers)
+              state = MachineState::Apply(test_value, next, handlers)
             } else if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
               if parts.length() != 3 {
                 raise EvalError("invalid cond")
               }
-              state = MachineState::Eval(parts[2], env, Kont::CondArrow(value, next), handlers)
+              state = MachineState::Eval(parts[2], env, Kont::CondArrow(test_value, next), handlers)
             } else {
               let body = parts.sub(start=1).to_array()
               state = eval_sequence_state(body, env, next, handlers)
             }
           }
           Kont::CondArrow(test_value, next) => {
-            state = apply_proc(value, [test_value], next, handlers)
+            let proc_value = expect_single(value)
+            state = apply_proc(proc_value, [test_value], next, handlers)
           }
           Kont::Let(bindings, index, values, env, body, next) => {
+            let single = expect_single(value)
             let next_values : Array[Value] = []
             for item in values {
               next_values.push(item)
             }
-            next_values.push(value)
+            next_values.push(single)
             let next_index = index + 1
             if next_index < bindings.length() {
               let (_, expr) = bindings[next_index]
@@ -324,9 +347,10 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             }
           }
           Kont::LetStar(bindings, index, env, body, next) => {
+            let single = expect_single(value)
             let (name, _) = bindings[index]
             let new_env = env_extend(env)
-            env_define(new_env, name, value)
+            env_define(new_env, name, single)
             let next_index = index + 1
             if next_index < bindings.length() {
               let (_, expr) = bindings[next_index]
@@ -341,8 +365,9 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             }
           }
           Kont::LetRec(bindings, index, env, body, next) => {
+            let single = expect_single(value)
             let (name, _) = bindings[index]
-            env_set(env, name, value)
+            env_set(env, name, single)
             let next_index = index + 1
             if next_index < bindings.length() {
               let (_, expr) = bindings[next_index]
@@ -356,11 +381,90 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               state = eval_sequence_state(body, env, next, handlers)
             }
           }
+          Kont::LetValues(bindings, index, collected, env, body, next) => {
+            let values = value_to_values(value)
+            let (names, _) = bindings[index]
+            if values.length() != names.length() {
+              raise arity_mismatch(names.length(), values.length())
+            }
+            let next_collected : Array[Array[Value]] = []
+            for item in collected {
+              next_collected.push(item)
+            }
+            next_collected.push(values)
+            let next_index = index + 1
+            if next_index < bindings.length() {
+              let (_, expr) = bindings[next_index]
+              state = MachineState::Eval(
+                expr,
+                env,
+                Kont::LetValues(bindings, next_index, next_collected, env, body, next),
+                handlers,
+              )
+            } else {
+              let new_env = env_extend(env)
+              let mut i = 0
+              while i < bindings.length() {
+                let (names, _) = bindings[i]
+                let bound_values = next_collected[i]
+                let mut j = 0
+                while j < names.length() {
+                  env_define(new_env, names[j], bound_values[j])
+                  j = j + 1
+                }
+                i = i + 1
+              }
+              state = eval_sequence_state(body, new_env, next, handlers)
+            }
+          }
+          Kont::LetStarValues(bindings, index, env, body, next) => {
+            let values = value_to_values(value)
+            let (names, _) = bindings[index]
+            if values.length() != names.length() {
+              raise arity_mismatch(names.length(), values.length())
+            }
+            let new_env = env_extend(env)
+            let mut i = 0
+            while i < names.length() {
+              env_define(new_env, names[i], values[i])
+              i = i + 1
+            }
+            let next_index = index + 1
+            if next_index < bindings.length() {
+              let (_, expr) = bindings[next_index]
+              state = MachineState::Eval(
+                expr,
+                new_env,
+                Kont::LetStarValues(bindings, next_index, new_env, body, next),
+                handlers,
+              )
+            } else {
+              state = eval_sequence_state(body, new_env, next, handlers)
+            }
+          }
+          Kont::DefineValues(names, env, next) => {
+            let values = value_to_values(value)
+            if values.length() != names.length() {
+              raise arity_mismatch(names.length(), values.length())
+            }
+            let mut i = 0
+            while i < names.length() {
+              env_define(env, names[i], values[i])
+              i = i + 1
+            }
+            state = MachineState::Apply(Value::Void, next, handlers)
+          }
           Kont::Case(clauses, env, next) => {
-            state = case_dispatch(value, clauses, env, next, handlers)
+            let key_value = expect_single(value)
+            state = case_dispatch(key_value, clauses, env, next, handlers)
           }
           Kont::CaseArrow(test_value, next) => {
-            state = apply_proc(value, [test_value], next, handlers)
+            let proc_value = expect_single(value)
+            state = apply_proc(proc_value, [test_value], next, handlers)
+          }
+          Kont::CallWithValues(consumer, next) => {
+            let values = value_to_values(value)
+            state = apply_proc(consumer, values, next, handlers)
           }
           Kont::RaiseNonCont => raise EvalError("non-continuable exception")
           Kont::RaiseCont(next) => state = MachineState::Apply(value, next, handlers)
@@ -558,6 +662,22 @@ fn parse_bindings(expr : Datum) -> Array[(String, Datum)] raise EvalError {
 }
 
 ///|
+fn parse_value_bindings(expr : Datum) -> Array[(Array[String], Datum)] raise EvalError {
+  let bindings = datum_list_to_array(expr)
+  let parsed : Array[(Array[String], Datum)] = []
+  for binding in bindings {
+    let parts = datum_list_to_array(binding)
+    if parts.length() != 2 {
+      raise EvalError("invalid let-values")
+    } else {
+      let names = parse_params(parts[0])
+      parsed.push((names, parts[1]))
+    }
+  }
+  parsed
+}
+
+///|
 fn parse_symbol(expr : Datum) -> String raise EvalError {
   match expr {
     Datum::Symbol(name) => name
@@ -572,6 +692,32 @@ fn parse_symbol_list(items : Array[Datum]) -> Array[String] raise EvalError {
     names.push(parse_symbol(item))
   }
   names
+}
+
+///|
+fn expect_single(value : Value) -> Value raise EvalError {
+  match value {
+    Value::Values(values) => {
+      if values.length() == 1 {
+        values[0]
+      } else {
+        raise EvalError("multiple values in single-value context")
+      }
+    }
+    _ => value
+  }
+}
+
+///|
+fn value_to_values(value : Value) -> Array[Value] {
+  match value {
+    Value::Values(values) => values
+    _ => {
+      let values : Array[Value] = []
+      values.push(value)
+      values
+    }
+  }
 }
 
 ///|
@@ -642,6 +788,22 @@ fn eval_define_state(
 }
 
 ///|
+fn eval_define_values_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  match args.length() {
+    2 => {
+      let names = parse_params(args[0])
+      MachineState::Eval(args[1], env, Kont::DefineValues(names, env, kont), handlers)
+    }
+    n => raise arity_mismatch(2, n)
+  }
+}
+
+///|
 fn eval_set_state(
   args : Array[Datum],
   env : Env,
@@ -690,6 +852,48 @@ fn eval_let_state(
           MachineState::Eval(expr, env, Kont::Let(bindings, 0, [], env, body, kont), handlers)
         }
       }
+    }
+  }
+}
+
+///|
+fn eval_let_values_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 2 {
+    raise arity_mismatch(2, args.length())
+  } else {
+    let bindings = parse_value_bindings(args[0])
+    let body = args.sub(start=1).to_array()
+    if bindings.is_empty() {
+      eval_sequence_state(body, env, kont, handlers)
+    } else {
+      let (_, expr) = bindings[0]
+      MachineState::Eval(expr, env, Kont::LetValues(bindings, 0, [], env, body, kont), handlers)
+    }
+  }
+}
+
+///|
+fn eval_let_star_values_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() < 2 {
+    raise arity_mismatch(2, args.length())
+  } else {
+    let bindings = parse_value_bindings(args[0])
+    let body = args.sub(start=1).to_array()
+    if bindings.is_empty() {
+      eval_sequence_state(body, env, kont, handlers)
+    } else {
+      let (_, expr) = bindings[0]
+      MachineState::Eval(expr, env, Kont::LetStarValues(bindings, 0, env, body, kont), handlers)
     }
   }
 }
@@ -1317,8 +1521,11 @@ fn eval_pair(
       Some("lambda") => MachineState::Apply(eval_lambda(args, env), kont, handlers)
       Some("case-lambda") => MachineState::Apply(eval_case_lambda(args, env), kont, handlers)
       Some("define") => eval_define_state(args, env, kont, handlers)
+      Some("define-values") => eval_define_values_state(args, env, kont, handlers)
       Some("set!") => eval_set_state(args, env, kont, handlers)
       Some("let") => eval_let_state(args, env, kont, handlers)
+      Some("let-values") => eval_let_values_state(args, env, kont, handlers)
+      Some("let*-values") => eval_let_star_values_state(args, env, kont, handlers)
       Some("let*") => eval_let_star_state(args, env, kont, handlers)
       Some("letrec") => eval_letrec_state(args, env, kont, handlers)
       Some("letrec*") => eval_letrec_state(args, env, kont, handlers)
@@ -1352,6 +1559,15 @@ fn apply_proc(
 ) -> MachineState raise EvalError {
   match proc {
     Value::Primitive(Primitive::Apply) => apply_apply(args, kont, handlers)
+    Value::Primitive(Primitive::CallWithValues) => {
+      if args.length() != 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let producer = args[0]
+        let consumer = args[1]
+        apply_proc(producer, [], Kont::CallWithValues(consumer, kont), handlers)
+      }
+    }
     Value::Primitive(Primitive::WithExceptionHandler) => {
       if args.length() != 2 {
         raise arity_mismatch(2, args.length())
@@ -1446,10 +1662,10 @@ fn apply_proc(
       eval_sequence_state(matched_body, new_env, kont, handlers)
     }
     Value::Continuation(cont) => {
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      } else {
+      if args.length() == 1 {
         MachineState::Apply(args[0], cont.kont, cont.handlers)
+      } else {
+        MachineState::Apply(Value::Values(args), cont.kont, cont.handlers)
       }
     }
     Value::RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)

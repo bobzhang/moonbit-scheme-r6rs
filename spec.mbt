@@ -6,7 +6,8 @@
 ///   characters, strings, pairs/lists
 /// - quote, quasiquote, unquote, unquote-splicing, if, begin, lambda, define,
 ///   set!, let (including named let), let*, letrec, letrec*, let-syntax,
-///   letrec-syntax, and, or, cond (including =>), case, do, case-lambda
+///   letrec-syntax, and, or, cond (including =>), case, do, case-lambda,
+///   let-values, let*-values, define-values
 /// - define-syntax + syntax-rules (hygienic identifiers), including "..." repetition
 /// - application with left-to-right evaluation
 /// - proper tail calls for procedure application
@@ -22,6 +23,7 @@
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
+///   values call-with-values
 ///   (equality is structural for datums in this subset)
 /// - printing via value_to_string (booleans as #t/#f, empty list as ())
 ///
@@ -84,6 +86,8 @@ pub enum Primitive {
   Not
   Apply
   CallCC
+  Values
+  CallWithValues
   ExactToInexact
   InexactToExact
   Numerator
@@ -173,6 +177,7 @@ pub enum Value {
   Primitive(Primitive)
   Closure(Closure)
   CaseClosure(CaseClosure)
+  Values(Array[Value])
   Continuation(Continuation)
   Port(Port)
   Record(Record)
@@ -214,6 +219,7 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 /// - Macros print as "#<syntax>"
 /// - Continuations print as "#<procedure>"
 /// - Ports print as "#<port>"
+/// - Multiple values print as "#<values>"
 ///|
 #declaration_only
 pub fn value_to_string(value : Value) -> String {
