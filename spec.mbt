@@ -22,9 +22,12 @@
 ///   equal? list? make-list list-ref list-tail length append
 ///   reverse char? char=? char<? char>? char<=? char>=?
 ///   char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
+///   char->integer integer->char char-alphabetic? char-numeric? char-whitespace?
+///   char-upper-case? char-lower-case? char-upcase char-downcase char-foldcase
 ///   string? string=? string<? string>? string<=? string>=?
 ///   string-ci=? string-ci<? string-ci>? string-ci<=? string-ci>=?
 ///   string-length string-append string-ref string->list list->string
+///   string-upcase string-downcase string-foldcase
 ///   vector make-vector vector? vector-length vector-ref vector-set!
 ///   vector->list list->vector
 ///   bytevector bytevector? bytevector-length bytevector-u8-ref bytevector-u8-set!
@@ -120,6 +123,16 @@ pub enum Primitive {
   CharCiLessEq
   CharCiGreaterEq
   CharP
+  CharToInteger
+  IntegerToChar
+  CharAlphabeticP
+  CharNumericP
+  CharWhitespaceP
+  CharUpperCaseP
+  CharLowerCaseP
+  CharUpcase
+  CharDowncase
+  CharFoldcase
   StringEq
   StringLess
   StringGreater
@@ -136,6 +149,9 @@ pub enum Primitive {
   StringRef
   StringToList
   ListToString
+  StringUpcase
+  StringDowncase
+  StringFoldcase
   Vector
   MakeVector
   VectorP

@@ -21,6 +21,16 @@ test "r6rs char and string primitives" {
   inspect(value_to_string(eval_program("(char>=? #\\c #\\c #\\b)")), content="#t")
   inspect(value_to_string(eval_program("(char-ci=? #\\A #\\a)")), content="#t")
   inspect(value_to_string(eval_program("(char-ci<? #\\A #\\b)")), content="#t")
+  inspect(value_to_string(eval_program("(char->integer #\\A)")), content="65")
+  inspect(value_to_string(eval_program("(integer->char 97)")), content="#\\a")
+  inspect(value_to_string(eval_program("(char-alphabetic? #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(char-numeric? #\\9)")), content="#t")
+  inspect(value_to_string(eval_program("(char-whitespace? #\\space)")), content="#t")
+  inspect(value_to_string(eval_program("(char-upper-case? #\\A)")), content="#t")
+  inspect(value_to_string(eval_program("(char-lower-case? #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(char-upcase #\\a)")), content="#\\A")
+  inspect(value_to_string(eval_program("(char-downcase #\\A)")), content="#\\a")
+  inspect(value_to_string(eval_program("(char-foldcase #\\A)")), content="#\\a")
   inspect(value_to_string(eval_program("(string=? \"hi\" \"hi\")")), content="#t")
   inspect(value_to_string(eval_program("(string<? \"a\" \"ab\")")), content="#t")
   inspect(value_to_string(eval_program("(string>? \"b\" \"a\")")), content="#t")
@@ -28,6 +38,9 @@ test "r6rs char and string primitives" {
   inspect(value_to_string(eval_program("(string>=? \"c\" \"c\" \"b\")")), content="#t")
   inspect(value_to_string(eval_program("(string-ci=? \"A\" \"a\")")), content="#t")
   inspect(value_to_string(eval_program("(string-ci<? \"a\" \"B\")")), content="#t")
+  inspect(value_to_string(eval_program("(string-upcase \"Abc\")")), content="\"ABC\"")
+  inspect(value_to_string(eval_program("(string-downcase \"AbC\")")), content="\"abc\"")
+  inspect(value_to_string(eval_program("(string-foldcase \"AbC\")")), content="\"abc\"")
 }
 
 ///|
@@ -57,5 +70,11 @@ test "r6rs char/string compare: errors" {
   match bad_string {
     Err(err) => inspect(err, content="EvalError(\"type error: string expected\")")
     _ => fail("expected EvalError for non-string")
+  }
+
+  let bad_code = try? eval_program("(integer->char -1)")
+  match bad_code {
+    Err(err) => inspect(err, content="EvalError(\"type error: valid scalar value expected\")")
+    _ => fail("expected EvalError for invalid integer->char")
   }
 }

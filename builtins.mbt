@@ -75,6 +75,16 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::CharCiLessEq, Primitive::CharCiLessEq)
     | (Primitive::CharCiGreaterEq, Primitive::CharCiGreaterEq)
     | (Primitive::CharP, Primitive::CharP)
+    | (Primitive::CharToInteger, Primitive::CharToInteger)
+    | (Primitive::IntegerToChar, Primitive::IntegerToChar)
+    | (Primitive::CharAlphabeticP, Primitive::CharAlphabeticP)
+    | (Primitive::CharNumericP, Primitive::CharNumericP)
+    | (Primitive::CharWhitespaceP, Primitive::CharWhitespaceP)
+    | (Primitive::CharUpperCaseP, Primitive::CharUpperCaseP)
+    | (Primitive::CharLowerCaseP, Primitive::CharLowerCaseP)
+    | (Primitive::CharUpcase, Primitive::CharUpcase)
+    | (Primitive::CharDowncase, Primitive::CharDowncase)
+    | (Primitive::CharFoldcase, Primitive::CharFoldcase)
     | (Primitive::StringEq, Primitive::StringEq)
     | (Primitive::StringLess, Primitive::StringLess)
     | (Primitive::StringGreater, Primitive::StringGreater)
@@ -91,6 +101,9 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::StringRef, Primitive::StringRef)
     | (Primitive::StringToList, Primitive::StringToList)
     | (Primitive::ListToString, Primitive::ListToString)
+    | (Primitive::StringUpcase, Primitive::StringUpcase)
+    | (Primitive::StringDowncase, Primitive::StringDowncase)
+    | (Primitive::StringFoldcase, Primitive::StringFoldcase)
     | (Primitive::Vector, Primitive::Vector)
     | (Primitive::MakeVector, Primitive::MakeVector)
     | (Primitive::VectorP, Primitive::VectorP)
@@ -307,6 +320,15 @@ fn value_as_char(value : Value) -> Char raise EvalError {
   match value {
     Value::Datum(Datum::Char(ch)) => ch
     _ => raise EvalError("type error: char expected")
+  }
+}
+
+///|
+fn char_from_int_value(value : Value) -> Char raise EvalError {
+  let n = value_as_int_index(value)
+  match n.to_char() {
+    Some(ch) => ch
+    None => raise EvalError("type error: valid scalar value expected")
   }
 }
 
@@ -879,6 +901,96 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         n => raise arity_mismatch(1, n)
       }
     }
+    Primitive::CharToInteger => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          Value::Datum(Datum::Int(ch.to_int()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::IntegerToChar => {
+      match args.length() {
+        1 => {
+          let ch = char_from_int_value(args[0])
+          Value::Datum(Datum::Char(ch))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharAlphabeticP => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          bool_value(ch.is_ascii_alphabetic())
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharNumericP => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          bool_value(ch.is_numeric())
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharWhitespaceP => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          bool_value(ch.is_whitespace())
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharUpperCaseP => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          bool_value(ch.is_ascii_uppercase())
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharLowerCaseP => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          bool_value(ch.is_ascii_lowercase())
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharUpcase => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          Value::Datum(Datum::Char(ch.to_ascii_uppercase()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharDowncase => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          Value::Datum(Datum::Char(ch.to_ascii_lowercase()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharFoldcase => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          Value::Datum(Datum::Char(ch.to_ascii_lowercase()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
     Primitive::StringEq => bool_value(compare_chain_string(args, CompareMode::Eq, false))
     Primitive::StringLess => bool_value(compare_chain_string(args, CompareMode::Lt, false))
     Primitive::StringGreater => bool_value(compare_chain_string(args, CompareMode::Gt, false))
@@ -961,6 +1073,33 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             }
           }
           Value::Datum(Datum::String(buf.to_string()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringUpcase => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(s.to_upper()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringDowncase => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(s.to_lower()))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringFoldcase => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(s.to_lower()))
         }
         n => raise arity_mismatch(1, n)
       }
