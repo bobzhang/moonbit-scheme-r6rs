@@ -77,6 +77,13 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::ImagPart, Primitive::ImagPart)
     | (Primitive::Magnitude, Primitive::Magnitude)
     | (Primitive::Angle, Primitive::Angle)
+    | (Primitive::Sqrt, Primitive::Sqrt)
+    | (Primitive::Exp, Primitive::Exp)
+    | (Primitive::Log, Primitive::Log)
+    | (Primitive::Expt, Primitive::Expt)
+    | (Primitive::Sin, Primitive::Sin)
+    | (Primitive::Cos, Primitive::Cos)
+    | (Primitive::Tan, Primitive::Tan)
     | (Primitive::Numerator, Primitive::Numerator)
     | (Primitive::Denominator, Primitive::Denominator)
     | (Primitive::Abs, Primitive::Abs)
@@ -315,12 +322,132 @@ fn datum_to_complex_parts(value : Datum) -> (Datum, Datum) {
 }
 
 ///|
+fn datum_to_complex_float(value : Datum) -> (Float, Float) raise EvalError {
+  match value {
+    Datum::Complex(real, imag) => (number_to_float(real.val), number_to_float(imag.val))
+    _ => (number_to_float(value), 0.0)
+  }
+}
+
+///|
 fn make_complex(real : Datum, imag : Datum) -> Datum {
   if datum_is_zero(imag) {
     real
   } else {
     Datum::Complex(Ref::new(real), Ref::new(imag))
   }
+}
+
+///|
+fn complex_from_float(real : Float, imag : Float) -> Datum {
+  make_complex(Datum::Float(real), Datum::Float(imag))
+}
+
+///|
+fn float_to_int_exact(value : Float) -> Int? {
+  let n = value.to_int()
+  if value == Float::from_int(n) { Some(n) } else { None }
+}
+
+///|
+fn pow_int(base : Int, exp : Int) -> Int {
+  let mut result = 1
+  let mut b = base
+  let mut e = exp
+  while e > 0 {
+    if e % 2 != 0 {
+      result = result * b
+    }
+    b = b * b
+    e = e / 2
+  }
+  result
+}
+
+///|
+fn pow_float_int(base : Float, exp : Int) -> Float {
+  let mut result = Float::from_int(1)
+  let mut b = base
+  let mut e = exp
+  while e > 0 {
+    if e % 2 != 0 {
+      result = result * b
+    }
+    b = b * b
+    e = e / 2
+  }
+  result
+}
+
+///|
+fn complex_mul_f(ar : Float, ai : Float, br : Float, bi : Float) -> (Float, Float) {
+  (ar * br - ai * bi, ar * bi + ai * br)
+}
+
+///|
+fn complex_div_f(ar : Float, ai : Float, br : Float, bi : Float) -> (Float, Float) raise EvalError {
+  let denom = br * br + bi * bi
+  if denom == 0.0 {
+    raise EvalError("division by zero")
+  }
+  ((ar * br + ai * bi) / denom, (ai * br - ar * bi) / denom)
+}
+
+///|
+fn complex_exp_f(ar : Float, ai : Float) -> (Float, Float) {
+  let exp_a = @math.expf(ar)
+  (exp_a * @math.cosf(ai), exp_a * @math.sinf(ai))
+}
+
+///|
+fn complex_log_f(ar : Float, ai : Float) -> (Float, Float) {
+  let r = (ar * ar + ai * ai).sqrt()
+  (@math.lnf(r), @math.atan2f(ai, ar))
+}
+
+///|
+fn complex_sqrt_f(ar : Float, ai : Float) -> (Float, Float) {
+  let r = (ar * ar + ai * ai).sqrt()
+  let real = ((r + ar) / 2.0).sqrt()
+  let imag_mag = ((r - ar) / 2.0).sqrt()
+  let imag = if ai < 0.0 { -imag_mag } else { imag_mag }
+  (real, imag)
+}
+
+///|
+fn complex_sin_f(ar : Float, ai : Float) -> (Float, Float) {
+  let sin_a = @math.sinf(ar)
+  let cos_a = @math.cosf(ar)
+  let exp_b = @math.expf(ai)
+  let exp_neg_b = @math.expf(-ai)
+  let cosh_b = (exp_b + exp_neg_b) / 2.0
+  let sinh_b = (exp_b - exp_neg_b) / 2.0
+  (sin_a * cosh_b, cos_a * sinh_b)
+}
+
+///|
+fn complex_cos_f(ar : Float, ai : Float) -> (Float, Float) {
+  let sin_a = @math.sinf(ar)
+  let cos_a = @math.cosf(ar)
+  let exp_b = @math.expf(ai)
+  let exp_neg_b = @math.expf(-ai)
+  let cosh_b = (exp_b + exp_neg_b) / 2.0
+  let sinh_b = (exp_b - exp_neg_b) / 2.0
+  (cos_a * cosh_b, -sin_a * sinh_b)
+}
+
+///|
+fn complex_tan_f(ar : Float, ai : Float) -> (Float, Float) raise EvalError {
+  let (sr, si) = complex_sin_f(ar, ai)
+  let (cr, ci) = complex_cos_f(ar, ai)
+  complex_div_f(sr, si, cr, ci)
+}
+
+///|
+fn complex_expt_f(base_r : Float, base_i : Float, exp_r : Float, exp_i : Float) -> (Float, Float) {
+  let (log_r, log_i) = complex_log_f(base_r, base_i)
+  let (mul_r, mul_i) = complex_mul_f(exp_r, exp_i, log_r, log_i)
+  complex_exp_f(mul_r, mul_i)
 }
 
 ///|
@@ -1325,6 +1452,199 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let real_f = number_to_float(datum)
               Value::Datum(Datum::Float(@math.atan2f(0.0, real_f)))
             }
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Sqrt => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 && real_f >= 0.0 {
+            Value::Datum(Datum::Float(real_f.sqrt()))
+          } else {
+            let (sr, si) = complex_sqrt_f(real_f, imag_f)
+            Value::Datum(complex_from_float(sr, si))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Exp => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 {
+            Value::Datum(Datum::Float(@math.expf(real_f)))
+          } else {
+            let (er, ei) = complex_exp_f(real_f, imag_f)
+            Value::Datum(complex_from_float(er, ei))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Log => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 && real_f >= 0.0 {
+            Value::Datum(Datum::Float(@math.lnf(real_f)))
+          } else {
+            let (lr, li) = complex_log_f(real_f, imag_f)
+            Value::Datum(complex_from_float(lr, li))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Expt => {
+      match args.length() {
+        2 => {
+          let base = value_as_number(args[0])
+          let exponent = value_as_number(args[1])
+          match exponent {
+            Datum::Int(exp_int) => {
+              match base {
+                Datum::Int(base_int) => {
+                  if exp_int >= 0 {
+                    Value::Datum(Datum::Int(pow_int(base_int, exp_int)))
+                  } else {
+                    Value::Datum(normalize_rat_or_error(1, pow_int(base_int, -exp_int)))
+                  }
+                }
+                Datum::Rat(n, d) => {
+                  if exp_int >= 0 {
+                    let num = pow_int(n, exp_int)
+                    let den = pow_int(d, exp_int)
+                    Value::Datum(normalize_rat_or_error(num, den))
+                  } else {
+                    let num = pow_int(d, -exp_int)
+                    let den = pow_int(n, -exp_int)
+                    Value::Datum(normalize_rat_or_error(num, den))
+                  }
+                }
+                Datum::Float(f) => {
+                  let pow = if exp_int >= 0 {
+                    pow_float_int(f, exp_int)
+                  } else {
+                    1.0 / pow_float_int(f, -exp_int)
+                  }
+                  Value::Datum(Datum::Float(pow))
+                }
+                Datum::Complex(_, _) => {
+                  let (br, bi) = datum_to_complex_float(base)
+                  let (rr, ri) = complex_expt_f(br, bi, Float::from_int(exp_int), 0.0)
+                  Value::Datum(complex_from_float(rr, ri))
+                }
+                _ => raise EvalError("type error: number expected")
+              }
+            }
+            Datum::Float(exp_f) => {
+              match base {
+                Datum::Complex(_, _) => {
+                  let (br, bi) = datum_to_complex_float(base)
+                  let (rr, ri) = complex_expt_f(br, bi, exp_f, 0.0)
+                  Value::Datum(complex_from_float(rr, ri))
+                }
+                _ => {
+                  let base_f = number_to_float(base)
+                  match float_to_int_exact(exp_f) {
+                    Some(exp_int) => {
+                      let pow = if exp_int >= 0 {
+                        pow_float_int(base_f, exp_int)
+                      } else {
+                        1.0 / pow_float_int(base_f, -exp_int)
+                      }
+                      Value::Datum(Datum::Float(pow))
+                    }
+                    None => {
+                      if base_f >= 0.0 {
+                        Value::Datum(Datum::Float(@math.powf(base_f, exp_f)))
+                      } else {
+                        let (rr, ri) = complex_expt_f(base_f, 0.0, exp_f, 0.0)
+                        Value::Datum(complex_from_float(rr, ri))
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            Datum::Rat(_, _) => {
+              let exp_f = number_to_float(exponent)
+              match base {
+                Datum::Complex(_, _) => {
+                  let (br, bi) = datum_to_complex_float(base)
+                  let (rr, ri) = complex_expt_f(br, bi, exp_f, 0.0)
+                  Value::Datum(complex_from_float(rr, ri))
+                }
+                _ => {
+                  let base_f = number_to_float(base)
+                  if base_f >= 0.0 {
+                    Value::Datum(Datum::Float(@math.powf(base_f, exp_f)))
+                  } else {
+                    let (rr, ri) = complex_expt_f(base_f, 0.0, exp_f, 0.0)
+                    Value::Datum(complex_from_float(rr, ri))
+                  }
+                }
+              }
+            }
+            Datum::Complex(_, _) => {
+              let (br, bi) = datum_to_complex_float(base)
+              let (er, ei) = datum_to_complex_float(exponent)
+              let (rr, ri) = complex_expt_f(br, bi, er, ei)
+              Value::Datum(complex_from_float(rr, ri))
+            }
+            _ => raise EvalError("type error: number expected")
+          }
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::Sin => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 {
+            Value::Datum(Datum::Float(@math.sinf(real_f)))
+          } else {
+            let (sr, si) = complex_sin_f(real_f, imag_f)
+            Value::Datum(complex_from_float(sr, si))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Cos => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 {
+            Value::Datum(Datum::Float(@math.cosf(real_f)))
+          } else {
+            let (cr, ci) = complex_cos_f(real_f, imag_f)
+            Value::Datum(complex_from_float(cr, ci))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::Tan => {
+      match args.length() {
+        1 => {
+          let value = value_as_number(args[0])
+          let (real_f, imag_f) = datum_to_complex_float(value)
+          if imag_f == 0.0 {
+            Value::Datum(Datum::Float(@math.tanf(real_f)))
+          } else {
+            let (tr, ti) = complex_tan_f(real_f, imag_f)
+            Value::Datum(complex_from_float(tr, ti))
           }
         }
         n => raise arity_mismatch(1, n)

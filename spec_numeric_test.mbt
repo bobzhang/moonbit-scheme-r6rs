@@ -399,6 +399,82 @@ test "r6rs numeric: complex numbers" {
 }
 
 ///|
+test "r6rs numeric: elementary functions" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (sqrt 4) 2)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (real-part (sqrt -4)) 0.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (imag-part (sqrt -4)) 2.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(< (abs (- (exp 1) 2.71828)) 0.001)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(< (abs (- (log (exp 1)) 1.0)) 0.001)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (expt 2 3) 8)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (sin 0) 0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (cos 0) 1)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(= (tan 0) 0)
+      )
+    )),
+    content="#t",
+  )
+}
+
+///|
 test "r6rs numeric: conversions and fractions" {
   inspect(
     value_to_string(eval_program(

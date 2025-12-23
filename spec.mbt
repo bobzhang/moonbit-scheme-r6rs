@@ -137,6 +137,13 @@ pub enum Primitive {
   ImagPart
   Magnitude
   Angle
+  Sqrt
+  Exp
+  Log
+  Expt
+  Sin
+  Cos
+  Tan
   Numerator
   Denominator
   Abs
