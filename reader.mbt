@@ -465,9 +465,24 @@ fn reader_datum_is_zero(value : Datum) -> Bool {
 }
 
 ///|
+fn reader_datum_is_inexact(value : Datum) -> Bool {
+  match value {
+    Datum::Float(_) => true
+    _ => false
+  }
+}
+
+///|
 fn make_complex_datum(real : Datum, imag : Datum) -> Datum {
   if reader_datum_is_zero(imag) {
-    real
+    if reader_datum_is_inexact(imag) && !reader_datum_is_inexact(real) {
+      match datum_to_float(real) {
+        Some(value) => Datum::Float(value)
+        None => real
+      }
+    } else {
+      real
+    }
   } else {
     Datum::Complex(Ref::new(real), Ref::new(imag))
   }

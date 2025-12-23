@@ -324,6 +324,14 @@ fn datum_is_zero(value : Datum) -> Bool {
 }
 
 ///|
+fn datum_is_inexact(value : Datum) -> Bool {
+  match value {
+    Datum::Float(_) => true
+    _ => false
+  }
+}
+
+///|
 fn datum_to_real(value : Datum) -> Datum raise EvalError {
   match value {
     Datum::Complex(real, imag) => {
@@ -356,7 +364,16 @@ fn datum_to_complex_float(value : Datum) -> (Float, Float) raise EvalError {
 ///|
 fn make_complex(real : Datum, imag : Datum) -> Datum {
   if datum_is_zero(imag) {
-    real
+    if datum_is_inexact(imag) && !datum_is_inexact(real) {
+      match real {
+        Datum::Int(n) => Datum::Float(Float::from_int(n))
+        Datum::Rat(n, d) => Datum::Float(Float::from_int(n) / Float::from_int(d))
+        Datum::Float(f) => Datum::Float(f)
+        _ => real
+      }
+    } else {
+      real
+    }
   } else {
     Datum::Complex(Ref::new(real), Ref::new(imag))
   }

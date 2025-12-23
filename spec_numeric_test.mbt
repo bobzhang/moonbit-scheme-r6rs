@@ -423,6 +423,42 @@ test "r6rs numeric: complex numbers" {
 }
 
 ///|
+test "r6rs numeric: complex exactness propagation" {
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(inexact? (make-rectangular 1 0.0))
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(inexact? (make-rectangular 1/2 0.0))
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(inexact? 1+0.0i)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(exact? (make-rectangular 1 0))
+      )
+    )),
+    content="#t",
+  )
+}
+
+///|
 test "r6rs numeric: complex literals" {
   inspect(
     value_to_string(eval_program(
