@@ -557,6 +557,11 @@ fn stdlib_source() -> String {
     "      (let loop ((rest (cdr strs)) (acc (car strs)))",
     "        (if (null? rest) acc",
     "            (loop (cdr rest) (string-append acc sep (car rest)))))))",
+    "(define (list-tabulate n f)",
+    "  (let loop ((i 0) (acc '()))",
+    "    (if (>= i n)",
+    "        (reverse acc)",
+    "        (loop (+ i 1) (cons (f i) acc)))))",
   ]
   lines.join("\n")
 }

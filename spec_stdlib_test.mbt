@@ -55,4 +55,9 @@ test "stdlib: extended helpers" {
     content="\"a,b,c\"",
   )
   inspect(value_to_string(eval_program("(string-join '() \",\")")), content="\"\"")
+  inspect(
+    value_to_string(eval_program("(list-tabulate 5 (lambda (i) (* i i)))")),
+    content="(0 1 4 9 16)",
+  )
+  inspect(value_to_string(eval_program("(list-tabulate 0 (lambda (i) i))")), content="()")
 }
