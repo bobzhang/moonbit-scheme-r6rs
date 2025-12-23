@@ -61,6 +61,16 @@ test "r6rs numeric: gcd" {
 }
 
 ///|
+test "r6rs numeric: lcm" {
+  inspect(value_to_string(eval_program("(lcm)")), content="1")
+  inspect(value_to_string(eval_program("(lcm 5)")), content="5")
+  inspect(value_to_string(eval_program("(lcm 6 8)")), content="24")
+  inspect(value_to_string(eval_program("(lcm -6 8)")), content="24")
+  inspect(value_to_string(eval_program("(lcm 0 10)")), content="0")
+  inspect(value_to_string(eval_program("(lcm 4 6 10)")), content="60")
+}
+
+///|
 test "r6rs numeric: quotient errors" {
   let bad_div = try? eval_program("(quotient 1 0)")
   match bad_div {

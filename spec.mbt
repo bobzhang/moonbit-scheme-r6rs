@@ -18,7 +18,7 @@
 /// - library and import (minimal library support)
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
 ///   boolean? number? integer? rational? real? exact? inexact? exact->inexact
-///   inexact->exact numerator denominator abs quotient remainder modulo gcd
+///   inexact->exact numerator denominator abs quotient remainder modulo gcd lcm
 ///   procedure? not apply call/cc eq? eqv?
 ///   equal? list? make-list list-ref list-tail length append
 ///   reverse c[ad]+r member memq memv assoc assq assv map for-each list-copy
@@ -115,6 +115,7 @@ pub enum Primitive {
   Remainder
   Modulo
   Gcd
+  Lcm
   ListP
   MakeList
   Length

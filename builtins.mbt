@@ -63,6 +63,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Remainder, Primitive::Remainder)
     | (Primitive::Modulo, Primitive::Modulo)
     | (Primitive::Gcd, Primitive::Gcd)
+    | (Primitive::Lcm, Primitive::Lcm)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
@@ -830,6 +831,19 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       let mut acc = 0
       for arg in args {
         acc = gcd(acc, value_as_int_index(arg))
+      }
+      Value::Datum(Datum::Int(acc))
+    }
+    Primitive::Lcm => {
+      let mut acc = 1
+      for arg in args {
+        let n = value_as_int_index(arg)
+        if acc == 0 || n == 0 {
+          acc = 0
+        } else {
+          let g = gcd(acc, n)
+          acc = int_abs((acc / g) * n)
+        }
       }
       Value::Datum(Datum::Int(acc))
     }
