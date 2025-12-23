@@ -53,6 +53,12 @@ test "r6rs bytevectors" {
   inspect(value_to_string(eval_program("(make-bytevector 0)")), content="#vu8()")
   inspect(value_to_string(eval_program("(bytevector->u8-list #vu8(1 2 3))")), content="(1 2 3)")
   inspect(value_to_string(eval_program("(u8-list->bytevector '(1 2 3))")), content="#vu8(1 2 3)")
+  let byte_copy_bang_program =
+    "(let ((to (bytevector 1 2 3 4)) (from (bytevector 9 8 7))) (bytevector-copy! to 1 from 0 2) to)"
+  inspect(value_to_string(eval_program(byte_copy_bang_program)), content="#vu8(1 9 8 4)")
+  let byte_overlap_program =
+    "(let ((b (bytevector 1 2 3 4))) (bytevector-copy! b 1 b 0 3) b)"
+  inspect(value_to_string(eval_program(byte_overlap_program)), content="#vu8(1 1 2 3)")
   inspect(
     value_to_string(eval_program("(bytevector-copy #vu8(1 2 3))")),
     content="#vu8(1 2 3)",
@@ -115,6 +121,12 @@ test "r6rs vectors/bytevectors: errors" {
   match bad_byte_fill {
     Err(err) => inspect(err, content="EvalError(\"index out of range\")")
     _ => fail("expected EvalError for invalid bytevector-fill! range")
+  }
+
+  let bad_byte_copy_bang = try? eval_program("(bytevector-copy! #vu8(1 2) 1 #vu8(3 4) 0 2)")
+  match bad_byte_copy_bang {
+    Err(err) => inspect(err, content="EvalError(\"index out of range\")")
+    _ => fail("expected EvalError for invalid bytevector-copy! range")
   }
 
   let bad_list = try? eval_program("(list->vector '(1 . 2))")

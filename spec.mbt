@@ -40,7 +40,7 @@
 ///   vector-copy vector-copy! vector-fill! vector-map vector-for-each
 ///   vector->list list->vector
 ///   bytevector make-bytevector bytevector? bytevector-length bytevector-u8-ref
-///   bytevector-u8-set! bytevector-copy bytevector-fill!
+///   bytevector-u8-set! bytevector-copy bytevector-copy! bytevector-fill!
 ///   bytevector->u8-list u8-list->bytevector
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
@@ -222,6 +222,7 @@ pub enum Primitive {
   ByteVectorU8Ref
   ByteVectorU8Set
   ByteVectorCopy
+  ByteVectorCopyBang
   ByteVectorFill
   ByteVectorToU8List
   U8ListToByteVector

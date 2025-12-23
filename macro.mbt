@@ -204,6 +204,7 @@ fn is_core_identifier(name : String) -> Bool {
     "bytevector-u8-ref",
     "bytevector-u8-set!",
     "bytevector-copy",
+    "bytevector-copy!",
     "bytevector-fill!",
     "bytevector->u8-list",
     "u8-list->bytevector",
