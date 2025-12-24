@@ -3702,6 +3702,11 @@ fn cond_start(
 fn feature_enabled(name : String) -> Bool {
   match name {
     "r6rs" => true
+    "ratios" => true
+    "ieee-float" => true
+    "full-unicode" => true
+    "exact-closed" => false
+    "exact-complex" => false
     _ => false
   }
 }

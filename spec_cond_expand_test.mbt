@@ -35,4 +35,20 @@ test "r6rs cond-expand" {
     )
   )
   inspect(value_to_string(eval_program(lib_prog)), content="5")
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(cond-expand (ratios 7) (else 8))
+      )
+    )),
+    content="7",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(cond-expand (exact-closed 9) (else 10))
+      )
+    )),
+    content="10",
+  )
 }
