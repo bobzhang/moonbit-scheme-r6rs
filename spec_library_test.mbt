@@ -151,3 +151,37 @@ test "r6rs libraries: versioned names" {
   )
   inspect(value_to_string(eval_program(program)), content="99")
 }
+
+///|
+test "r6rs libraries: version references" {
+  let program = (
+    (
+      #|(library (ver-ref (1 0))
+      #|  (export val)
+      #|  (import)
+      #|  (define val 10))
+      #|(library (ver-ref (2 0))
+      #|  (export val)
+      #|  (import)
+      #|  (define val 20))
+      #|(import (ver-ref (>= 1 0)))
+      #|val
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="20")
+  let program2 = (
+    (
+      #|(library (ver-and (1 0))
+      #|  (export val)
+      #|  (import)
+      #|  (define val 100))
+      #|(library (ver-and (2 0))
+      #|  (export val)
+      #|  (import)
+      #|  (define val 200))
+      #|(import (ver-and (and (>= (1 0)) (< (2 0)))))
+      #|val
+    )
+  )
+  inspect(value_to_string(eval_program(program2)), content="100")
+}

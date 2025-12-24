@@ -341,11 +341,11 @@ fn env_export_map(env : Env) -> Map[String, Value] {
 ///|
 fn register_builtin_libraries(env : Env) -> Unit {
   let exports = env_export_map(env)
-  register_library("rnrs.base", exports)
+  register_library_entry("rnrs.base", Some([6]), exports)
   let eval_exports : Map[String, Value] = {}
   eval_exports["eval"] = Value::Primitive(Primitive::Eval)
   eval_exports["environment"] = Value::Primitive(Primitive::Environment)
-  register_library("rnrs.eval", eval_exports)
+  register_library_entry("rnrs.eval", Some([6]), eval_exports)
 }
 
 ///|
@@ -688,6 +688,7 @@ pub fn eval_program(src : String) -> Value raise {
 pub fn eval_program_all(src : String) -> Array[Value] raise {
   let forms = parse_program(src)
   reset_library_registry()
+  reset_library_version_registry()
   reset_record_type_registry()
   set_current_output_port(new_output_string_port())
   wind_stack.val = []
@@ -3293,43 +3294,341 @@ fn apply_hashtable_update(
   )
 }
 
+priv struct LibraryNameSpec {
+  base : String
+  version : Array[Int]?
+}
+
+priv enum VersionRef {
+  Exact(Array[Int])
+  Gt(Array[Int])
+  Ge(Array[Int])
+  Lt(Array[Int])
+  Le(Array[Int])
+  And(Array[VersionRef])
+  Or(Array[VersionRef])
+  Not(Ref[VersionRef])
+}
+
+priv struct LibraryRef {
+  base : String
+  version_ref : VersionRef?
+}
+
+priv struct LibraryVersionInfo {
+  name : String
+  version : Array[Int]
+  has_version : Bool
+}
+
+let library_versions_registry : Ref[Map[String, Array[LibraryVersionInfo]]] = Ref::new({})
+
 ///|
-fn parse_version_list(expr : Datum) -> String raise EvalError {
-  let parts = datum_list_to_array(expr)
-  if parts.is_empty() {
-    raise EvalError("invalid library name")
-  }
+fn reset_library_version_registry() -> Unit {
+  library_versions_registry.val = {}
+}
+
+///|
+fn format_version_suffix(version : Array[Int]) -> String {
   let versions : Array[String] = []
-  for part in parts {
-    match part {
-      Datum::Int(n) =>
-        if n < 0 {
-          raise EvalError("invalid library name")
-        } else {
-          versions.push(n.to_string())
-        }
-      _ => raise EvalError("invalid library name")
-    }
+  for part in version {
+    versions.push(part.to_string())
   }
   let joined = versions.join(".")
   "v\{joined}"
 }
 
 ///|
-fn parse_library_name(expr : Datum) -> String raise EvalError {
+fn library_full_name(base : String, version : Array[Int]?) -> String {
+  match version {
+    Some(value) => "\{base}.\{format_version_suffix(value)}"
+    None => base
+  }
+}
+
+///|
+fn register_library_entry(
+  base : String,
+  version : Array[Int]?,
+  exports : Map[String, Value],
+) -> Unit {
+  let name = library_full_name(base, version)
+  register_library(name, exports)
+  let entry = LibraryVersionInfo::{
+    name,
+    version: match version {
+      Some(value) => value
+      None => []
+    },
+    has_version: version is Some(_),
+  }
+  match library_versions_registry.val.get(base) {
+    Some(existing) => {
+      let updated = existing
+      updated.push(entry)
+      library_versions_registry.val[base] = updated
+    }
+    None => library_versions_registry.val[base] = [entry]
+  }
+}
+
+///|
+fn parse_version_items(items : Array[Datum]) -> Array[Int] raise EvalError {
+  if items.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  let versions : Array[Int] = []
+  for part in items {
+    match part {
+      Datum::Int(n) =>
+        if n < 0 {
+          raise EvalError("invalid library name")
+        } else {
+          versions.push(n)
+        }
+      _ => raise EvalError("invalid library name")
+    }
+  }
+  versions
+}
+
+///|
+fn parse_version_list(expr : Datum) -> Array[Int] raise EvalError {
+  parse_version_items(datum_list_to_array(expr))
+}
+
+///|
+fn parse_version_ref_version(items : Array[Datum]) -> Array[Int] raise EvalError {
+  if items.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  if items.length() == 1 {
+    match items[0] {
+      Datum::Pair(_, _) | Datum::Nil => parse_version_list(items[0])
+      _ => parse_version_items(items)
+    }
+  } else {
+    parse_version_items(items)
+  }
+}
+
+///|
+fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
+  let items = datum_list_to_array(expr)
+  if items.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  match items[0] {
+    Datum::Symbol("and") => {
+      if items.length() == 1 {
+        raise EvalError("invalid library name")
+      }
+      let refs : Array[VersionRef] = []
+      let mut i = 1
+      while i < items.length() {
+        refs.push(parse_version_ref(items[i]))
+        i = i + 1
+      }
+      VersionRef::And(refs)
+    }
+    Datum::Symbol("or") => {
+      if items.length() == 1 {
+        raise EvalError("invalid library name")
+      }
+      let refs : Array[VersionRef] = []
+      let mut i = 1
+      while i < items.length() {
+        refs.push(parse_version_ref(items[i]))
+        i = i + 1
+      }
+      VersionRef::Or(refs)
+    }
+    Datum::Symbol("not") => {
+      if items.length() != 2 {
+        raise EvalError("invalid library name")
+      }
+      VersionRef::Not(Ref::new(parse_version_ref(items[1])))
+    }
+    Datum::Symbol(">") => VersionRef::Gt(parse_version_ref_version(items.sub(start=1).to_array()))
+    Datum::Symbol(">=") => VersionRef::Ge(parse_version_ref_version(items.sub(start=1).to_array()))
+    Datum::Symbol("<") => VersionRef::Lt(parse_version_ref_version(items.sub(start=1).to_array()))
+    Datum::Symbol("<=") => VersionRef::Le(parse_version_ref_version(items.sub(start=1).to_array()))
+    Datum::Int(_) => VersionRef::Exact(parse_version_items(items))
+    _ => raise EvalError("invalid library name")
+  }
+}
+
+///|
+fn parse_library_name_spec(expr : Datum) -> LibraryNameSpec raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.is_empty() {
     raise EvalError("invalid library name")
   }
   let names : Array[String] = []
-  for part in parts {
-    match part {
-      Datum::Symbol(name) => names.push(name)
-      Datum::Pair(_, _) | Datum::Nil => names.push(parse_version_list(part))
+  let mut version : Array[Int]? = None
+  let mut i = 0
+  while i < parts.length() {
+    match parts[i] {
+      Datum::Symbol(name) => {
+        if version is Some(_) {
+          raise EvalError("invalid library name")
+        }
+        names.push(name)
+      }
+      Datum::Pair(_, _) | Datum::Nil => {
+        if i != parts.length() - 1 {
+          raise EvalError("invalid library name")
+        }
+        version = Some(parse_version_list(parts[i]))
+      }
       _ => raise EvalError("invalid library name")
     }
+    i = i + 1
   }
-  names.join(".")
+  if names.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  { base: names.join("."), version }
+}
+
+///|
+fn parse_library_ref(expr : Datum) -> LibraryRef raise EvalError {
+  let parts = datum_list_to_array(expr)
+  if parts.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  let names : Array[String] = []
+  let mut version_ref : VersionRef? = None
+  let mut i = 0
+  while i < parts.length() {
+    match parts[i] {
+      Datum::Symbol(name) => {
+        if version_ref is Some(_) {
+          raise EvalError("invalid library name")
+        }
+        names.push(name)
+      }
+      Datum::Pair(_, _) | Datum::Nil => {
+        if i != parts.length() - 1 {
+          raise EvalError("invalid library name")
+        }
+        version_ref = Some(parse_version_ref(parts[i]))
+      }
+      _ => raise EvalError("invalid library name")
+    }
+    i = i + 1
+  }
+  if names.is_empty() {
+    raise EvalError("invalid library name")
+  }
+  { base: names.join("."), version_ref }
+}
+
+///|
+fn compare_versions(left : Array[Int], right : Array[Int]) -> Int {
+  let min_len = if left.length() < right.length() {
+    left.length()
+  } else {
+    right.length()
+  }
+  let mut i = 0
+  while i < min_len {
+    if left[i] < right[i] {
+      return -1
+    }
+    if left[i] > right[i] {
+      return 1
+    }
+    i = i + 1
+  }
+  if left.length() < right.length() {
+    -1
+  } else if left.length() > right.length() {
+    1
+  } else {
+    0
+  }
+}
+
+///|
+fn version_ref_matches(version : Array[Int], reference : VersionRef) -> Bool {
+  match reference {
+    VersionRef::Exact(expected) => compare_versions(version, expected) == 0
+    VersionRef::Gt(expected) => compare_versions(version, expected) > 0
+    VersionRef::Ge(expected) => compare_versions(version, expected) >= 0
+    VersionRef::Lt(expected) => compare_versions(version, expected) < 0
+    VersionRef::Le(expected) => compare_versions(version, expected) <= 0
+    VersionRef::And(items) => {
+      let mut i = 0
+      while i < items.length() {
+        if !version_ref_matches(version, items[i]) {
+          return false
+        }
+        i = i + 1
+      }
+      true
+    }
+    VersionRef::Or(items) => {
+      let mut i = 0
+      while i < items.length() {
+        if version_ref_matches(version, items[i]) {
+          return true
+        }
+        i = i + 1
+      }
+      false
+    }
+    VersionRef::Not(item) => !version_ref_matches(version, item.val)
+  }
+}
+
+///|
+fn select_library_for_ref(reference : LibraryRef) -> LibraryVersionInfo? {
+  match library_versions_registry.val.get(reference.base) {
+    None => None
+    Some(available) => {
+      let version_ref = reference.version_ref
+      let mut best : LibraryVersionInfo? = None
+      for entry in available {
+        match version_ref {
+          Some(ref_value) => {
+            if !entry.has_version {
+              continue
+            }
+            if !version_ref_matches(entry.version, ref_value) {
+              continue
+            }
+          }
+          None => ()
+        }
+        match best {
+          None => best = Some(entry)
+          Some(current) => {
+            if version_ref is None {
+              if entry.has_version && !current.has_version {
+                best = Some(entry)
+              } else if entry.has_version && current.has_version {
+                if compare_versions(entry.version, current.version) > 0 {
+                  best = Some(entry)
+                }
+              }
+            } else if compare_versions(entry.version, current.version) > 0 {
+              best = Some(entry)
+            }
+          }
+        }
+      }
+      best
+    }
+  }
+}
+
+///|
+fn library_exports_from_ref(reference : LibraryRef) -> Map[String, Value] raise EvalError {
+  match select_library_for_ref(reference) {
+    Some(entry) => library_exports(entry.name)
+    None => raise EvalError("unknown library: \{reference.base}")
+  }
 }
 
 ///|
@@ -3552,8 +3851,8 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
       import_set_exports(items[1])
     }
     _ => {
-      let name = parse_library_name(expr)
-      library_exports(name)
+      let reference = parse_library_ref(expr)
+      library_exports_from_ref(reference)
     }
   }
 }
@@ -3579,7 +3878,7 @@ fn eval_library_state(
   if args.length() < 3 {
     raise EvalError("invalid library")
   }
-  let name = parse_library_name(args[0])
+  let name_spec = parse_library_name_spec(args[0])
   let exports = parse_export_clause(args[1])
   let imports = parse_import_clause(args[2])
   let body = args.sub(start=3).to_array()
@@ -3595,7 +3894,7 @@ fn eval_library_state(
     let (external, internal) = export_spec
     export_map[external] = env_lookup(lib_env, internal)
   }
-  register_library(name, export_map)
+  register_library_entry(name_spec.base, name_spec.version, export_map)
   MachineState::Apply(Value::Void, kont, handlers)
 }
 
@@ -3784,8 +4083,8 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
           if items.length() != 2 {
             raise EvalError("invalid cond-expand")
           }
-          let name = parse_library_name(items[1])
-          lookup_library(name) is Some(_)
+          let reference = parse_library_ref(items[1])
+          select_library_for_ref(reference) is Some(_)
         }
         _ => raise EvalError("invalid cond-expand")
       }
