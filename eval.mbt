@@ -2049,6 +2049,27 @@ fn eval_sequence_state(
 }
 
 ///|
+fn eval_begin_for_syntax_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  let syntax_env = env_clone(env)
+  for form in args {
+    let _ = eval_expr(form, syntax_env)
+  }
+  let frame = syntax_env[syntax_env.length() - 1]
+  for key in frame.keys() {
+    match frame.get(key) {
+      Some(Value::Macro(rules)) => env_define(env, key, Value::Macro(rules))
+      _ => ()
+    }
+  }
+  MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
 fn eval_if_state(
   args : Array[Datum],
   env : Env,
@@ -3865,6 +3886,73 @@ fn parse_rename_specs(items : Array[Datum]) -> Array[(String, String)] raise Eva
   renames
 }
 
+priv struct ImportPhases {
+  run : Bool
+  expand : Bool
+}
+
+///|
+fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
+  if items.is_empty() {
+    raise EvalError("invalid import set")
+  }
+  let mut run = false
+  let mut expand = false
+  for item in items {
+    match item {
+      Datum::Symbol("run") => run = true
+      Datum::Symbol("expand") => expand = true
+      Datum::Pair(_, _) | Datum::Nil => {
+        let parts = datum_list_to_array(item)
+        if parts.length() != 2 {
+          raise EvalError("invalid import set")
+        }
+        match parts[0] {
+          Datum::Symbol("meta") => {
+            match parts[1] {
+              Datum::Int(0) => run = true
+              Datum::Int(1) => expand = true
+              Datum::Int(_) => raise EvalError("unsupported import phase")
+              _ => raise EvalError("invalid import set")
+            }
+          }
+          _ => raise EvalError("invalid import set")
+        }
+      }
+      _ => raise EvalError("invalid import set")
+    }
+  }
+  if !run && !expand {
+    raise EvalError("invalid import set")
+  }
+  { run, expand }
+}
+
+///|
+fn filter_exports_by_phase(
+  exports : Map[String, Value],
+  phases : ImportPhases,
+) -> Map[String, Value] {
+  if phases.run && phases.expand {
+    return exports
+  }
+  let result : Map[String, Value] = {}
+  for key in exports.keys() {
+    match exports.get(key) {
+      Some(Value::Macro(_)) =>
+        if phases.expand {
+          result[key] = exports[key]
+        }
+      Some(_) =>
+        if phases.run {
+          result[key] = exports[key]
+        }
+      None => ()
+    }
+  }
+  result
+}
+
 ///|
 fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
   let items = datum_list_to_array(expr)
@@ -3908,8 +3996,9 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
       if items.length() < 3 {
         raise EvalError("invalid import set")
       }
-      let _ = parse_symbol_list(items.sub(start=2).to_array())
-      import_set_exports(items[1])
+      let phases = parse_for_phases(items.sub(start=2).to_array())
+      let base = import_set_exports(items[1])
+      filter_exports_by_phase(base, phases)
     }
     _ => {
       let reference = parse_library_ref(expr)
@@ -4214,6 +4303,7 @@ fn eval_pair(
       Some("delay") => MachineState::Apply(eval_delay(args, env), kont, handlers)
       Some("if") => eval_if_state(args, env, kont, handlers)
       Some("begin") => eval_sequence_state(args, env, kont, handlers)
+      Some("begin-for-syntax") => eval_begin_for_syntax_state(args, env, kont, handlers)
       Some("lambda") => MachineState::Apply(eval_lambda(args, env), kont, handlers)
       Some("case-lambda") => MachineState::Apply(eval_case_lambda(args, env), kont, handlers)
       Some("define") => eval_define_state(args, env, kont, handlers)

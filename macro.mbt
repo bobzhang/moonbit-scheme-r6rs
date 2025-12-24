@@ -28,6 +28,7 @@ fn is_core_identifier(name : String) -> Bool {
     "library",
     "import",
     "export",
+    "begin-for-syntax",
     "syntax-case",
     "syntax",
     "syntax?",

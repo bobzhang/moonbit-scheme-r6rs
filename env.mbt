@@ -13,6 +13,25 @@ fn env_extend(env : Env) -> Env {
 }
 
 ///|
+fn env_clone(env : Env) -> Env {
+  let new_env : Env = []
+  let mut i = 0
+  while i < env.length() {
+    let frame = env[i]
+    let new_frame : Map[String, Value] = {}
+    for key in frame.keys() {
+      match frame.get(key) {
+        Some(value) => new_frame[key] = value
+        None => ()
+      }
+    }
+    new_env.push(new_frame)
+    i = i + 1
+  }
+  new_env
+}
+
+///|
 fn env_get(env : Env, name : String) -> Value? {
   let mut i = env.length() - 1
   while true {
