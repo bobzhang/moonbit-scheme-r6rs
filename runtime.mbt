@@ -68,6 +68,25 @@ struct Hashtable {
 }
 
 ///|
+struct EnumSet {
+  id : Int
+  universe : Array[String]
+  members : Array[Bool]
+}
+
+///|
+priv enum EnumSetProcKind {
+  Constructor(EnumSet)
+  Indexer(EnumSet)
+}
+
+///|
+struct EnumSetProc {
+  id : Int
+  kind : EnumSetProcKind
+}
+
+///|
 priv enum RecordProcKind {
   Constructor(RecordType)
   Predicate(RecordType)
@@ -125,6 +144,8 @@ let record_ctor_desc_counter : Ref[Int] = Ref::new(0)
 let condition_counter : Ref[Int] = Ref::new(0)
 let condition_proc_counter : Ref[Int] = Ref::new(0)
 let hashtable_counter : Ref[Int] = Ref::new(0)
+let enum_set_counter : Ref[Int] = Ref::new(0)
+let enum_set_proc_counter : Ref[Int] = Ref::new(0)
 let library_registry : Ref[Map[String, Library]] = Ref::new({})
 let record_type_registry : Ref[Map[String, RecordTypeDescriptor]] = Ref::new({})
 let record_type_uid_registry : Ref[Map[String, RecordTypeDescriptor]] = Ref::new({})
@@ -190,6 +211,20 @@ fn next_condition_proc_id() -> Int {
 fn next_hashtable_id() -> Int {
   let id = hashtable_counter.val
   hashtable_counter.val = id + 1
+  id
+}
+
+///|
+fn next_enum_set_id() -> Int {
+  let id = enum_set_counter.val
+  enum_set_counter.val = id + 1
+  id
+}
+
+///|
+fn next_enum_set_proc_id() -> Int {
+  let id = enum_set_proc_counter.val
+  enum_set_proc_counter.val = id + 1
   id
 }
 
@@ -271,6 +306,83 @@ fn make_hashtable(
 }
 
 ///|
+fn make_enum_set(universe : Array[String], members : Array[Bool]) -> EnumSet {
+  EnumSet::{ id: next_enum_set_id(), universe, members }
+}
+
+///|
+fn make_enum_set_proc(kind : EnumSetProcKind) -> EnumSetProc {
+  EnumSetProc::{ id: next_enum_set_proc_id(), kind }
+}
+
+///|
+fn enum_set_members_all_true(universe : Array[String]) -> Array[Bool] {
+  let members : Array[Bool] = []
+  for _ in universe {
+    members.push(true)
+  }
+  members
+}
+
+///|
+fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
+  let members : Array[Bool] = []
+  for _ in universe {
+    members.push(false)
+  }
+  members
+}
+
+///|
+fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
+  if a.universe.length() != b.universe.length() {
+    return false
+  }
+  let mut i = 0
+  while i < a.universe.length() {
+    if a.universe[i] != b.universe[i] {
+      return false
+    }
+    i = i + 1
+  }
+  true
+}
+
+///|
+fn enum_set_index_of(universe : Array[String], name : String) -> Int? {
+  let mut i = 0
+  while i < universe.length() {
+    if universe[i] == name {
+      return Some(i)
+    }
+    i = i + 1
+  }
+  None
+}
+
+///|
+fn enum_set_member_by_name(set : EnumSet, name : String) -> Bool {
+  match enum_set_index_of(set.universe, name) {
+    Some(idx) => set.members[idx]
+    None => false
+  }
+}
+
+///|
+fn enum_set_from_names(
+  universe : Array[String],
+  names : Array[String],
+) -> EnumSet raise EvalError {
+  let members = enum_set_members_all_false(universe)
+  for name in names {
+    match enum_set_index_of(universe, name) {
+      Some(idx) => members[idx] = true
+      None => raise EvalError("enum-set: unknown symbol")
+    }
+  }
+  make_enum_set(universe, members)
+}
+///|
 fn reset_library_registry() -> Unit {
   library_registry.val = {}
 }
@@ -337,7 +449,8 @@ fn is_procedure_value(value : Value) -> Bool {
     | Value::Parameter(_)
     | Value::Continuation(_)
     | Value::RecordProc(_)
-    | Value::ConditionProc(_) => true
+    | Value::ConditionProc(_)
+    | Value::EnumSetProc(_) => true
     _ => false
   }
 }

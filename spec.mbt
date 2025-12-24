@@ -179,6 +179,20 @@ pub enum Primitive {
   HashtableEquivalenceFunction
   HashtableHashFunction
   HashtableMutableP
+  MakeEnumeration
+  EnumSetUniverse
+  EnumSetIndexer
+  EnumSetConstructor
+  EnumSetP
+  EnumSetMemberP
+  EnumSetSubsetP
+  EnumSetEq
+  EnumSetUnion
+  EnumSetIntersection
+  EnumSetDifference
+  EnumSetComplement
+  EnumSetProjection
+  EnumSetToList
   Not
   Apply
   CallCC
@@ -409,6 +423,8 @@ pub enum Value {
   RecordProc(RecordProc)
   ConditionProc(ConditionProc)
   Hashtable(Hashtable)
+  EnumSet(EnumSet)
+  EnumSetProc(EnumSetProc)
   RecordTypeDescriptor(RecordTypeDescriptor)
   RecordConstructorDescriptor(RecordConstructorDescriptor)
   Macro(SyntaxRules)

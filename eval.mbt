@@ -101,6 +101,20 @@ fn init_env() -> Env {
     Value::Primitive(Primitive::HashtableHashFunction),
   )
   env_define(env, "hashtable-mutable?", Value::Primitive(Primitive::HashtableMutableP))
+  env_define(env, "make-enumeration", Value::Primitive(Primitive::MakeEnumeration))
+  env_define(env, "enum-set-universe", Value::Primitive(Primitive::EnumSetUniverse))
+  env_define(env, "enum-set-indexer", Value::Primitive(Primitive::EnumSetIndexer))
+  env_define(env, "enum-set-constructor", Value::Primitive(Primitive::EnumSetConstructor))
+  env_define(env, "enum-set?", Value::Primitive(Primitive::EnumSetP))
+  env_define(env, "enum-set-member?", Value::Primitive(Primitive::EnumSetMemberP))
+  env_define(env, "enum-set-subset?", Value::Primitive(Primitive::EnumSetSubsetP))
+  env_define(env, "enum-set=?", Value::Primitive(Primitive::EnumSetEq))
+  env_define(env, "enum-set-union", Value::Primitive(Primitive::EnumSetUnion))
+  env_define(env, "enum-set-intersection", Value::Primitive(Primitive::EnumSetIntersection))
+  env_define(env, "enum-set-difference", Value::Primitive(Primitive::EnumSetDifference))
+  env_define(env, "enum-set-complement", Value::Primitive(Primitive::EnumSetComplement))
+  env_define(env, "enum-set-projection", Value::Primitive(Primitive::EnumSetProjection))
+  env_define(env, "enum-set->list", Value::Primitive(Primitive::EnumSetToList))
   env_define(env, "not", Value::Primitive(Primitive::Not))
   env_define(env, "apply", Value::Primitive(Primitive::Apply))
   env_define(env, "values", Value::Primitive(Primitive::Values))
@@ -2510,6 +2524,33 @@ fn eval_define_condition_type_state(
 }
 
 ///|
+fn eval_define_enumeration_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  if args.length() != 3 {
+    raise EvalError("invalid define-enumeration")
+  }
+  let type_name = parse_symbol(args[0])
+  let symbols = parse_symbol_list(datum_list_to_array(args[1]))
+  let ctor_name = parse_symbol(args[2])
+  let seen : Map[String, Bool] = {}
+  for name in symbols {
+    if seen.contains(name) {
+      raise EvalError("invalid define-enumeration")
+    }
+    seen[name] = true
+  }
+  let members = enum_set_members_all_true(symbols)
+  let universe = make_enum_set(symbols, members)
+  env_define(env, type_name, Value::EnumSet(universe))
+  env_define(env, ctor_name, Value::EnumSetProc(make_enum_set_proc(EnumSetProcKind::Constructor(universe))))
+  MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
 ///|
 ///|
 fn array_contains_name(items : Array[String], name : String) -> Bool {
@@ -2716,6 +2757,35 @@ fn apply_condition_proc(
           )
         }
       }
+    }
+  }
+}
+
+///|
+fn apply_enum_set_proc(
+  proc : EnumSetProc,
+  args : Array[Value],
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  match proc.kind {
+    EnumSetProcKind::Indexer(set) => {
+      if args.length() != 1 {
+        raise arity_mismatch(1, args.length())
+      }
+      let name = parse_symbol(value_as_datum(args[0]))
+      match enum_set_index_of(set.universe, name) {
+        Some(idx) => MachineState::Apply(Value::Datum(Datum::Int(idx)), kont, handlers)
+        None => MachineState::Apply(Value::Datum(Datum::Bool(false)), kont, handlers)
+      }
+    }
+    EnumSetProcKind::Constructor(set) => {
+      if args.length() != 1 {
+        raise arity_mismatch(1, args.length())
+      }
+      let names = parse_symbol_list(datum_list_to_array(value_as_datum(args[0])))
+      let subset = enum_set_from_names(set.universe, names)
+      MachineState::Apply(Value::EnumSet(subset), kont, handlers)
     }
   }
 }
@@ -3163,6 +3233,7 @@ fn eval_pair(
       Some("import") => eval_import_state(args, env, kont, handlers)
       Some("define-record-type") => eval_define_record_type_state(args, env, kont, handlers)
       Some("define-condition-type") => eval_define_condition_type_state(args, env, kont, handlers)
+      Some("define-enumeration") => eval_define_enumeration_state(args, env, kont, handlers)
       Some("quote") => MachineState::Apply(eval_quote(args), kont, handlers)
       Some("quasiquote") => MachineState::Apply(eval_quasiquote(args, env), kont, handlers)
       Some("syntax") => MachineState::Apply(eval_quote(args), kont, handlers)
@@ -3570,6 +3641,7 @@ fn apply_proc(
     }
     Value::RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)
     Value::ConditionProc(proc) => apply_condition_proc(proc, args, kont, handlers)
+    Value::EnumSetProc(proc) => apply_enum_set_proc(proc, args, kont, handlers)
     _ => raise EvalError("type error: procedure expected")
   }
 }

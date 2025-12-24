@@ -105,6 +105,20 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::HashtableEquivalenceFunction, Primitive::HashtableEquivalenceFunction)
     | (Primitive::HashtableHashFunction, Primitive::HashtableHashFunction)
     | (Primitive::HashtableMutableP, Primitive::HashtableMutableP)
+    | (Primitive::MakeEnumeration, Primitive::MakeEnumeration)
+    | (Primitive::EnumSetUniverse, Primitive::EnumSetUniverse)
+    | (Primitive::EnumSetIndexer, Primitive::EnumSetIndexer)
+    | (Primitive::EnumSetConstructor, Primitive::EnumSetConstructor)
+    | (Primitive::EnumSetP, Primitive::EnumSetP)
+    | (Primitive::EnumSetMemberP, Primitive::EnumSetMemberP)
+    | (Primitive::EnumSetSubsetP, Primitive::EnumSetSubsetP)
+    | (Primitive::EnumSetEq, Primitive::EnumSetEq)
+    | (Primitive::EnumSetUnion, Primitive::EnumSetUnion)
+    | (Primitive::EnumSetIntersection, Primitive::EnumSetIntersection)
+    | (Primitive::EnumSetDifference, Primitive::EnumSetDifference)
+    | (Primitive::EnumSetComplement, Primitive::EnumSetComplement)
+    | (Primitive::EnumSetProjection, Primitive::EnumSetProjection)
+    | (Primitive::EnumSetToList, Primitive::EnumSetToList)
     | (Primitive::Not, Primitive::Not)
     | (Primitive::Apply, Primitive::Apply)
     | (Primitive::CallCC, Primitive::CallCC)
@@ -289,6 +303,8 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::RecordProc(a), Value::RecordProc(b)) => a.id == b.id
     (Value::ConditionProc(a), Value::ConditionProc(b)) => a.id == b.id
     (Value::Hashtable(a), Value::Hashtable(b)) => a.id == b.id
+    (Value::EnumSet(a), Value::EnumSet(b)) => a.id == b.id
+    (Value::EnumSetProc(a), Value::EnumSetProc(b)) => a.id == b.id
     (Value::RecordTypeDescriptor(a), Value::RecordTypeDescriptor(b)) => a.id == b.id
     (Value::RecordConstructorDescriptor(a), Value::RecordConstructorDescriptor(b)) => a.id == b.id
     (Value::Void, Value::Void) => true
@@ -1247,6 +1263,14 @@ fn value_as_hashtable(value : Value) -> Hashtable raise EvalError {
 }
 
 ///|
+fn value_as_enum_set(value : Value) -> EnumSet raise EvalError {
+  match value {
+    Value::EnumSet(set) => set
+    _ => raise EvalError("type error: enum-set expected")
+  }
+}
+
+///|
 fn hashtable_equiv_from_value(value : Value) -> HashtableEquiv raise EvalError {
   match value {
     Value::Primitive(Primitive::Eq) => HashtableEquiv::Eq
@@ -1276,6 +1300,31 @@ fn validate_hashtable_size_arg(value : Value) -> Unit raise EvalError {
   let n = value_as_int_index(value)
   if n < 0 {
     raise EvalError("type error: non-negative integer expected")
+  }
+}
+
+///|
+fn enum_set_require_same_universe(a : EnumSet, b : EnumSet) -> Unit raise EvalError {
+  if !enum_set_universe_equal(a, b) {
+    raise EvalError("type error: enum-set universe mismatch")
+  }
+}
+
+///|
+fn enum_set_symbol_list(value : Value) -> Array[String] raise EvalError {
+  let datum = value_as_datum(value)
+  let items = datum_list_to_array(datum)
+  parse_symbol_list(items)
+}
+
+///|
+fn ensure_unique_symbols(names : Array[String]) -> Unit raise EvalError {
+  let seen : Map[String, Bool] = {}
+  for name in names {
+    if seen.contains(name) {
+      raise EvalError("type error: duplicate symbol")
+    }
+    seen[name] = true
   }
 }
 
@@ -2665,7 +2714,8 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             | Value::Parameter(_)
             | Value::Continuation(_)
             | Value::RecordProc(_)
-            | Value::ConditionProc(_) => bool_value(true)
+            | Value::ConditionProc(_)
+            | Value::EnumSetProc(_) => bool_value(true)
             _ => bool_value(false)
           }
         }
@@ -3244,6 +3294,201 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let table = value_as_hashtable(args[0])
           bool_value(table.mutable)
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::MakeEnumeration => {
+      match args.length() {
+        1 => {
+          let names = enum_set_symbol_list(args[0])
+          ensure_unique_symbols(names)
+          let members = enum_set_members_all_true(names)
+          Value::EnumSet(make_enum_set(names, members))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetUniverse => {
+      match args.length() {
+        1 => {
+          let set = value_as_enum_set(args[0])
+          let members = enum_set_members_all_true(set.universe)
+          Value::EnumSet(make_enum_set(set.universe, members))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetIndexer => {
+      match args.length() {
+        1 => {
+          let set = value_as_enum_set(args[0])
+          Value::EnumSetProc(make_enum_set_proc(EnumSetProcKind::Indexer(set)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetConstructor => {
+      match args.length() {
+        1 => {
+          let set = value_as_enum_set(args[0])
+          Value::EnumSetProc(make_enum_set_proc(EnumSetProcKind::Constructor(set)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetP => {
+      match args.length() {
+        1 =>
+          match args[0] {
+            Value::EnumSet(_) => bool_value(true)
+            _ => bool_value(false)
+          }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetMemberP => {
+      match args.length() {
+        2 => {
+          let name = parse_symbol(value_as_datum(args[0]))
+          let set = value_as_enum_set(args[1])
+          bool_value(enum_set_member_by_name(set, name))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetSubsetP => {
+      match args.length() {
+        2 => {
+          let left = value_as_enum_set(args[0])
+          let right = value_as_enum_set(args[1])
+          enum_set_require_same_universe(left, right)
+          let mut i = 0
+          while i < left.members.length() {
+            if left.members[i] && !right.members[i] {
+              return bool_value(false)
+            }
+            i = i + 1
+          }
+          bool_value(true)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetEq => {
+      match args.length() {
+        2 => {
+          let left = value_as_enum_set(args[0])
+          let right = value_as_enum_set(args[1])
+          enum_set_require_same_universe(left, right)
+          let mut i = 0
+          while i < left.members.length() {
+            if left.members[i] != right.members[i] {
+              return bool_value(false)
+            }
+            i = i + 1
+          }
+          bool_value(true)
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetUnion => {
+      match args.length() {
+        2 => {
+          let left = value_as_enum_set(args[0])
+          let right = value_as_enum_set(args[1])
+          enum_set_require_same_universe(left, right)
+          let members = enum_set_members_all_false(left.universe)
+          let mut i = 0
+          while i < members.length() {
+            members[i] = left.members[i] || right.members[i]
+            i = i + 1
+          }
+          Value::EnumSet(make_enum_set(left.universe, members))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetIntersection => {
+      match args.length() {
+        2 => {
+          let left = value_as_enum_set(args[0])
+          let right = value_as_enum_set(args[1])
+          enum_set_require_same_universe(left, right)
+          let members = enum_set_members_all_false(left.universe)
+          let mut i = 0
+          while i < members.length() {
+            members[i] = left.members[i] && right.members[i]
+            i = i + 1
+          }
+          Value::EnumSet(make_enum_set(left.universe, members))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetDifference => {
+      match args.length() {
+        2 => {
+          let left = value_as_enum_set(args[0])
+          let right = value_as_enum_set(args[1])
+          enum_set_require_same_universe(left, right)
+          let members = enum_set_members_all_false(left.universe)
+          let mut i = 0
+          while i < members.length() {
+            members[i] = left.members[i] && !right.members[i]
+            i = i + 1
+          }
+          Value::EnumSet(make_enum_set(left.universe, members))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetComplement => {
+      match args.length() {
+        1 => {
+          let set = value_as_enum_set(args[0])
+          let members = enum_set_members_all_false(set.universe)
+          let mut i = 0
+          while i < members.length() {
+            members[i] = !set.members[i]
+            i = i + 1
+          }
+          Value::EnumSet(make_enum_set(set.universe, members))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EnumSetProjection => {
+      match args.length() {
+        2 => {
+          let source = value_as_enum_set(args[0])
+          let target = value_as_enum_set(args[1])
+          let members = enum_set_members_all_false(target.universe)
+          let mut i = 0
+          while i < target.universe.length() {
+            let name = target.universe[i]
+            members[i] = enum_set_member_by_name(source, name)
+            i = i + 1
+          }
+          Value::EnumSet(make_enum_set(target.universe, members))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::EnumSetToList => {
+      match args.length() {
+        1 => {
+          let set = value_as_enum_set(args[0])
+          let items : Array[Datum] = []
+          let mut i = 0
+          while i < set.universe.length() {
+            if set.members[i] {
+              items.push(Datum::Symbol(set.universe[i]))
+            }
+            i = i + 1
+          }
+          Value::Datum(list_from_array(items))
         }
         n => raise arity_mismatch(1, n)
       }

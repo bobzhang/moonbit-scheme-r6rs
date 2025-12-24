@@ -143,6 +143,8 @@ pub fn value_to_string(value : Value) -> String {
     Value::RecordProc(_) => "#<procedure>"
     Value::ConditionProc(_) => "#<procedure>"
     Value::Hashtable(_) => "#<hashtable>"
+    Value::EnumSet(_) => "#<enum-set>"
+    Value::EnumSetProc(_) => "#<procedure>"
     Value::RecordTypeDescriptor(_) => "#<record-type-descriptor>"
     Value::RecordConstructorDescriptor(_) => "#<record-constructor-descriptor>"
     Value::Macro(_) => "#<syntax>"
