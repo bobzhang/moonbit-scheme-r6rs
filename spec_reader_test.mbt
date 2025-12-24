@@ -64,3 +64,19 @@ test "reader: string escapes" {
     content="(65 65 10 9 11 12 13 8 7)",
   )
 }
+
+///|
+test "reader: fold-case directives" {
+  let program : String =
+    #|(begin
+    #|  #!fold-case
+    #|  (define a (symbol->string 'AbC))
+    #|  (define b (symbol->string '|AbC|))
+    #|  #!no-fold-case
+    #|  (list a b (symbol->string 'AbC)))
+    #|
+  inspect(
+    value_to_string(eval_program(program)),
+    content="(\"abc\" \"AbC\" \"AbC\")",
+  )
+}

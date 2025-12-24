@@ -2,6 +2,7 @@
 priv struct Reader {
   chars : Array[Char]
   mut pos : Int
+  mut fold_case : Bool
 }
 
 ///|
@@ -10,7 +11,7 @@ fn make_reader(src : String) -> Reader {
   for ch in src {
     chars.push(ch)
   }
-  { chars, pos: 0 }
+  { chars, pos: 0, fold_case: false }
 }
 
 ///|
@@ -139,6 +140,7 @@ fn read_token(r : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   let mut in_bar = false
   let mut started = false
+  let mut fold_case = r.fold_case
   while true {
     match reader_peek(r) {
       Some(ch) => {
@@ -147,6 +149,11 @@ fn read_token(r : Reader) -> String raise ParseError {
         }
         started = true
         r.pos = r.pos + 1
+        if !in_bar && chars.is_empty() && ch == '#' {
+          if r.pos < r.chars.length() && r.chars[r.pos] == '\\' {
+            fold_case = false
+          }
+        }
         if in_bar {
           if ch == '|' {
             in_bar = false
@@ -171,7 +178,9 @@ fn read_token(r : Reader) -> String raise ParseError {
               }
             }
           } else {
-            chars.push(ch)
+            let next_char =
+              if fold_case { ch.to_ascii_lowercase() } else { ch }
+            chars.push(next_char)
           }
         }
         continue
@@ -1212,7 +1221,16 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
       }
     }
     Some('#') => {
-      if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == ';' {
+      if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == '!' {
+        let tok = read_token(r)
+        let directive = ascii_lower_string(tok)
+        if directive == "#!fold-case" {
+          r.fold_case = true
+        } else if directive == "#!no-fold-case" {
+          r.fold_case = false
+        }
+        read_expr(r)
+      } else if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == ';' {
         r.pos = r.pos + 2
         let _ = read_expr(r)
         read_expr(r)
