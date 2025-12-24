@@ -3605,6 +3605,101 @@ fn cond_start(
 }
 
 ///|
+fn feature_enabled(name : String) -> Bool {
+  match name {
+    "r6rs" => true
+    _ => false
+  }
+}
+
+///|
+fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
+  match expr {
+    Datum::Symbol(name) => feature_enabled(name)
+    Datum::Pair(_, _) => {
+      let items = datum_list_to_array(expr)
+      if items.is_empty() {
+        raise EvalError("invalid cond-expand")
+      }
+      match items[0] {
+        Datum::Symbol("and") => {
+          if items.length() == 1 {
+            true
+          } else {
+            let mut i = 1
+            while i < items.length() {
+              if !cond_expand_feature(items[i]) {
+                return false
+              }
+              i = i + 1
+            }
+            true
+          }
+        }
+        Datum::Symbol("or") => {
+          let mut i = 1
+          while i < items.length() {
+            if cond_expand_feature(items[i]) {
+              return true
+            }
+            i = i + 1
+          }
+          false
+        }
+        Datum::Symbol("not") => {
+          if items.length() != 2 {
+            raise EvalError("invalid cond-expand")
+          }
+          !cond_expand_feature(items[1])
+        }
+        Datum::Symbol("library") => {
+          if items.length() != 2 {
+            raise EvalError("invalid cond-expand")
+          }
+          let name = parse_library_name(items[1])
+          lookup_library(name) is Some(_)
+        }
+        _ => raise EvalError("invalid cond-expand")
+      }
+    }
+    _ => raise EvalError("invalid cond-expand")
+  }
+}
+
+///|
+fn eval_cond_expand_state(
+  clauses : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+) -> MachineState raise EvalError {
+  let mut i = 0
+  while i < clauses.length() {
+    let parts = datum_list_to_array(clauses[i])
+    if parts.is_empty() {
+      raise EvalError("invalid cond-expand")
+    }
+    match parts[0] {
+      Datum::Symbol("else") => {
+        if i != clauses.length() - 1 {
+          raise EvalError("invalid cond-expand")
+        }
+        let body = parts.sub(start=1).to_array()
+        return eval_sequence_state(body, env, kont, handlers)
+      }
+      _ => {
+        if cond_expand_feature(parts[0]) {
+          let body = parts.sub(start=1).to_array()
+          return eval_sequence_state(body, env, kont, handlers)
+        }
+      }
+    }
+    i = i + 1
+  }
+  MachineState::Apply(Value::Void, kont, handlers)
+}
+
+///|
 fn eval_pair(
   expr : Datum,
   env : Env,
@@ -3647,6 +3742,7 @@ fn eval_pair(
       Some("and") => eval_and_state(args, env, kont, handlers)
       Some("or") => eval_or_state(args, env, kont, handlers)
       Some("cond") => cond_start(args, env, kont, handlers)
+      Some("cond-expand") => eval_cond_expand_state(args, env, kont, handlers)
       Some("guard") => eval_guard_state(args, env, kont, handlers)
       Some("do") => eval_do_state(args, env, kont, handlers)
       Some("case") => eval_case_state(args, env, kont, handlers)
