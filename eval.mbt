@@ -1465,6 +1465,14 @@ fn eval_quasiquote(args : Array[Datum], env : Env) -> Value raise EvalError {
 }
 
 ///|
+fn eval_quasisyntax(args : Array[Datum], env : Env) -> Value raise EvalError {
+  match args.length() {
+    1 => Value::Datum(quasisyntax_expand(args[0], env, 1))
+    n => raise arity_mismatch(1, n)
+  }
+}
+
+///|
 fn eval_delay(args : Array[Datum], env : Env) -> Value raise EvalError {
   match args.length() {
     1 => {
@@ -1542,6 +1550,59 @@ fn quasiquote_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalEr
       pair_new(
         quasiquote_expand(car.val, env, depth),
         quasiquote_expand(cdr.val, env, depth),
+      )
+    }
+    _ => expr
+  }
+}
+
+///|
+fn quasisyntax_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalError {
+  match unwrap_form(expr, "quasisyntax") {
+    Some(arg) =>
+      return list_from_array([Datum::Symbol("quasisyntax"), quasisyntax_expand(arg, env, depth + 1)])
+    None => ()
+  }
+  match unwrap_form(expr, "unsyntax") {
+    Some(arg) => {
+      if depth == 1 {
+        return value_to_datum_element(eval_expr(arg, env))
+      } else {
+        return list_from_array([Datum::Symbol("unsyntax"), quasisyntax_expand(arg, env, depth - 1)])
+      }
+    }
+    None => ()
+  }
+  match unwrap_form(expr, "unsyntax-splicing") {
+    Some(arg) => {
+      if depth == 1 {
+        raise EvalError("unsyntax-splicing not in list context")
+      } else {
+        return list_from_array([
+          Datum::Symbol("unsyntax-splicing"),
+          quasisyntax_expand(arg, env, depth - 1),
+        ])
+      }
+    }
+    None => ()
+  }
+  match expr {
+    Datum::Pair(car, cdr) => {
+      if depth == 1 {
+        match unwrap_form(car.val, "unsyntax-splicing") {
+          Some(arg) => {
+            let value = eval_expr(arg, env)
+            let datum = value_as_datum(value)
+            let items = datum_list_to_array(datum)
+            let tail = quasisyntax_expand(cdr.val, env, depth)
+            return list_with_tail(items, tail)
+          }
+          None => ()
+        }
+      }
+      pair_new(
+        quasisyntax_expand(car.val, env, depth),
+        quasisyntax_expand(cdr.val, env, depth),
       )
     }
     _ => expr
@@ -4149,6 +4210,7 @@ fn eval_pair(
       Some("quote") => MachineState::Apply(eval_quote(args), kont, handlers)
       Some("quasiquote") => MachineState::Apply(eval_quasiquote(args, env), kont, handlers)
       Some("syntax") => MachineState::Apply(eval_quote(args), kont, handlers)
+      Some("quasisyntax") => MachineState::Apply(eval_quasisyntax(args, env), kont, handlers)
       Some("delay") => MachineState::Apply(eval_delay(args, env), kont, handlers)
       Some("if") => eval_if_state(args, env, kont, handlers)
       Some("begin") => eval_sequence_state(args, env, kont, handlers)

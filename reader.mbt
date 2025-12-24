@@ -852,6 +852,26 @@ fn make_unquote_splicing(expr : Datum) -> Datum {
 }
 
 ///|
+fn make_syntax(expr : Datum) -> Datum {
+  pair_new(Datum::Symbol("syntax"), pair_new(expr, Datum::Nil))
+}
+
+///|
+fn make_quasisyntax(expr : Datum) -> Datum {
+  pair_new(Datum::Symbol("quasisyntax"), pair_new(expr, Datum::Nil))
+}
+
+///|
+fn make_unsyntax(expr : Datum) -> Datum {
+  pair_new(Datum::Symbol("unsyntax"), pair_new(expr, Datum::Nil))
+}
+
+///|
+fn make_unsyntax_splicing(expr : Datum) -> Datum {
+  pair_new(Datum::Symbol("unsyntax-splicing"), pair_new(expr, Datum::Nil))
+}
+
+///|
 fn read_list(r : Reader) -> Datum raise ParseError {
   let items : Array[Datum] = []
   let mut dotted_tail : Datum? = None
@@ -1002,7 +1022,49 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
       }
     }
     Some('#') => {
-      if is_vector_start(r) {
+      if r.pos + 1 < r.chars.length() {
+        match r.chars[r.pos + 1] {
+          '\'' => {
+            r.pos = r.pos + 2
+            let expr = read_expr(r)
+            make_syntax(expr)
+          }
+          '`' => {
+            r.pos = r.pos + 2
+            let expr = read_expr(r)
+            make_quasisyntax(expr)
+          }
+          ',' => {
+            r.pos = r.pos + 2
+            let mut splicing = false
+            match reader_peek(r) {
+              Some('@') => {
+                r.pos = r.pos + 1
+                splicing = true
+              }
+              _ => ()
+            }
+            let expr = read_expr(r)
+            if splicing {
+              make_unsyntax_splicing(expr)
+            } else {
+              make_unsyntax(expr)
+            }
+          }
+          _ => {
+            if is_vector_start(r) {
+              r.pos = r.pos + 2
+              read_vector_literal(r)
+            } else if is_bytevector_start(r) {
+              r.pos = r.pos + 5
+              read_bytevector_literal(r)
+            } else {
+              let tok = read_token(r)
+              token_to_datum(tok)
+            }
+          }
+        }
+      } else if is_vector_start(r) {
         r.pos = r.pos + 2
         read_vector_literal(r)
       } else if is_bytevector_start(r) {
