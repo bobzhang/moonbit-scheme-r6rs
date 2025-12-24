@@ -1,10 +1,16 @@
 ///|
 fn init_env() -> Env {
   let env = env_new()
-  let condition_type = make_record_type("&condition", None, false, false, None, [])
-  let condition_ctor_desc = make_record_constructor_descriptor(condition_type, None, None)
-  let condition_rtd = make_record_type_descriptor(condition_type, condition_ctor_desc)
-  let _ = register_record_type("&condition", condition_rtd)
+  let condition_rtd = match lookup_record_type_descriptor("&condition") {
+    Some(desc) => desc
+    None => {
+      let condition_type = make_record_type("&condition", None, false, false, None, [])
+      let condition_ctor_desc = make_record_constructor_descriptor(condition_type, None, None)
+      let condition_rtd = make_record_type_descriptor(condition_type, condition_ctor_desc)
+      let _ = register_record_type("&condition", condition_rtd)
+      condition_rtd
+    }
+  }
   env_define(env, "&condition", Value::RecordTypeDescriptor(condition_rtd))
   env_define(env, "+", Value::Primitive(Primitive::Add))
   env_define(env, "-", Value::Primitive(Primitive::Sub))
@@ -816,6 +822,76 @@ fn stdlib_source() -> String {
     "  (subform syntax-violation-subform))",
     "(define-condition-type &undefined &violation",
     "  make-undefined-violation undefined-violation?)",
+    "(library (rnrs lists (6))",
+    "  (export find find-tail for-all exists filter partition fold-left fold-right",
+    "          remp remove remq remv memp memq memv assp assq assv assoc",
+    "          member cons*)",
+    "  (import)",
+    "  (define (fold-left f acc lst)",
+    "    (let loop ((acc acc) (lst lst))",
+    "      (if (null? lst) acc",
+    "          (loop (f acc (car lst)) (cdr lst)))))",
+    "  (define (fold-right f acc lst)",
+    "    (if (null? lst) acc",
+    "        (f (car lst) (fold-right f acc (cdr lst)))))",
+    "  (define (filter pred lst)",
+    "    (cond ((null? lst) '())",
+    "          ((pred (car lst)) (cons (car lst) (filter pred (cdr lst))))",
+    "          (else (filter pred (cdr lst)))))",
+    "  (define (remove pred lst)",
+    "    (filter (lambda (x) (not (pred x))) lst))",
+    "  (define (remp pred lst)",
+    "    (remove pred lst))",
+    "  (define (remq obj lst)",
+    "    (remp (lambda (x) (eq? x obj)) lst))",
+    "  (define (remv obj lst)",
+    "    (remp (lambda (x) (eqv? x obj)) lst))",
+    "  (define (find pred lst)",
+    "    (cond ((null? lst) #f)",
+    "          ((pred (car lst)) (car lst))",
+    "          (else (find pred (cdr lst)))))",
+    "  (define (find-tail pred lst)",
+    "    (cond ((null? lst) #f)",
+    "          ((pred (car lst)) lst)",
+    "          (else (find-tail pred (cdr lst)))))",
+    "  (define (partition pred lst)",
+    "    (let loop ((lst lst) (yes '()) (no '()))",
+    "      (if (null? lst)",
+    "          (list (reverse yes) (reverse no))",
+    "          (if (pred (car lst))",
+    "              (loop (cdr lst) (cons (car lst) yes) no)",
+    "              (loop (cdr lst) yes (cons (car lst) no))))))",
+    "  (define (any-null? lists)",
+    "    (cond ((null? lists) #f)",
+    "          ((null? (car lists)) #t)",
+    "          (else (any-null? (cdr lists)))))",
+    "  (define (for-all pred . lists)",
+    "    (if (null? lists) #t",
+    "        (let loop ((lists lists))",
+    "          (if (any-null? lists)",
+    "              #t",
+    "              (and (apply pred (map car lists))",
+    "                   (loop (map cdr lists)))))))",
+    "  (define (exists pred . lists)",
+    "    (if (null? lists) #f",
+    "        (let loop ((lists lists))",
+    "          (if (any-null? lists)",
+    "              #f",
+    "              (let ((value (apply pred (map car lists))))",
+    "                (if value value (loop (map cdr lists))))))))",
+    "  (define (memp pred lst)",
+    "    (cond ((null? lst) #f)",
+    "          ((pred (car lst)) lst)",
+    "          (else (memp pred (cdr lst)))))",
+    "  (define (assp pred alist)",
+    "    (cond ((null? alist) #f)",
+    "          ((pred (caar alist)) (car alist))",
+    "          (else (assp pred (cdr alist)))))",
+    "  (define (cons* . args)",
+    "    (cond ((null? args) '())",
+    "          ((null? (cdr args)) (car args))",
+    "          (else (cons (car args) (apply cons* (cdr args))))))",
+    ")",
   ]
   lines.join("\n")
 }
