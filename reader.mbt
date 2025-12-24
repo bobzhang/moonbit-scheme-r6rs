@@ -3,6 +3,7 @@ priv struct Reader {
   chars : Array[Char]
   mut pos : Int
   mut fold_case : Bool
+  labels : Map[Int, Datum]
 }
 
 ///|
@@ -11,7 +12,7 @@ fn make_reader(src : String) -> Reader {
   for ch in src {
     chars.push(ch)
   }
-  { chars, pos: 0, fold_case: false }
+  { chars, pos: 0, fold_case: false, labels: Map::new() }
 }
 
 ///|
@@ -238,6 +239,32 @@ fn digit_value(ch : Char) -> Int? {
   } else {
     None
   }
+}
+
+///|
+fn parse_label_token(tok : String) -> (Bool, Int)? {
+  let chars : Array[Char] = []
+  for ch in tok {
+    chars.push(ch)
+  }
+  if chars.length() < 3 || chars[0] != '#' {
+    return None
+  }
+  let last = chars[chars.length() - 1]
+  if last != '=' && last != '#' {
+    return None
+  }
+  let mut acc = 0
+  let mut i = 1
+  while i < chars.length() - 1 {
+    let ch = chars[i]
+    if !ch.is_ascii_digit() {
+      return None
+    }
+    acc = acc * 10 + (ch.to_int() - '0'.to_int())
+    i = i + 1
+  }
+  Some((last == '=', acc))
 }
 
 ///|
@@ -1253,6 +1280,25 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
           r.fold_case = false
         }
         read_expr(r)
+      } else if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1].is_ascii_digit() {
+        let tok = read_token(r)
+        match parse_label_token(tok) {
+          Some((true, label)) => {
+            match r.labels.get(label) {
+              Some(_) => raise ParseError("duplicate label")
+              None => ()
+            }
+            let datum = read_expr(r)
+            r.labels[label] = datum
+            datum
+          }
+          Some((false, label)) =>
+            match r.labels.get(label) {
+              Some(value) => value
+              None => raise ParseError("undefined label")
+            }
+          None => token_to_datum(tok)
+        }
       } else if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == ';' {
         r.pos = r.pos + 2
         let _ = read_expr(r)

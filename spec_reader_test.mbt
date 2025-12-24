@@ -105,3 +105,18 @@ test "reader: string line continuation" {
     content="(97 98)",
   )
 }
+
+///|
+test "reader: datum labels" {
+  let program : String =
+    #|(begin
+    #|  (define x '#1=(a b))
+    #|  (define y '#1#)
+    #|  (set-car! y 'z)
+    #|  x)
+    #|
+  inspect(
+    value_to_string(eval_program(program)),
+    content="(z b)",
+  )
+}
