@@ -3515,6 +3515,13 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
       let prefix = parse_symbol(items[2])
       import_set_prefix(base, prefix)
     }
+    Datum::Symbol("for") => {
+      if items.length() < 3 {
+        raise EvalError("invalid import set")
+      }
+      let _ = parse_symbol_list(items.sub(start=2).to_array())
+      import_set_exports(items[1])
+    }
     _ => {
       let name = parse_library_name(expr)
       library_exports(name)

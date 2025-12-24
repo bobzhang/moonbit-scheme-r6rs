@@ -109,6 +109,17 @@ test "r6rs libraries: import sets" {
     )
   )
   inspect(value_to_string(eval_program(nested_prog)), content="10")
+  let for_prog = (
+    (
+      #|(library (base-for)
+      #|  (export a)
+      #|  (import)
+      #|  (define a 12))
+      #|(import (for (base-for) run))
+      #|a
+    )
+  )
+  inspect(value_to_string(eval_program(for_prog)), content="12")
 }
 
 ///|
