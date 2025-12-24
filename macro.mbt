@@ -161,6 +161,8 @@ fn is_core_identifier(name : String) -> Bool {
     "call-with-values",
     "make-parameter",
     "dynamic-wind",
+    "eval",
+    "environment",
     "promise?",
     "make-promise",
     "force",

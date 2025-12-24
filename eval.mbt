@@ -316,7 +316,36 @@ fn init_env() -> Env {
     "call-with-current-continuation",
     Value::Primitive(Primitive::CallCC),
   )
+  env_define(env, "eval", Value::Primitive(Primitive::Eval))
+  env_define(env, "environment", Value::Primitive(Primitive::Environment))
   env
+}
+
+///|
+fn env_export_map(env : Env) -> Map[String, Value] {
+  let exports : Map[String, Value] = {}
+  let mut i = 0
+  while i < env.length() {
+    let frame = env[i]
+    for key in frame.keys() {
+      match frame.get(key) {
+        Some(value) => exports[key] = value
+        None => ()
+      }
+    }
+    i = i + 1
+  }
+  exports
+}
+
+///|
+fn register_builtin_libraries(env : Env) -> Unit {
+  let exports = env_export_map(env)
+  register_library("rnrs.base", exports)
+  let eval_exports : Map[String, Value] = {}
+  eval_exports["eval"] = Value::Primitive(Primitive::Eval)
+  eval_exports["environment"] = Value::Primitive(Primitive::Environment)
+  register_library("rnrs.eval", eval_exports)
 }
 
 ///|
@@ -390,6 +419,29 @@ fn next_promise_id() -> Int {
 ///|
 fn make_promise(thunk : Value) -> Promise {
   { id: next_promise_id(), state: Ref::new(PromiseState::Thunk(thunk)) }
+}
+
+///|
+let eval_env_counter : Ref[Int] = Ref::new(0)
+
+///|
+fn next_eval_env_id() -> Int {
+  let id = eval_env_counter.val
+  eval_env_counter.val = id + 1
+  id
+}
+
+///|
+fn make_eval_env(env : Env) -> EvalEnv {
+  { id: next_eval_env_id(), env }
+}
+
+///|
+fn value_as_eval_env(value : Value) -> EvalEnv raise EvalError {
+  match value {
+    Value::EvalEnv(env) => env
+    _ => raise EvalError("type error: environment expected")
+  }
 }
 
 ///|
@@ -641,6 +693,7 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
   wind_stack.val = []
   let env = init_env()
   load_stdlib(env)
+  register_builtin_libraries(env)
   let results : Array[Value] = []
   for form in forms {
     let value = eval_expr(form, env)
@@ -3862,6 +3915,26 @@ fn apply_proc(
         let winder = make_proc_winder(before, after)
         apply_winder_before(winder, Kont::WindEnter(thunk, winder, kont), handlers)
       }
+    }
+    Value::Primitive(Primitive::Eval) => {
+      if args.length() != 2 {
+        raise arity_mismatch(2, args.length())
+      } else {
+        let expr = value_as_datum(args[0])
+        let eval_env = value_as_eval_env(args[1])
+        MachineState::Eval(expr, eval_env.env, kont, handlers)
+      }
+    }
+    Value::Primitive(Primitive::Environment) => {
+      if args.is_empty() {
+        raise arity_mismatch(1, 0)
+      }
+      let env = env_new()
+      for arg in args {
+        let spec = value_as_datum(arg)
+        import_set_into_env(spec, env)
+      }
+      MachineState::Apply(Value::EvalEnv(make_eval_env(env)), kont, handlers)
     }
     Value::Primitive(Primitive::MakePromise) => {
       if args.length() != 1 {

@@ -126,6 +126,8 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::CallWithValues, Primitive::CallWithValues)
     | (Primitive::MakeParameter, Primitive::MakeParameter)
     | (Primitive::DynamicWind, Primitive::DynamicWind)
+    | (Primitive::Eval, Primitive::Eval)
+    | (Primitive::Environment, Primitive::Environment)
     | (Primitive::PromiseP, Primitive::PromiseP)
     | (Primitive::MakePromise, Primitive::MakePromise)
     | (Primitive::Force, Primitive::Force)
@@ -306,6 +308,7 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::GuardHandler(a), Value::GuardHandler(b)) => a.id == b.id
     (Value::Parameter(a), Value::Parameter(b)) => a.id == b.id
     (Value::Promise(a), Value::Promise(b)) => a.id == b.id
+    (Value::EvalEnv(a), Value::EvalEnv(b)) => a.id == b.id
     (Value::Continuation(a), Value::Continuation(b)) => a.id == b.id
     (Value::Port(a), Value::Port(b)) => a.id == b.id
     (Value::Record(a), Value::Record(b)) => a.id == b.id
@@ -4410,6 +4413,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::DynamicWind => {
       raise EvalError("internal error: dynamic-wind should be handled in apply_proc")
+    }
+    Primitive::Eval => {
+      raise EvalError("internal error: eval should be handled in apply_proc")
+    }
+    Primitive::Environment => {
+      raise EvalError("internal error: environment should be handled in apply_proc")
     }
     Primitive::PromiseP => {
       match args.length() {

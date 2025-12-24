@@ -201,6 +201,8 @@ pub enum Primitive {
   CallWithValues
   MakeParameter
   DynamicWind
+  Eval
+  Environment
   PromiseP
   MakePromise
   Force
@@ -429,6 +431,12 @@ pub struct Promise {
 }
 
 ///|
+pub struct EvalEnv {
+  id : Int
+  env : Env
+}
+
+///|
 /// Runtime values produced by evaluation.
 ///|
 pub enum Value {
@@ -441,6 +449,7 @@ pub enum Value {
   GuardHandler(GuardHandler)
   Parameter(Parameter)
   Promise(Promise)
+  EvalEnv(EvalEnv)
   Continuation(Continuation)
   Port(Port)
   Record(Record)
