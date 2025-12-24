@@ -327,8 +327,13 @@ fn next_closure_id() -> Int {
 }
 
 ///|
-fn make_closure(params : Array[String], body : Array[Datum], env : Env) -> Closure {
-  { id: next_closure_id(), params, body, env }
+fn make_closure(
+  params : Array[String],
+  rest : String?,
+  body : Array[Datum],
+  env : Env,
+) -> Closure {
+  { id: next_closure_id(), params, rest, body, env }
 }
 
 ///|
@@ -375,6 +380,12 @@ fn make_case_closure(clauses : Array[CaseClause], env : Env) -> CaseClosure {
 }
 
 ///|
+priv struct Formals {
+  params : Array[String]
+  rest : String?
+}
+
+///|
 fn make_guard_handler(
   name : String,
   clauses : Array[Datum],
@@ -411,15 +422,15 @@ priv enum Kont {
   LetStar(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
   LetRec(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
   LetValues(
-    Array[(Array[String], Datum)],
+    Array[(Formals, Datum)],
     Int,
-    Array[Array[Value]],
+    Array[Array[(String, Value)]],
     Env,
     Array[Datum],
     Kont,
   )
-  LetStarValues(Array[(Array[String], Datum)], Int, Env, Array[Datum], Kont)
-  DefineValues(Array[String], Env, Kont)
+  LetStarValues(Array[(Formals, Datum)], Int, Env, Array[Datum], Kont)
+  DefineValues(Formals, Env, Kont)
   ParameterizeParam(
     Array[(Datum, Datum)],
     Int,
@@ -948,15 +959,13 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           }
           Kont::LetValues(bindings, index, collected, env, body, next) => {
             let values = value_to_values(value)
-            let (names, _) = bindings[index]
-            if values.length() != names.length() {
-              raise arity_mismatch(names.length(), values.length())
-            }
-            let next_collected : Array[Array[Value]] = []
+            let (formals, _) = bindings[index]
+            let bound = formals_bindings(formals, values)
+            let next_collected : Array[Array[(String, Value)]] = []
             for item in collected {
               next_collected.push(item)
             }
-            next_collected.push(values)
+            next_collected.push(bound)
             let next_index = index + 1
             if next_index < bindings.length() {
               let (_, expr) = bindings[next_index]
@@ -970,12 +979,10 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               let new_env = env_extend(env)
               let mut i = 0
               while i < bindings.length() {
-                let (names, _) = bindings[i]
-                let bound_values = next_collected[i]
-                let mut j = 0
-                while j < names.length() {
-                  env_define(new_env, names[j], bound_values[j])
-                  j = j + 1
+                let binding_values = next_collected[i]
+                for binding in binding_values {
+                  let (name, bound_value) = binding
+                  env_define(new_env, name, bound_value)
                 }
                 i = i + 1
               }
@@ -984,15 +991,12 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           }
           Kont::LetStarValues(bindings, index, env, body, next) => {
             let values = value_to_values(value)
-            let (names, _) = bindings[index]
-            if values.length() != names.length() {
-              raise arity_mismatch(names.length(), values.length())
-            }
+            let (formals, _) = bindings[index]
+            let binding_values = formals_bindings(formals, values)
             let new_env = env_extend(env)
-            let mut i = 0
-            while i < names.length() {
-              env_define(new_env, names[i], values[i])
-              i = i + 1
+            for binding in binding_values {
+              let (name, bound_value) = binding
+              env_define(new_env, name, bound_value)
             }
             let next_index = index + 1
             if next_index < bindings.length() {
@@ -1007,15 +1011,12 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               state = eval_sequence_state(body, new_env, next, handlers)
             }
           }
-          Kont::DefineValues(names, env, next) => {
+          Kont::DefineValues(formals, env, next) => {
             let values = value_to_values(value)
-            if values.length() != names.length() {
-              raise arity_mismatch(names.length(), values.length())
-            }
-            let mut i = 0
-            while i < names.length() {
-              env_define(env, names[i], values[i])
-              i = i + 1
+            let binding_values = formals_bindings(formals, values)
+            for binding in binding_values {
+              let (name, bound_value) = binding
+              env_define(env, name, bound_value)
             }
             state = MachineState::Apply(Value::Void, next, handlers)
           }
@@ -1441,16 +1442,89 @@ fn list_with_tail(items : Array[Datum], tail : Datum) -> Datum {
   result
 }
 ///|
-fn parse_params(expr : Datum) -> Array[String] raise EvalError {
-  let params = datum_list_to_array(expr)
+fn parse_formals(expr : Datum) -> Formals raise EvalError {
   let names : Array[String] = []
-  for param in params {
-    match param {
-      Datum::Symbol(name) => names.push(name)
+  let mut cur = expr
+  while true {
+    match cur {
+      Datum::Nil => return Formals::{ params: names, rest: None }
+      Datum::Symbol(name) => return Formals::{ params: names, rest: Some(name) }
+      Datum::Pair(car, cdr) => {
+        match car.val {
+          Datum::Symbol(name) => names.push(name)
+          _ => raise EvalError("type error: symbol expected")
+        }
+        cur = cdr.val
+      }
       _ => raise EvalError("type error: symbol expected")
     }
   }
-  names
+  Formals::{ params: names, rest: None }
+}
+
+///|
+fn arity_mismatch_at_least(expected : Int, got : Int) -> EvalError {
+  EvalError("arity mismatch: expected at least \{expected} got \{got}")
+}
+
+///|
+fn values_to_list_value(values : Array[Value]) -> Value {
+  let items : Array[Datum] = []
+  for value in values {
+    items.push(value_to_datum_element(value))
+  }
+  Value::Datum(list_from_array(items))
+}
+
+///|
+fn formals_bindings(formals : Formals, values : Array[Value]) -> Array[(String, Value)] raise EvalError {
+  let params = formals.params
+  let min_len = params.length()
+  match formals.rest {
+    None =>
+      if values.length() != min_len {
+        raise arity_mismatch(min_len, values.length())
+      }
+    Some(_) =>
+      if values.length() < min_len {
+        raise arity_mismatch_at_least(min_len, values.length())
+      }
+  }
+  let bindings : Array[(String, Value)] = []
+  let mut i = 0
+  while i < params.length() {
+    bindings.push((params[i], values[i]))
+    i = i + 1
+  }
+  match formals.rest {
+    Some(name) => {
+      let rest_values : Array[Value] = []
+      let mut j = min_len
+      while j < values.length() {
+        rest_values.push(values[j])
+        j = j + 1
+      }
+      bindings.push((name, values_to_list_value(rest_values)))
+    }
+    None => ()
+  }
+  bindings
+}
+
+///|
+fn formals_accept_len(formals : Formals, arg_len : Int) -> Bool {
+  match formals.rest {
+    None => arg_len == formals.params.length()
+    Some(_) => arg_len >= formals.params.length()
+  }
+}
+
+///|
+fn formals_expected_desc(formals : Formals) -> String {
+  match formals.rest {
+    None => formals.params.length().to_string()
+    Some(_) => ">=\{formals.params.length()}"
+  }
 }
 
 ///|
@@ -1458,9 +1532,9 @@ fn eval_lambda(args : Array[Datum], env : Env) -> Value raise EvalError {
   if args.length() < 2 {
     raise arity_mismatch(2, args.length())
   } else {
-    let params = parse_params(args[0])
+    let formals = parse_formals(args[0])
     let body = args.sub(start=1).to_array()
-    Value::Closure(make_closure(params, body, env))
+    Value::Closure(make_closure(formals.params, formals.rest, body, env))
   }
 }
 
@@ -1475,9 +1549,9 @@ fn eval_case_lambda(args : Array[Datum], env : Env) -> Value raise EvalError {
     if parts.length() < 2 {
       raise EvalError("invalid case-lambda")
     }
-    let params = parse_params(parts[0])
+    let formals = parse_formals(parts[0])
     let body = parts.sub(start=1).to_array()
-    clauses.push(CaseClause::{ params, body })
+    clauses.push(CaseClause::{ params: formals.params, rest: formals.rest, body })
   }
   Value::CaseClosure(make_case_closure(clauses, env))
 }
@@ -1539,16 +1613,16 @@ fn parse_bindings(expr : Datum) -> Array[(String, Datum)] raise EvalError {
 }
 
 ///|
-fn parse_value_bindings(expr : Datum) -> Array[(Array[String], Datum)] raise EvalError {
+fn parse_value_bindings(expr : Datum) -> Array[(Formals, Datum)] raise EvalError {
   let bindings = datum_list_to_array(expr)
-  let parsed : Array[(Array[String], Datum)] = []
+  let parsed : Array[(Formals, Datum)] = []
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
       raise EvalError("invalid let-values")
     } else {
-      let names = parse_params(parts[0])
-      parsed.push((names, parts[1]))
+      let formals = parse_formals(parts[0])
+      parsed.push((formals, parts[1]))
     }
   }
   parsed
@@ -1829,21 +1903,12 @@ fn eval_define_state(
           n => raise arity_mismatch(2, n)
         }
       }
-      Datum::Pair(_, _) => {
-        let sig = datum_list_to_array(args[0])
-        if sig.is_empty() {
-          raise EvalError("type error: symbol expected")
-        } else {
-          match sig[0] {
-            Datum::Symbol(name) => {
-              let params = parse_params(list_from_array(sig.sub(start=1).to_array()))
-              let body = args.sub(start=1).to_array()
-              env_define(env, name, Value::Closure(make_closure(params, body, env)))
-              MachineState::Apply(Value::Void, kont, handlers)
-            }
-            _ => raise EvalError("type error: symbol expected")
-          }
-        }
+      Datum::Pair(head, tail) => {
+        let name = parse_symbol(head.val)
+        let formals = parse_formals(tail.val)
+        let body = args.sub(start=1).to_array()
+        env_define(env, name, Value::Closure(make_closure(formals.params, formals.rest, body, env)))
+        MachineState::Apply(Value::Void, kont, handlers)
       }
       _ => raise EvalError("type error: symbol expected")
     }
@@ -1859,8 +1924,8 @@ fn eval_define_values_state(
 ) -> MachineState raise EvalError {
   match args.length() {
     2 => {
-      let names = parse_params(args[0])
-      MachineState::Eval(args[1], env, Kont::DefineValues(names, env, kont), handlers)
+      let formals = parse_formals(args[0])
+      MachineState::Eval(args[1], env, Kont::DefineValues(formals, env, kont), handlers)
     }
     n => raise arity_mismatch(2, n)
   }
@@ -2861,11 +2926,7 @@ fn make_condition_record(name : String, values : Array[Value]) -> Record raise E
 
 ///|
 fn irritants_list_value(values : Array[Value]) -> Value {
-  let items : Array[Datum] = []
-  for value in values {
-    items.push(value_to_datum_element(value))
-  }
-  Value::Datum(list_from_array(items))
+  values_to_list_value(values)
 }
 
 ///|
@@ -3718,51 +3779,54 @@ fn apply_proc(
     }
     Value::Primitive(prim) => MachineState::Apply(apply_primitive(prim, args), kont, handlers)
     Value::Closure(cl) => {
-      if args.length() != cl.params.length() {
-        raise arity_mismatch(cl.params.length(), args.length())
-      } else {
-        let new_env = env_extend(cl.env)
-        let mut i = 0
-        while i < cl.params.length() {
-          env_define(new_env, cl.params[i], args[i])
-          i = i + 1
-        }
-        eval_sequence_state(cl.body, new_env, kont, handlers)
+      let formals = Formals::{ params: cl.params, rest: cl.rest }
+      let bindings = formals_bindings(formals, args)
+      let new_env = env_extend(cl.env)
+      for binding in bindings {
+        let (name, bound_value) = binding
+        env_define(new_env, name, bound_value)
       }
+      eval_sequence_state(cl.body, new_env, kont, handlers)
     }
     Value::CaseClosure(cl) => {
       let mut matched = false
-      let mut matched_params : Array[String] = []
+      let mut matched_formals : Formals? = None
       let mut matched_body : Array[Datum] = []
       for clause in cl.clauses {
-        if clause.params.length() == args.length() {
+        let clause_formals = Formals::{ params: clause.params, rest: clause.rest }
+        if formals_accept_len(clause_formals, args.length()) {
           matched = true
-          matched_params = clause.params
+          matched_formals = Some(clause_formals)
           matched_body = clause.body
           break
         }
       }
       if !matched {
-        let lengths : Array[Int] = []
-        for clause in cl.clauses {
-          lengths.push(clause.params.length())
-        }
-        if lengths.length() == 1 {
-          raise arity_mismatch(lengths[0], args.length())
-        } else {
-          let expected_parts : Array[String] = []
-          for len in lengths {
-            expected_parts.push(len.to_string())
+        if cl.clauses.length() == 1 {
+          let clause = cl.clauses[0]
+          match clause.rest {
+            None => raise arity_mismatch(clause.params.length(), args.length())
+            Some(_) => raise arity_mismatch_at_least(clause.params.length(), args.length())
           }
-          let expected = expected_parts.join(", ")
-          raise EvalError("arity mismatch: expected one of \{expected} got \{args.length()}")
         }
+        let expected_parts : Array[String] = []
+        for clause in cl.clauses {
+          let clause_formals = Formals::{ params: clause.params, rest: clause.rest }
+          expected_parts.push(formals_expected_desc(clause_formals))
+        }
+        let expected = expected_parts.join(", ")
+        raise EvalError("arity mismatch: expected one of \{expected} got \{args.length()}")
       }
       let new_env = env_extend(cl.env)
-      let mut i = 0
-      while i < matched_params.length() {
-        env_define(new_env, matched_params[i], args[i])
-        i = i + 1
+      match matched_formals {
+        Some(formals) => {
+          let bindings = formals_bindings(formals, args)
+          for binding in bindings {
+            let (name, bound_value) = binding
+            env_define(new_env, name, bound_value)
+          }
+        }
+        None => ()
       }
       eval_sequence_state(matched_body, new_env, kont, handlers)
     }

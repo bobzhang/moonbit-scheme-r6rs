@@ -377,6 +377,7 @@ pub struct SyntaxRules {
 pub struct Closure {
   id : Int
   params : Array[String]
+  rest : String?
   body : Array[Datum]
   env : Env
 }
@@ -384,6 +385,7 @@ pub struct Closure {
 ///|
 pub struct CaseClause {
   params : Array[String]
+  rest : String?
   body : Array[Datum]
 }
 
