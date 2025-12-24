@@ -110,3 +110,18 @@ test "r6rs libraries: import sets" {
   )
   inspect(value_to_string(eval_program(nested_prog)), content="10")
 }
+
+///|
+test "r6rs libraries: export rename" {
+  let program = (
+    (
+      #|(library (export-rename)
+      #|  (export (rename (add1 inc)))
+      #|  (import)
+      #|  (define (add1 x) (+ x 1)))
+      #|(import (export-rename))
+      #|(inc 4)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="5")
+}

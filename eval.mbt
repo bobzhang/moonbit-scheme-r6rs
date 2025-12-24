@@ -3304,13 +3304,46 @@ fn parse_library_name(expr : Datum) -> String raise EvalError {
 }
 
 ///|
-fn parse_export_clause(expr : Datum) -> Array[String] raise EvalError {
+fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
     raise EvalError("invalid library")
   }
   match items[0] {
-    Datum::Symbol("export") => parse_symbol_list(items.sub(start=1).to_array())
+    Datum::Symbol("export") => {
+      let exports : Array[(String, String)] = []
+      let mut i = 1
+      while i < items.length() {
+        match items[i] {
+          Datum::Symbol(name) => exports.push((name, name))
+          Datum::Pair(_, _) => {
+            let spec_items = datum_list_to_array(items[i])
+            if spec_items.is_empty() {
+              raise EvalError("invalid library")
+            }
+            match spec_items[0] {
+              Datum::Symbol("rename") => {
+                let mut j = 1
+                while j < spec_items.length() {
+                  let rename_parts = datum_list_to_array(spec_items[j])
+                  if rename_parts.length() != 2 {
+                    raise EvalError("invalid library")
+                  }
+                  let internal = parse_symbol(rename_parts[0])
+                  let external = parse_symbol(rename_parts[1])
+                  exports.push((external, internal))
+                  j = j + 1
+                }
+              }
+              _ => raise EvalError("invalid library")
+            }
+          }
+          _ => raise EvalError("invalid library")
+        }
+        i = i + 1
+      }
+      exports
+    }
     _ => raise EvalError("invalid library")
   }
 }
@@ -3522,8 +3555,9 @@ fn eval_library_state(
     let _ = eval_expr(form, lib_env)
   }
   let export_map : Map[String, Value] = {}
-  for export_name in exports {
-    export_map[export_name] = env_lookup(lib_env, export_name)
+  for export_spec in exports {
+    let (external, internal) = export_spec
+    export_map[external] = env_lookup(lib_env, internal)
   }
   register_library(name, export_map)
   MachineState::Apply(Value::Void, kont, handlers)
