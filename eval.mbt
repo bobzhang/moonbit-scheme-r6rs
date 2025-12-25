@@ -393,7 +393,7 @@ fn make_parameter(value : Value) -> Parameter {
 fn value_as_parameter(value : Value) -> Parameter raise EvalError {
   match value {
     Value::Parameter(param) => param
-    _ => raise EvalError("type error: parameter expected")
+    _ => raise @core.EvalError("type error: parameter expected")
   }
 }
 
@@ -446,19 +446,13 @@ fn make_eval_env(env : Env) -> EvalEnv {
 fn value_as_eval_env(value : Value) -> EvalEnv raise EvalError {
   match value {
     Value::EvalEnv(env) => env
-    _ => raise EvalError("type error: environment expected")
+    _ => raise @core.EvalError("type error: environment expected")
   }
 }
 
 ///|
 fn make_case_closure(clauses : Array[CaseClause], env : Env) -> CaseClosure {
   { id: next_closure_id(), clauses, env }
-}
-
-///|
-priv struct Formals {
-  params : Array[String]
-  rest : String?
 }
 
 ///|
@@ -479,147 +473,6 @@ fn capture_continuation(kont : Kont, handlers : Array[Value]) -> Continuation {
     winds_copy.push(item)
   }
   Continuation::{ id: next_continuation_id(), kont, handlers, winds: winds_copy }
-}
-
-///|
-priv enum Kont {
-  Halt
-  If(Datum, Datum, Env, Kont)
-  Begin(Array[Datum], Env, Kont)
-  Set(String, Env, Kont)
-  Define(String, Env, Kont)
-  AppFun(Array[Datum], Env, Kont)
-  AppArgs(Value, Array[Value], Array[Datum], Env, Kont)
-  And(Array[Datum], Env, Kont)
-  Or(Array[Datum], Env, Kont)
-  Cond(Array[Datum], Array[Datum], Env, Kont)
-  CondArrow(Value, Kont)
-  Let(Array[(String, Datum)], Int, Array[Value], Env, Array[Datum], Kont)
-  LetStar(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
-  LetRec(Array[(String, Datum)], Int, Env, Array[Datum], Kont)
-  LetRecInit(Array[(String, Datum)], Int, Array[Value], Env, Array[Datum], Kont)
-  LetValues(
-    Array[(Formals, Datum)],
-    Int,
-    Array[Array[(String, Value)]],
-    Env,
-    Array[Datum],
-    Kont,
-  )
-  LetStarValues(Array[(Formals, Datum)], Int, Env, Array[Datum], Kont)
-  DefineValues(Formals, Env, Kont)
-  ParameterizeParam(
-    Array[(Datum, Datum)],
-    Int,
-    Array[Parameter],
-    Array[Value],
-    Env,
-    Array[Datum],
-    Kont,
-  )
-  ParameterizeValue(
-    Array[(Datum, Datum)],
-    Int,
-    Array[Parameter],
-    Array[Value],
-    Env,
-    Array[Datum],
-    Kont,
-  )
-  ParameterizeConvert(
-    Array[(Datum, Datum)],
-    Int,
-    Array[Parameter],
-    Array[Value],
-    Env,
-    Array[Datum],
-    Kont,
-  )
-  MakeParameter(Value, Kont)
-  SetParameter(Parameter, Kont)
-  GuardResult(GuardInfo)
-  GuardCond(Array[Datum], Array[Datum], Env, GuardInfo)
-  GuardCondArrow(Value, GuardInfo)
-  Case(Array[Datum], Env, Kont)
-  CaseArrow(Value, Kont)
-  CallWithValues(Value, Kont)
-  RecordConstructorDone(Kont)
-  RecordProtocolNApply(RecordType, Array[Value], Kont)
-  RecordProtocolNResult(RecordType, Kont)
-  DefineRecordType(String, String, RecordType, Array[RecordFieldBinding], Env, Kont)
-  DefineConditionType(String, String, RecordType, Array[RecordFieldBinding], Env, Kont)
-  HashtableFindResult(Hashtable, Value, Int, HashtableOp, Kont)
-  HashtableUpdateApply(Hashtable, Value, Int, Bool, Kont)
-  MapStep(Value, Array[Datum], Array[Datum], Bool, Kont)
-  VectorMapFinalize(Kont)
-  StringMapFinalize(Kont)
-  WindEnter(Value, Winder, Kont)
-  WindExit(Winder, Kont)
-  WindActions(Array[WindAction], Value, Kont, Array[Value])
-  WindPush(Winder, Array[WindAction], Value, Kont, Array[Value])
-  ForcePromise(Promise, Kont)
-  RaiseNonCont
-  RaiseCont(Kont)
-  RestoreHandlers(Array[Value], Kont)
-}
-
-///|
-struct Continuation {
-  id : Int
-  kont : Kont
-  handlers : Array[Value]
-  winds : Array[Winder]
-}
-
-///|
-priv struct ParamBinding {
-  param : Parameter
-  old_value : Value
-  new_value : Value
-}
-
-///|
-priv struct RecordFieldBinding {
-  accessor : String
-  index : Int
-  mutator : String?
-}
-
-///|
-priv enum HashtableOp {
-  Ref(Value)
-  Contains
-  Set(Value)
-  Delete
-  Update(Value, Value)
-}
-
-///|
-priv struct GuardInfo {
-  condition : Value
-  resume_value : Value
-  handlers : Array[Value]
-  raise_kont : Kont
-  continuable : Bool
-}
-
-///|
-priv enum WinderKind {
-  Proc(Value, Value)
-  Params(Array[ParamBinding])
-}
-
-///|
-priv struct Winder {
-  id : Int
-  kind : WinderKind
-}
-
-///|
-priv enum WindAction {
-  After(Winder)
-  Before(Winder)
-  SwitchHandlers(Array[Value])
 }
 
 ///|
@@ -1038,7 +891,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               state = MachineState::Apply(test_value, next, handlers)
             } else if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
               if parts.length() != 3 {
-                raise EvalError("invalid cond")
+                raise @core.EvalError("invalid cond")
               }
               state = MachineState::Eval(parts[2], env, Kont::CondArrow(test_value, next), handlers)
             } else {
@@ -1335,7 +1188,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
               state = apply_proc(info.resume_value, [test_value], kont, info.handlers)
             } else if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
               if parts.length() != 3 {
-                raise EvalError("invalid guard")
+                raise @core.EvalError("invalid guard")
               }
               state = MachineState::Eval(parts[2], env, Kont::GuardCondArrow(test_value, info), handlers)
             } else {
@@ -1362,7 +1215,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           Kont::RecordConstructorDone(next) => {
             let ctor_value = expect_single(value)
             if !is_procedure_value(ctor_value) {
-              raise EvalError("type error: procedure expected")
+              raise @core.EvalError("type error: procedure expected")
             }
             state = MachineState::Apply(ctor_value, next, handlers)
           }
@@ -1380,10 +1233,10 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             let record = value_as_record(record_value)
             let parent_type = match record_type.parent {
               Some(parent) => parent
-              None => raise EvalError("invalid record constructor descriptor")
+              None => raise @core.EvalError("invalid record constructor descriptor")
             }
             if !record_type_is_a(record.record_type, parent_type) {
-              raise EvalError("type error: record type mismatch: expected \{parent_type.name}")
+              raise @core.EvalError("type error: record type mismatch: expected \{parent_type.name}")
             }
             let parent_values : Array[Value] = []
             for field in record.fields {
@@ -1397,7 +1250,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           Kont::DefineRecordType(ctor_name, pred_name, record_type, bindings, env, next) => {
             let ctor_value = expect_single(value)
             if !is_procedure_value(ctor_value) {
-              raise EvalError("type error: procedure expected")
+              raise @core.EvalError("type error: procedure expected")
             }
             env_define(env, ctor_name, ctor_value)
             env_define(
@@ -1429,7 +1282,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           Kont::DefineConditionType(ctor_name, pred_name, record_type, bindings, env, next) => {
             let ctor_value = expect_single(value)
             if !is_procedure_value(ctor_value) {
-              raise EvalError("type error: procedure expected")
+              raise @core.EvalError("type error: procedure expected")
             }
             env_define(env, ctor_name, ctor_value)
             env_define(
@@ -1463,7 +1316,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
           Kont::HashtableUpdateApply(table, key, idx, found, next) => {
             let next_value = expect_single(value)
             if !table.mutable {
-              raise EvalError("hashtable is immutable")
+              raise @core.EvalError("hashtable is immutable")
             }
             if found {
               let entries = table.entries.val
@@ -1517,7 +1370,7 @@ fn eval_expr(expr : Datum, env : Env) -> Value raise EvalError {
             promise.state.val = PromiseState::Value(value)
             state = MachineState::Apply(value, next, handlers)
           }
-          Kont::RaiseNonCont => raise EvalError("non-continuable exception")
+          Kont::RaiseNonCont => raise @core.EvalError("non-continuable exception")
           Kont::RaiseCont(next) => state = MachineState::Apply(value, next, handlers)
           Kont::RestoreHandlers(prev_handlers, next) =>
             state = MachineState::Apply(value, next, prev_handlers)
@@ -1604,7 +1457,7 @@ fn quasiquote_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalEr
   match unwrap_form(expr, "unquote-splicing") {
     Some(arg) => {
       if depth == 1 {
-        raise EvalError("unquote-splicing not in list context")
+        raise @core.EvalError("unquote-splicing not in list context")
       } else {
         return list_from_array([
           Datum::Symbol("unquote-splicing"),
@@ -1657,7 +1510,7 @@ fn quasisyntax_expand(expr : Datum, env : Env, depth : Int) -> Datum raise EvalE
   match unwrap_form(expr, "unsyntax-splicing") {
     Some(arg) => {
       if depth == 1 {
-        raise EvalError("unsyntax-splicing not in list context")
+        raise @core.EvalError("unsyntax-splicing not in list context")
       } else {
         return list_from_array([
           Datum::Symbol("unsyntax-splicing"),
@@ -1709,11 +1562,11 @@ fn parse_formals(expr : Datum) -> Formals raise EvalError {
       Datum::Pair(car, cdr) => {
         match car.val {
           Datum::Symbol(name) => names.push(name)
-          _ => raise EvalError("type error: symbol expected")
+          _ => raise @core.EvalError("type error: symbol expected")
         }
         cur = cdr.val
       }
-      _ => raise EvalError("type error: symbol expected")
+      _ => raise @core.EvalError("type error: symbol expected")
     }
   }
   Formals::{ params: names, rest: None }
@@ -1721,7 +1574,7 @@ fn parse_formals(expr : Datum) -> Formals raise EvalError {
 
 ///|
 fn arity_mismatch_at_least(expected : Int, got : Int) -> EvalError {
-  EvalError("arity mismatch: expected at least \{expected} got \{got}")
+  @core.EvalError("arity mismatch: expected at least \{expected} got \{got}")
 }
 
 ///|
@@ -1804,7 +1657,7 @@ fn eval_case_lambda(args : Array[Datum], env : Env) -> Value raise EvalError {
   for clause in args {
     let parts = datum_list_to_array(clause)
     if parts.length() < 2 {
-      raise EvalError("invalid case-lambda")
+      raise @core.EvalError("invalid case-lambda")
     }
     let formals = parse_formals(parts[0])
     let body = parts.sub(start=1).to_array()
@@ -1823,7 +1676,7 @@ fn eval_define_syntax(args : Array[Datum], env : Env) -> Value raise EvalError {
           env_define(env, name, Value::Macro(rules))
           Value::Void
         }
-        _ => raise EvalError("type error: symbol expected")
+        _ => raise @core.EvalError("type error: symbol expected")
       }
     }
     n => raise arity_mismatch(2, n)
@@ -1837,14 +1690,14 @@ fn parse_syntax_bindings(expr : Datum) -> Array[(String, SyntaxRules)] raise Eva
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
-      raise EvalError("type error: syntax binding expected")
+      raise @core.EvalError("type error: syntax binding expected")
     } else {
       match parts[0] {
         Datum::Symbol(name) => {
           let rules = parse_transformer(parts[1], name)
           parsed.push((name, rules))
         }
-        _ => raise EvalError("type error: symbol expected")
+        _ => raise @core.EvalError("type error: symbol expected")
       }
     }
   }
@@ -1858,11 +1711,11 @@ fn parse_bindings(expr : Datum) -> Array[(String, Datum)] raise EvalError {
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
-      raise EvalError("type error: binding expected")
+      raise @core.EvalError("type error: binding expected")
     } else {
       match parts[0] {
         Datum::Symbol(name) => parsed.push((name, parts[1]))
-        _ => raise EvalError("type error: symbol expected")
+        _ => raise @core.EvalError("type error: symbol expected")
       }
     }
   }
@@ -1876,7 +1729,7 @@ fn parse_value_bindings(expr : Datum) -> Array[(Formals, Datum)] raise EvalError
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
-      raise EvalError("invalid let-values")
+      raise @core.EvalError("invalid let-values")
     } else {
       let formals = parse_formals(parts[0])
       parsed.push((formals, parts[1]))
@@ -1892,7 +1745,7 @@ fn parse_parameterize_bindings(expr : Datum) -> Array[(Datum, Datum)] raise Eval
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
-      raise EvalError("invalid parameterize")
+      raise @core.EvalError("invalid parameterize")
     } else {
       parsed.push((parts[0], parts[1]))
     }
@@ -1904,7 +1757,7 @@ fn parse_parameterize_bindings(expr : Datum) -> Array[(Datum, Datum)] raise Eval
 fn parse_symbol(expr : Datum) -> String raise EvalError {
   match expr {
     Datum::Symbol(name) => name
-    _ => raise EvalError("type error: symbol expected")
+    _ => raise @core.EvalError("type error: symbol expected")
   }
 }
 
@@ -1912,7 +1765,7 @@ fn parse_symbol(expr : Datum) -> String raise EvalError {
 fn parse_bool(expr : Datum) -> Bool raise EvalError {
   match expr {
     Datum::Bool(value) => value
-    _ => raise EvalError("invalid define-record-type")
+    _ => raise @core.EvalError("invalid define-record-type")
   }
 }
 
@@ -1932,7 +1785,7 @@ fn expect_single(value : Value) -> Value raise EvalError {
       if values.length() == 1 {
         values[0]
       } else {
-        raise EvalError("multiple values in single-value context")
+        raise @core.EvalError("multiple values in single-value context")
       }
     }
     _ => value
@@ -1959,7 +1812,7 @@ fn raise_to_handlers(
   continuable : Bool,
 ) -> MachineState raise EvalError {
   if handlers.is_empty() {
-    raise EvalError("uncaught exception")
+    raise @core.EvalError("uncaught exception")
   } else {
     let handler = handlers[handlers.length() - 1]
     if continuable {
@@ -2188,7 +2041,7 @@ fn eval_define_state(
         env_define(env, name, Value::Closure(make_closure(formals.params, formals.rest, body, env)))
         MachineState::Apply(Value::Void, kont, handlers)
       }
-      _ => raise EvalError("type error: symbol expected")
+      _ => raise @core.EvalError("type error: symbol expected")
     }
   }
 }
@@ -2221,7 +2074,7 @@ fn eval_guard_state(
   } else {
     let spec = datum_list_to_array(args[0])
     if spec.is_empty() {
-      raise EvalError("invalid guard")
+      raise @core.EvalError("invalid guard")
     }
     let name = parse_symbol(spec[0])
     let clauses = spec.sub(start=1).to_array()
@@ -2292,7 +2145,7 @@ fn eval_set_state(
             None => MachineState::Eval(args[1], env, Kont::Set(name, env, kont), handlers)
           }
         }
-        _ => raise EvalError("type error: symbol expected")
+        _ => raise @core.EvalError("type error: symbol expected")
       }
     }
     n => raise arity_mismatch(2, n)
@@ -2546,7 +2399,7 @@ fn parse_do_bindings(expr : Datum) -> (Array[String], Array[Datum], Array[Datum]
   for binding in bindings {
     let parts = datum_list_to_array(binding)
     if parts.length() < 2 || parts.length() > 3 {
-      raise EvalError("invalid do")
+      raise @core.EvalError("invalid do")
     }
     let name = parse_symbol(parts[0])
     names.push(name)
@@ -2573,7 +2426,7 @@ fn eval_do_state(
   let (names, inits, steps) = parse_do_bindings(args[0])
   let test_parts = datum_list_to_array(args[1])
   if test_parts.is_empty() {
-    raise EvalError("invalid do")
+    raise @core.EvalError("invalid do")
   }
   let test_expr = test_parts[0]
   let result_exprs = test_parts.sub(start=1).to_array()
@@ -2631,12 +2484,12 @@ fn eval_define_record_type_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   if args.length() < 3 {
-    raise EvalError("invalid define-record-type")
+    raise @core.EvalError("invalid define-record-type")
   }
   let record_name = parse_symbol(args[0])
   let ctor_parts = datum_list_to_array(args[1])
   if ctor_parts.is_empty() {
-    raise EvalError("invalid define-record-type")
+    raise @core.EvalError("invalid define-record-type")
   }
   let ctor_name = parse_symbol(ctor_parts[0])
   let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1).to_array())
@@ -2654,14 +2507,14 @@ fn eval_define_record_type_state(
       match symbol_name(parts[0]) {
         Some("parent") if parts.length() == 2 => {
           if parent_name is Some(_) {
-            raise EvalError("invalid define-record-type")
+            raise @core.EvalError("invalid define-record-type")
           }
           parent_name = Some(parse_symbol(parts[1]))
           continue
         }
         Some("protocol") if parts.length() == 2 => {
           if protocol_expr is Some(_) {
-            raise EvalError("invalid define-record-type")
+            raise @core.EvalError("invalid define-record-type")
           }
           protocol_expr = Some(parts[1])
           continue
@@ -2676,7 +2529,7 @@ fn eval_define_record_type_state(
         }
         Some("nongenerative") => {
           if uid is Some(_) {
-            raise EvalError("invalid define-record-type")
+            raise @core.EvalError("invalid define-record-type")
           }
           if parts.length() == 1 {
             uid = Some(record_name)
@@ -2694,7 +2547,7 @@ fn eval_define_record_type_state(
     Some(name) =>
       match lookup_record_type_descriptor(name) {
         Some(desc) => Some(desc)
-        None => raise EvalError("invalid define-record-type")
+        None => raise @core.EvalError("invalid define-record-type")
       }
     None => None
   }
@@ -2705,7 +2558,7 @@ fn eval_define_record_type_state(
   match parent_type {
     Some(parent) => {
       if parent.is_sealed {
-        raise EvalError("invalid define-record-type")
+        raise @core.EvalError("invalid define-record-type")
       }
     }
     None => ()
@@ -2726,14 +2579,14 @@ fn eval_define_record_type_state(
   for spec in field_specs {
     let parts = datum_list_to_array(spec)
     if parts.length() < 2 || parts.length() > 3 {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
     let field_name = parse_symbol(parts[0])
     if array_contains_name(parent_field_names, field_name) {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
     if accessors.contains(field_name) {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
     let accessor = parse_symbol(parts[1])
     accessors[field_name] = accessor
@@ -2748,11 +2601,11 @@ fn eval_define_record_type_state(
   }
   if parent_count == 0 {
     if ctor_fields.length() != new_field_names.length() {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
   } else {
     if ctor_fields.length() != parent_count + new_field_names.length() {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
   }
   let fields : Array[RecordField] = []
@@ -2761,18 +2614,18 @@ fn eval_define_record_type_state(
   while i < ctor_fields.length() {
     let field_name = ctor_fields[i]
     if field_index.contains(field_name) {
-      raise EvalError("invalid define-record-type")
+      raise @core.EvalError("invalid define-record-type")
     }
     if i < parent_count {
       let parent_field = parent_fields[i]
       if parent_field.name != field_name {
-        raise EvalError("invalid define-record-type")
+        raise @core.EvalError("invalid define-record-type")
       }
       fields.push(parent_field)
     } else {
       let is_mutable = match mutable.get(field_name) {
         Some(flag) => flag
-        None => raise EvalError("invalid define-record-type")
+        None => raise @core.EvalError("invalid define-record-type")
       }
       fields.push(RecordField::{ name: field_name, mutable: is_mutable })
     }
@@ -2783,11 +2636,11 @@ fn eval_define_record_type_state(
   for field_name in new_field_names {
     let idx = match field_index.get(field_name) {
       Some(value) => value
-      None => raise EvalError("invalid define-record-type")
+      None => raise @core.EvalError("invalid define-record-type")
     }
     let accessor_name = match accessors.get(field_name) {
       Some(name) => name
-      None => raise EvalError("invalid define-record-type")
+      None => raise @core.EvalError("invalid define-record-type")
     }
     let mutator_name = mutators.get(field_name)
     bindings.push(
@@ -2801,10 +2654,10 @@ fn eval_define_record_type_state(
   let (record_type, ctor_desc) = match existing_desc {
     Some(desc) => {
       if !record_type_matches(desc.record_type, parent_type, is_sealed, is_opaque, fields) {
-        raise EvalError("invalid define-record-type")
+        raise @core.EvalError("invalid define-record-type")
       }
       if protocol_expr is Some(_) {
-        raise EvalError("invalid define-record-type")
+        raise @core.EvalError("invalid define-record-type")
       }
       register_record_type_alias(record_name, desc)
       (desc.record_type, desc.constructor_desc)
@@ -2826,7 +2679,7 @@ fn eval_define_record_type_state(
         Some(expr) => {
           let proc = eval_expr(expr, env)
           if !is_procedure_value(proc) {
-            raise EvalError("type error: procedure expected")
+            raise @core.EvalError("type error: procedure expected")
           }
           Some(proc)
         }
@@ -2855,7 +2708,7 @@ fn eval_define_condition_type_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   if args.length() < 4 {
-    raise EvalError("invalid define-condition-type")
+    raise @core.EvalError("invalid define-condition-type")
   }
   let record_name = parse_symbol(args[0])
   let parent_name = parse_symbol(args[1])
@@ -2863,20 +2716,20 @@ fn eval_define_condition_type_state(
   let pred_name = parse_symbol(args[3])
   let field_specs = args.sub(start=4).to_array()
   match lookup_record_type_descriptor(record_name) {
-    Some(_) => raise EvalError("invalid define-condition-type")
+    Some(_) => raise @core.EvalError("invalid define-condition-type")
     None => ()
   }
   let parent_desc = match lookup_record_type_descriptor(parent_name) {
     Some(desc) => desc
-    None => raise EvalError("invalid define-condition-type")
+    None => raise @core.EvalError("invalid define-condition-type")
   }
   let parent_type = parent_desc.record_type
   if parent_type.is_sealed || parent_type.is_opaque {
-    raise EvalError("invalid define-condition-type")
+    raise @core.EvalError("invalid define-condition-type")
   }
   let base_type = condition_base_type()
   if !record_type_is_a(parent_type, base_type) {
-    raise EvalError("invalid define-condition-type")
+    raise @core.EvalError("invalid define-condition-type")
   }
   let parent_fields = parent_type.fields
   let parent_field_names : Array[String] = []
@@ -2888,14 +2741,14 @@ fn eval_define_condition_type_state(
   for spec in field_specs {
     let parts = datum_list_to_array(spec)
     if parts.length() != 2 {
-      raise EvalError("invalid define-condition-type")
+      raise @core.EvalError("invalid define-condition-type")
     }
     let field_name = parse_symbol(parts[0])
     if array_contains_name(parent_field_names, field_name) {
-      raise EvalError("invalid define-condition-type")
+      raise @core.EvalError("invalid define-condition-type")
     }
     if accessors.contains(field_name) {
-      raise EvalError("invalid define-condition-type")
+      raise @core.EvalError("invalid define-condition-type")
     }
     let accessor = parse_symbol(parts[1])
     accessors[field_name] = accessor
@@ -2915,7 +2768,7 @@ fn eval_define_condition_type_state(
     let field_name = new_field_names[i]
     let accessor_name = match accessors.get(field_name) {
       Some(name) => name
-      None => raise EvalError("invalid define-condition-type")
+      None => raise @core.EvalError("invalid define-condition-type")
     }
     bindings.push(
       RecordFieldBinding::{ accessor: accessor_name, index: parent_count + i, mutator: None },
@@ -2948,7 +2801,7 @@ fn eval_define_enumeration_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   if args.length() != 3 {
-    raise EvalError("invalid define-enumeration")
+    raise @core.EvalError("invalid define-enumeration")
   }
   let type_name = parse_symbol(args[0])
   let symbols = parse_symbol_list(datum_list_to_array(args[1]))
@@ -2956,7 +2809,7 @@ fn eval_define_enumeration_state(
   let seen : Map[String, Bool] = {}
   for name in symbols {
     if seen.contains(name) {
-      raise EvalError("invalid define-enumeration")
+      raise @core.EvalError("invalid define-enumeration")
     }
     seen[name] = true
   }
@@ -2983,7 +2836,7 @@ fn array_contains_name(items : Array[String], name : String) -> Bool {
 fn value_as_record(value : Value) -> Record raise EvalError {
   match value {
     Value::Record(record) => record
-    _ => raise EvalError("type error: record expected")
+    _ => raise @core.EvalError("type error: record expected")
   }
 }
 
@@ -3000,7 +2853,7 @@ fn record_constructor_from_descriptor(
     }
     Some(protocol) => {
       if !is_procedure_value(protocol) {
-        raise EvalError("type error: procedure expected")
+        raise @core.EvalError("type error: procedure expected")
       }
       let arg = match desc.record_type.parent {
         None => Value::RecordProc(make_record_proc(RecordProcKind::Constructor(desc.record_type)))
@@ -3051,7 +2904,7 @@ fn apply_record_proc(
       } else {
         let record = value_as_record(args[0])
         if !record_type_is_a(record.record_type, record_type) {
-          raise EvalError("type error: record type mismatch: expected \{record_type.name}")
+          raise @core.EvalError("type error: record type mismatch: expected \{record_type.name}")
         }
         MachineState::Apply(record.fields[idx].val, kont, handlers)
       }
@@ -3062,11 +2915,11 @@ fn apply_record_proc(
       } else {
         let record = value_as_record(args[0])
         if !record_type_is_a(record.record_type, record_type) {
-          raise EvalError("type error: record type mismatch: expected \{record_type.name}")
+          raise @core.EvalError("type error: record type mismatch: expected \{record_type.name}")
         }
         let field = record.record_type.fields[idx]
         if !field.mutable {
-          raise EvalError("record field is immutable: \{field.name}")
+          raise @core.EvalError("record field is immutable: \{field.name}")
         }
         record.fields[idx].val = args[1]
         MachineState::Apply(Value::Void, kont, handlers)
@@ -3075,7 +2928,7 @@ fn apply_record_proc(
     RecordProcKind::ProtocolN(record_type, parent_desc) => {
       let parent_type = match record_type.parent {
         Some(parent) => parent
-        None => raise EvalError("invalid record constructor descriptor")
+        None => raise @core.EvalError("invalid record constructor descriptor")
       }
       match parent_desc.protocol {
         None => {
@@ -3107,7 +2960,7 @@ fn apply_record_proc(
     RecordProcKind::ProtocolP(record_type, parent_values) => {
       let total_fields = record_type.fields.length()
       if parent_values.length() > total_fields {
-        raise EvalError("invalid record constructor descriptor")
+        raise @core.EvalError("invalid record constructor descriptor")
       }
       let child_count = total_fields - parent_values.length()
       if args.length() != child_count {
@@ -3169,7 +3022,7 @@ fn apply_condition_proc(
         }
         match found {
           Some(record) => MachineState::Apply(record.fields[idx].val, kont, handlers)
-          None => raise EvalError(
+          None => raise @core.EvalError(
             "type error: condition type mismatch: expected \{record_type.name}",
           )
         }
@@ -3220,7 +3073,7 @@ fn make_condition_value(components : Array[Record]) -> Value {
 fn lookup_condition_record_type(name : String) -> RecordType raise EvalError {
   match lookup_record_type_descriptor(name) {
     Some(desc) => desc.record_type
-    None => raise EvalError("type error: condition type expected")
+    None => raise @core.EvalError("type error: condition type expected")
   }
 }
 
@@ -3228,7 +3081,7 @@ fn lookup_condition_record_type(name : String) -> RecordType raise EvalError {
 fn make_condition_record(name : String, values : Array[Value]) -> Record raise EvalError {
   let record_type = lookup_condition_record_type(name)
   if record_type.fields.length() != values.length() {
-    raise EvalError("type error: condition field count mismatch")
+    raise @core.EvalError("type error: condition field count mismatch")
   }
   make_record_instance(record_type, values)
 }
@@ -3300,14 +3153,14 @@ fn hashtable_found_state(
     HashtableOp::Contains => MachineState::Apply(bool_value(true), kont, handlers)
     HashtableOp::Set(value) => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       entry.value.val = value
       MachineState::Apply(Value::Void, kont, handlers)
     }
     HashtableOp::Delete => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       let next_entries : Array[HashtableEntry] = []
       let mut i = 0
@@ -3322,7 +3175,7 @@ fn hashtable_found_state(
     }
     HashtableOp::Update(proc, _) => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       apply_proc(
         proc,
@@ -3347,7 +3200,7 @@ fn hashtable_not_found_state(
     HashtableOp::Contains => MachineState::Apply(bool_value(false), kont, handlers)
     HashtableOp::Set(value) => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       let entries = table.entries.val
       entries.push(HashtableEntry::{ key, value: Ref::new(value) })
@@ -3355,13 +3208,13 @@ fn hashtable_not_found_state(
     }
     HashtableOp::Delete => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       MachineState::Apply(Value::Void, kont, handlers)
     }
     HashtableOp::Update(proc, default_value) => {
       if !table.mutable {
-        raise EvalError("hashtable is immutable")
+        raise @core.EvalError("hashtable is immutable")
       }
       apply_proc(
         proc,
@@ -3445,7 +3298,7 @@ fn apply_hashtable_update(
   let proc = args[2]
   let default_value = args[3]
   if !is_procedure_value(proc) {
-    raise EvalError("type error: procedure expected")
+    raise @core.EvalError("type error: procedure expected")
   }
   hashtable_find_state(
     table,
@@ -3538,18 +3391,18 @@ fn register_library_entry(
 ///|
 fn parse_version_items(items : Array[Datum]) -> Array[Int] raise EvalError {
   if items.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   let versions : Array[Int] = []
   for part in items {
     match part {
       Datum::Int(n) =>
         if n < 0 {
-          raise EvalError("invalid library name")
+          raise @core.EvalError("invalid library name")
         } else {
           versions.push(n)
         }
-      _ => raise EvalError("invalid library name")
+      _ => raise @core.EvalError("invalid library name")
     }
   }
   versions
@@ -3563,7 +3416,7 @@ fn parse_version_list(expr : Datum) -> Array[Int] raise EvalError {
 ///|
 fn parse_version_ref_version(items : Array[Datum]) -> Array[Int] raise EvalError {
   if items.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   if items.length() == 1 {
     match items[0] {
@@ -3579,12 +3432,12 @@ fn parse_version_ref_version(items : Array[Datum]) -> Array[Int] raise EvalError
 fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   match items[0] {
     Datum::Symbol("and") => {
       if items.length() == 1 {
-        raise EvalError("invalid library name")
+        raise @core.EvalError("invalid library name")
       }
       let refs : Array[VersionRef] = []
       let mut i = 1
@@ -3596,7 +3449,7 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
     }
     Datum::Symbol("or") => {
       if items.length() == 1 {
-        raise EvalError("invalid library name")
+        raise @core.EvalError("invalid library name")
       }
       let refs : Array[VersionRef] = []
       let mut i = 1
@@ -3608,7 +3461,7 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
     }
     Datum::Symbol("not") => {
       if items.length() != 2 {
-        raise EvalError("invalid library name")
+        raise @core.EvalError("invalid library name")
       }
       VersionRef::Not(Ref::new(parse_version_ref(items[1])))
     }
@@ -3617,7 +3470,7 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
     Datum::Symbol("<") => VersionRef::Lt(parse_version_ref_version(items.sub(start=1).to_array()))
     Datum::Symbol("<=") => VersionRef::Le(parse_version_ref_version(items.sub(start=1).to_array()))
     Datum::Int(_) => VersionRef::Exact(parse_version_items(items))
-    _ => raise EvalError("invalid library name")
+    _ => raise @core.EvalError("invalid library name")
   }
 }
 
@@ -3625,7 +3478,7 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
 fn parse_library_name_spec(expr : Datum) -> LibraryNameSpec raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   let names : Array[String] = []
   let mut version : Array[Int]? = None
@@ -3634,22 +3487,22 @@ fn parse_library_name_spec(expr : Datum) -> LibraryNameSpec raise EvalError {
     match parts[i] {
       Datum::Symbol(name) => {
         if version is Some(_) {
-          raise EvalError("invalid library name")
+          raise @core.EvalError("invalid library name")
         }
         names.push(name)
       }
       Datum::Pair(_, _) | Datum::Nil => {
         if i != parts.length() - 1 {
-          raise EvalError("invalid library name")
+          raise @core.EvalError("invalid library name")
         }
         version = Some(parse_version_list(parts[i]))
       }
-      _ => raise EvalError("invalid library name")
+      _ => raise @core.EvalError("invalid library name")
     }
     i = i + 1
   }
   if names.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   { base: names.join("."), version }
 }
@@ -3658,7 +3511,7 @@ fn parse_library_name_spec(expr : Datum) -> LibraryNameSpec raise EvalError {
 fn parse_library_ref(expr : Datum) -> LibraryRef raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   let names : Array[String] = []
   let mut version_ref : VersionRef? = None
@@ -3667,22 +3520,22 @@ fn parse_library_ref(expr : Datum) -> LibraryRef raise EvalError {
     match parts[i] {
       Datum::Symbol(name) => {
         if version_ref is Some(_) {
-          raise EvalError("invalid library name")
+          raise @core.EvalError("invalid library name")
         }
         names.push(name)
       }
       Datum::Pair(_, _) | Datum::Nil => {
         if i != parts.length() - 1 {
-          raise EvalError("invalid library name")
+          raise @core.EvalError("invalid library name")
         }
         version_ref = Some(parse_version_ref(parts[i]))
       }
-      _ => raise EvalError("invalid library name")
+      _ => raise @core.EvalError("invalid library name")
     }
     i = i + 1
   }
   if names.is_empty() {
-    raise EvalError("invalid library name")
+    raise @core.EvalError("invalid library name")
   }
   { base: names.join("."), version_ref }
 }
@@ -3790,7 +3643,7 @@ fn select_library_for_ref(reference : LibraryRef) -> LibraryVersionInfo? {
 fn library_exports_from_ref(reference : LibraryRef) -> Map[String, Value] raise EvalError {
   match select_library_for_ref(reference) {
     Some(entry) => library_exports(entry.name)
-    None => raise EvalError("unknown library: \{reference.base}")
+    None => raise @core.EvalError("unknown library: \{reference.base}")
   }
 }
 
@@ -3798,7 +3651,7 @@ fn library_exports_from_ref(reference : LibraryRef) -> Map[String, Value] raise 
 fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
-    raise EvalError("invalid library")
+    raise @core.EvalError("invalid library")
   }
   match items[0] {
     Datum::Symbol("export") => {
@@ -3810,7 +3663,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
           Datum::Pair(_, _) => {
             let spec_items = datum_list_to_array(items[i])
             if spec_items.is_empty() {
-              raise EvalError("invalid library")
+              raise @core.EvalError("invalid library")
             }
             match spec_items[0] {
               Datum::Symbol("rename") => {
@@ -3818,7 +3671,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
                 while j < spec_items.length() {
                   let rename_parts = datum_list_to_array(spec_items[j])
                   if rename_parts.length() != 2 {
-                    raise EvalError("invalid library")
+                    raise @core.EvalError("invalid library")
                   }
                   let internal = parse_symbol(rename_parts[0])
                   let external = parse_symbol(rename_parts[1])
@@ -3826,16 +3679,16 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
                   j = j + 1
                 }
               }
-              _ => raise EvalError("invalid library")
+              _ => raise @core.EvalError("invalid library")
             }
           }
-          _ => raise EvalError("invalid library")
+          _ => raise @core.EvalError("invalid library")
         }
         i = i + 1
       }
       exports
     }
-    _ => raise EvalError("invalid library")
+    _ => raise @core.EvalError("invalid library")
   }
 }
 
@@ -3843,11 +3696,11 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
 fn parse_import_clause(expr : Datum) -> Array[Datum] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
-    raise EvalError("invalid library")
+    raise @core.EvalError("invalid library")
   }
   match items[0] {
     Datum::Symbol("import") => items.sub(start=1).to_array()
-    _ => raise EvalError("invalid library")
+    _ => raise @core.EvalError("invalid library")
   }
 }
 
@@ -3864,7 +3717,7 @@ fn library_exports(name : String) -> Map[String, Value] raise EvalError {
       }
       exports
     }
-    None => raise EvalError("unknown library: \{name}")
+    None => raise @core.EvalError("unknown library: \{name}")
   }
 }
 
@@ -3877,7 +3730,7 @@ fn import_set_only(
   for name in names {
     match exports.get(name) {
       Some(value) => result[name] = value
-      None => raise EvalError("unknown import: \{name}")
+      None => raise @core.EvalError("unknown import: \{name}")
     }
   }
   result
@@ -3891,7 +3744,7 @@ fn import_set_except(
   let excluded : Map[String, Bool] = {}
   for name in names {
     if !exports.contains(name) {
-      raise EvalError("unknown import: \{name}")
+      raise @core.EvalError("unknown import: \{name}")
     }
     excluded[name] = true
   }
@@ -3916,10 +3769,10 @@ fn import_set_rename(
   for rename in renames {
     let (old_name, new_name) = rename
     if !exports.contains(old_name) {
-      raise EvalError("unknown import: \{old_name}")
+      raise @core.EvalError("unknown import: \{old_name}")
     }
     if rename_map.contains(old_name) {
-      raise EvalError("invalid import set")
+      raise @core.EvalError("invalid import set")
     }
     rename_map[old_name] = new_name
   }
@@ -3930,7 +3783,7 @@ fn import_set_rename(
       None => key
     }
     if result.contains(target) {
-      raise EvalError("invalid import set")
+      raise @core.EvalError("invalid import set")
     }
     match exports.get(key) {
       Some(value) => result[target] = value
@@ -3958,7 +3811,7 @@ fn parse_rename_specs(items : Array[Datum]) -> Array[(String, String)] raise Eva
   for item in items {
     let parts = datum_list_to_array(item)
     if parts.length() != 2 {
-      raise EvalError("invalid import set")
+      raise @core.EvalError("invalid import set")
     }
     let old_name = parse_symbol(parts[0])
     let new_name = parse_symbol(parts[1])
@@ -3975,7 +3828,7 @@ priv struct ImportPhases {
 ///|
 fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
   if items.is_empty() {
-    raise EvalError("invalid import set")
+    raise @core.EvalError("invalid import set")
   }
   let mut run = false
   let mut expand = false
@@ -3986,7 +3839,7 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
       Datum::Pair(_, _) | Datum::Nil => {
         let parts = datum_list_to_array(item)
         if parts.length() != 2 {
-          raise EvalError("invalid import set")
+          raise @core.EvalError("invalid import set")
         }
         match parts[0] {
           Datum::Symbol("meta") => {
@@ -3997,19 +3850,19 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
                 } else if n > 0 {
                   expand = true
                 } else {
-                  raise EvalError("invalid import set")
+                  raise @core.EvalError("invalid import set")
                 }
-              _ => raise EvalError("invalid import set")
+              _ => raise @core.EvalError("invalid import set")
             }
           }
-          _ => raise EvalError("invalid import set")
+          _ => raise @core.EvalError("invalid import set")
         }
       }
-      _ => raise EvalError("invalid import set")
+      _ => raise @core.EvalError("invalid import set")
     }
   }
   if !run && !expand {
-    raise EvalError("invalid import set")
+    raise @core.EvalError("invalid import set")
   }
   { run, expand }
 }
@@ -4043,12 +3896,12 @@ fn filter_exports_by_phase(
 fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
-    raise EvalError("invalid import set")
+    raise @core.EvalError("invalid import set")
   }
   match items[0] {
     Datum::Symbol("only") => {
       if items.length() < 3 {
-        raise EvalError("invalid import set")
+        raise @core.EvalError("invalid import set")
       }
       let base = import_set_exports(items[1])
       let names = parse_symbol_list(items.sub(start=2).to_array())
@@ -4056,7 +3909,7 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
     }
     Datum::Symbol("except") => {
       if items.length() < 3 {
-        raise EvalError("invalid import set")
+        raise @core.EvalError("invalid import set")
       }
       let base = import_set_exports(items[1])
       let names = parse_symbol_list(items.sub(start=2).to_array())
@@ -4064,7 +3917,7 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
     }
     Datum::Symbol("rename") => {
       if items.length() < 3 {
-        raise EvalError("invalid import set")
+        raise @core.EvalError("invalid import set")
       }
       let base = import_set_exports(items[1])
       let renames = parse_rename_specs(items.sub(start=2).to_array())
@@ -4072,7 +3925,7 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
     }
     Datum::Symbol("prefix") => {
       if items.length() != 3 {
-        raise EvalError("invalid import set")
+        raise @core.EvalError("invalid import set")
       }
       let base = import_set_exports(items[1])
       let prefix = parse_symbol(items[2])
@@ -4080,7 +3933,7 @@ fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
     }
     Datum::Symbol("for") => {
       if items.length() < 3 {
-        raise EvalError("invalid import set")
+        raise @core.EvalError("invalid import set")
       }
       let phases = parse_for_phases(items.sub(start=2).to_array())
       let base = import_set_exports(items[1])
@@ -4112,7 +3965,7 @@ fn eval_library_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   if args.length() < 3 {
-    raise EvalError("invalid library")
+    raise @core.EvalError("invalid library")
   }
   let name_spec = parse_library_name_spec(args[0])
   let exports = parse_export_clause(args[1])
@@ -4223,7 +4076,7 @@ fn case_dispatch(
       if matched {
         if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
           if parts.length() != 3 {
-            raise EvalError("invalid case")
+            raise @core.EvalError("invalid case")
           }
           return MachineState::Eval(parts[2], env, Kont::CaseArrow(key, kont), handlers)
         }
@@ -4282,7 +4135,7 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
     Datum::Pair(_, _) => {
       let items = datum_list_to_array(expr)
       if items.is_empty() {
-        raise EvalError("invalid cond-expand")
+        raise @core.EvalError("invalid cond-expand")
       }
       match items[0] {
         Datum::Symbol("and") => {
@@ -4311,21 +4164,21 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
         }
         Datum::Symbol("not") => {
           if items.length() != 2 {
-            raise EvalError("invalid cond-expand")
+            raise @core.EvalError("invalid cond-expand")
           }
           !cond_expand_feature(items[1])
         }
         Datum::Symbol("library") => {
           if items.length() != 2 {
-            raise EvalError("invalid cond-expand")
+            raise @core.EvalError("invalid cond-expand")
           }
           let reference = parse_library_ref(items[1])
           select_library_for_ref(reference) is Some(_)
         }
-        _ => raise EvalError("invalid cond-expand")
+        _ => raise @core.EvalError("invalid cond-expand")
       }
     }
-    _ => raise EvalError("invalid cond-expand")
+    _ => raise @core.EvalError("invalid cond-expand")
   }
 }
 
@@ -4340,12 +4193,12 @@ fn eval_cond_expand_state(
   while i < clauses.length() {
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
-      raise EvalError("invalid cond-expand")
+      raise @core.EvalError("invalid cond-expand")
     }
     match parts[0] {
       Datum::Symbol("else") => {
         if i != clauses.length() - 1 {
-          raise EvalError("invalid cond-expand")
+          raise @core.EvalError("invalid cond-expand")
         }
         let body = parts.sub(start=1).to_array()
         return eval_sequence_state(body, env, kont, handlers)
@@ -4435,7 +4288,7 @@ fn map_step(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   if lists.is_empty() {
-    raise EvalError("arity mismatch: expected at least 1 list")
+    raise @core.EvalError("arity mismatch: expected at least 1 list")
   }
   let args : Array[Value] = []
   let next_lists : Array[Datum] = []
@@ -4451,7 +4304,7 @@ fn map_step(
         args.push(value_from_datum(car.val))
         next_lists.push(cdr.val)
       }
-      _ => raise EvalError("type error: proper list expected")
+      _ => raise @core.EvalError("type error: proper list expected")
     }
   }
   apply_proc(proc, args, Kont::MapStep(proc, next_lists, results, for_each, kont), handlers)
@@ -4464,7 +4317,7 @@ fn string_to_char_list(s : String) -> Datum raise EvalError {
   while i < s.length() {
     match s.get_char(i) {
       Some(ch) => items.push(Datum::Char(ch))
-      None => raise EvalError("index out of range")
+      None => raise @core.EvalError("index out of range")
     }
     i = i + 1
   }
@@ -4514,7 +4367,7 @@ fn apply_proc(
           let converter = args[1]
           apply_proc(converter, [args[0]], Kont::MakeParameter(converter, kont), handlers)
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Value::Primitive(Primitive::DynamicWind) => {
@@ -4554,7 +4407,7 @@ fn apply_proc(
       } else {
         let thunk = args[0]
         if !is_procedure_value(thunk) {
-          raise EvalError("type error: procedure expected")
+          raise @core.EvalError("type error: procedure expected")
         }
         MachineState::Apply(Value::Promise(make_promise(thunk)), kont, handlers)
       }
@@ -4570,7 +4423,7 @@ fn apply_proc(
               PromiseState::Thunk(thunk) =>
                 apply_proc(thunk, [], Kont::ForcePromise(promise, kont), handlers)
             }
-          _ => raise EvalError("type error: promise expected")
+          _ => raise @core.EvalError("type error: promise expected")
         }
       }
     }
@@ -4670,7 +4523,7 @@ fn apply_proc(
       if args.length() != 1 {
         raise arity_mismatch(1, args.length())
       } else if handlers.is_empty() {
-        raise EvalError("uncaught exception")
+        raise @core.EvalError("uncaught exception")
       } else {
         let handler = handlers[handlers.length() - 1]
         match handler {
@@ -4683,7 +4536,7 @@ fn apply_proc(
       if args.length() != 1 {
         raise arity_mismatch(1, args.length())
       } else if handlers.is_empty() {
-        raise EvalError("uncaught exception")
+        raise @core.EvalError("uncaught exception")
       } else {
         let handler = handlers[handlers.length() - 1]
         match handler {
@@ -4743,7 +4596,7 @@ fn apply_proc(
         let mut j = 0
         while j < vectors.length() {
           if vectors[j].length() != len {
-            raise EvalError("vector length mismatch")
+            raise @core.EvalError("vector length mismatch")
           }
           j = j + 1
         }
@@ -4771,7 +4624,7 @@ fn apply_proc(
         let mut j = 0
         while j < vectors.length() {
           if vectors[j].length() != len {
-            raise EvalError("vector length mismatch")
+            raise @core.EvalError("vector length mismatch")
           }
           j = j + 1
         }
@@ -4797,7 +4650,7 @@ fn apply_proc(
         while i < args.length() {
           let s = value_as_string(args[i])
           if s.length() != len {
-            raise EvalError("string length mismatch")
+            raise @core.EvalError("string length mismatch")
           }
           lists.push(string_to_char_list(s))
           i = i + 1
@@ -4818,7 +4671,7 @@ fn apply_proc(
         while i < args.length() {
           let s = value_as_string(args[i])
           if s.length() != len {
-            raise EvalError("string length mismatch")
+            raise @core.EvalError("string length mismatch")
           }
           lists.push(string_to_char_list(s))
           i = i + 1
@@ -4864,7 +4717,7 @@ fn apply_proc(
           expected_parts.push(formals_expected_desc(clause_formals))
         }
         let expected = expected_parts.join(", ")
-        raise EvalError("arity mismatch: expected one of \{expected} got \{args.length()}")
+        raise @core.EvalError("arity mismatch: expected one of \{expected} got \{args.length()}")
       }
       let new_env = env_extend(cl.env)
       match matched_formals {
@@ -4891,7 +4744,7 @@ fn apply_proc(
               MachineState::Apply(Value::Void, kont, handlers)
             }
           }
-        n => raise EvalError("arity mismatch: expected 0 or 1 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 0 or 1 got \{n}")
       }
     }
     Value::Continuation(cont) => {
@@ -4920,7 +4773,7 @@ fn apply_proc(
     Value::RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)
     Value::ConditionProc(proc) => apply_condition_proc(proc, args, kont, handlers)
     Value::EnumSetProc(proc) => apply_enum_set_proc(proc, args, kont, handlers)
-    _ => raise EvalError("type error: procedure expected")
+    _ => raise @core.EvalError("type error: procedure expected")
   }
 }
 

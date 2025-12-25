@@ -355,11 +355,11 @@ fn is_core_identifier(name : String) -> Bool {
 fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 3 {
-    raise EvalError("invalid syntax-rules")
+    raise @core.EvalError("invalid syntax-rules")
   }
   match parts[0] {
     Datum::Symbol("syntax-rules") => ()
-    _ => raise EvalError("invalid syntax-rules")
+    _ => raise @core.EvalError("invalid syntax-rules")
   }
   let mut ellipsis = "..."
   let mut literal_idx = 1
@@ -368,7 +368,7 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
       ellipsis = name
       literal_idx = 2
       if parts.length() < 4 {
-        raise EvalError("invalid syntax-rules")
+        raise @core.EvalError("invalid syntax-rules")
       }
     }
     _ => ()
@@ -379,7 +379,7 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
   while i < parts.length() {
     let rule_parts = datum_list_to_array(parts[i])
     if rule_parts.length() != 2 {
-      raise EvalError("invalid syntax-rules")
+      raise @core.EvalError("invalid syntax-rules")
     }
     rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
     i = i + 1
@@ -391,11 +391,11 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
 fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 2 {
-    raise EvalError("invalid identifier-syntax")
+    raise @core.EvalError("invalid identifier-syntax")
   }
   match parts[0] {
     Datum::Symbol("identifier-syntax") => ()
-    _ => raise EvalError("invalid identifier-syntax")
+    _ => raise @core.EvalError("invalid identifier-syntax")
   }
   let rules : Array[SyntaxRule] = []
   if parts.length() == 2 {
@@ -405,7 +405,7 @@ fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise Eva
     while i < parts.length() {
       let rule_parts = datum_list_to_array(parts[i])
       if rule_parts.length() != 2 {
-        raise EvalError("invalid identifier-syntax")
+        raise @core.EvalError("invalid identifier-syntax")
       }
       rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
       i = i + 1
@@ -433,28 +433,28 @@ fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise Eva
 fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 3 {
-    raise EvalError("invalid syntax-case")
+    raise @core.EvalError("invalid syntax-case")
   }
   match parts[0] {
     Datum::Symbol("lambda") => ()
-    _ => raise EvalError("invalid syntax-case")
+    _ => raise @core.EvalError("invalid syntax-case")
   }
   let params = datum_list_to_array(parts[1])
   if params.length() != 1 {
-    raise EvalError("invalid syntax-case")
+    raise @core.EvalError("invalid syntax-case")
   }
   let _ = parse_symbol_name(params[0])
   let body = parts.sub(start=2).to_array()
   if body.length() != 1 {
-    raise EvalError("invalid syntax-case")
+    raise @core.EvalError("invalid syntax-case")
   }
   let sc_parts = datum_list_to_array(body[0])
   if sc_parts.length() < 4 {
-    raise EvalError("invalid syntax-case")
+    raise @core.EvalError("invalid syntax-case")
   }
   match sc_parts[0] {
     Datum::Symbol("syntax-case") => ()
-    _ => raise EvalError("invalid syntax-case")
+    _ => raise @core.EvalError("invalid syntax-case")
   }
   let literals = parse_literal_list(sc_parts[2])
   let rules : Array[SyntaxRule] = []
@@ -470,7 +470,7 @@ fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
         fender: Some(rule_parts[1]),
       })
     } else {
-      raise EvalError("invalid syntax-case clause")
+      raise @core.EvalError("invalid syntax-case clause")
     }
     i = i + 1
   }
@@ -481,13 +481,13 @@ fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
 fn parse_transformer(expr : Datum, name : String) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.is_empty() {
-    raise EvalError("invalid syntax transformer")
+    raise @core.EvalError("invalid syntax transformer")
   }
   match parts[0] {
     Datum::Symbol("syntax-rules") => parse_syntax_rules(expr)
     Datum::Symbol("identifier-syntax") => parse_identifier_syntax(expr, name)
     Datum::Symbol("lambda") => parse_syntax_case_transformer(expr)
-    _ => raise EvalError("invalid syntax transformer")
+    _ => raise @core.EvalError("invalid syntax transformer")
   }
 }
 
@@ -498,7 +498,7 @@ fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
   for item in items {
     match item {
       Datum::Symbol(name) => literals.push(name)
-      _ => raise EvalError("invalid syntax-rules")
+      _ => raise @core.EvalError("invalid syntax-rules")
     }
   }
   literals
@@ -508,7 +508,7 @@ fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
 fn parse_symbol_name(expr : Datum) -> String raise EvalError {
   match expr {
     Datum::Symbol(name) => name
-    _ => raise EvalError("invalid syntax-case")
+    _ => raise @core.EvalError("invalid syntax-case")
   }
 }
 
@@ -699,7 +699,7 @@ fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise Eva
     }
     i = i + 1
   }
-  raise EvalError("no matching syntax-rules pattern")
+  raise @core.EvalError("no matching syntax-rules pattern")
 }
 
 ///|

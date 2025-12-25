@@ -30,17 +30,17 @@ fn unicode_category_has(ch : Char, category : String) -> Bool {
 }
 
 ///|
-fn unicode_char_is_alphabetic(ch : Char) -> Bool {
+pub fn unicode_char_is_alphabetic(ch : Char) -> Bool {
   unicode_category_has(ch, "L") || unicode_category_has(ch, "Nl")
 }
 
 ///|
-fn unicode_char_is_uppercase(ch : Char) -> Bool {
+pub fn unicode_char_is_uppercase(ch : Char) -> Bool {
   unicode_category_has(ch, "Lu")
 }
 
 ///|
-fn unicode_char_is_lowercase(ch : Char) -> Bool {
+pub fn unicode_char_is_lowercase(ch : Char) -> Bool {
   unicode_category_has(ch, "Ll")
 }
 
@@ -102,7 +102,7 @@ fn unicode_min_equivalent(chars : Array[Char], fallback : Char) -> Char {
 }
 
 ///|
-fn unicode_char_upcase(ch : Char) -> Char {
+pub fn unicode_char_upcase(ch : Char) -> Char {
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Lu") {
     Some(upper) => upper
@@ -115,7 +115,7 @@ fn unicode_char_upcase(ch : Char) -> Char {
 }
 
 ///|
-fn unicode_char_downcase(ch : Char) -> Char {
+pub fn unicode_char_downcase(ch : Char) -> Char {
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Ll") {
     Some(lower) => lower
@@ -124,7 +124,7 @@ fn unicode_char_downcase(ch : Char) -> Char {
 }
 
 ///|
-fn unicode_char_foldcase(ch : Char) -> Char {
+pub fn unicode_char_foldcase(ch : Char) -> Char {
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Ll") {
     Some(lower) => lower
@@ -133,7 +133,7 @@ fn unicode_char_foldcase(ch : Char) -> Char {
 }
 
 ///|
-fn unicode_string_upcase(s : String) -> String {
+pub fn unicode_string_upcase(s : String) -> String {
   let buf = @buffer.new()
   for ch in s {
     buf.write_char(unicode_char_upcase(ch))
@@ -142,7 +142,7 @@ fn unicode_string_upcase(s : String) -> String {
 }
 
 ///|
-fn unicode_string_downcase(s : String) -> String {
+pub fn unicode_string_downcase(s : String) -> String {
   let buf = @buffer.new()
   for ch in s {
     buf.write_char(unicode_char_downcase(ch))
@@ -151,7 +151,7 @@ fn unicode_string_downcase(s : String) -> String {
 }
 
 ///|
-fn unicode_string_foldcase(s : String) -> String {
+pub fn unicode_string_foldcase(s : String) -> String {
   let buf = @buffer.new()
   for ch in s {
     buf.write_char(unicode_char_foldcase(ch))

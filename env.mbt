@@ -76,7 +76,7 @@ fn env_lookup(env : Env, name : String) -> Value raise EvalError {
     }
     i = i - 1
   }
-  raise EvalError("unbound variable: \{name}")
+  raise @core.EvalError("unbound variable: \{name}")
 }
 
 ///|
@@ -93,5 +93,5 @@ fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError {
     }
     i = i - 1
   }
-  raise EvalError("unbound variable: \{name}")
+  raise @core.EvalError("unbound variable: \{name}")
 }

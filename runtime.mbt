@@ -4,132 +4,6 @@ fn bool_value(value : Bool) -> Value {
 }
 
 ///|
-priv enum PortKind {
-  OutputString(Ref[String])
-}
-
-///|
-struct Port {
-  id : Int
-  kind : PortKind
-}
-
-///|
-priv struct RecordField {
-  name : String
-  mutable : Bool
-}
-
-///|
-priv struct RecordType {
-  id : Int
-  name : String
-  parent : RecordType?
-  is_sealed : Bool
-  is_opaque : Bool
-  uid : String?
-  fields : Array[RecordField]
-}
-
-///|
-struct Record {
-  id : Int
-  record_type : RecordType
-  fields : Array[Ref[Value]]
-}
-
-///|
-struct Condition {
-  id : Int
-  components : Array[Record]
-}
-
-///|
-priv enum HashtableEquiv {
-  Eq
-  Eqv
-  Equal
-  Proc(Value)
-}
-
-///|
-priv struct HashtableEntry {
-  key : Value
-  value : Ref[Value]
-}
-
-///|
-struct Hashtable {
-  id : Int
-  mutable : Bool
-  equiv : HashtableEquiv
-  hash : Value?
-  entries : Ref[Array[HashtableEntry]]
-}
-
-///|
-struct EnumSet {
-  id : Int
-  universe : Array[String]
-  members : Array[Bool]
-}
-
-///|
-priv enum EnumSetProcKind {
-  Constructor(EnumSet)
-  Indexer(EnumSet)
-}
-
-///|
-struct EnumSetProc {
-  id : Int
-  kind : EnumSetProcKind
-}
-
-///|
-priv enum RecordProcKind {
-  Constructor(RecordType)
-  Predicate(RecordType)
-  Accessor(RecordType, Int)
-  Mutator(RecordType, Int)
-  ProtocolN(RecordType, RecordConstructorDescriptor)
-  ProtocolP(RecordType, Array[Value])
-}
-
-///|
-struct RecordProc {
-  id : Int
-  kind : RecordProcKind
-}
-
-///|
-priv enum ConditionProcKind {
-  Predicate(RecordType)
-  Accessor(RecordType, Int)
-}
-
-///|
-struct ConditionProc {
-  id : Int
-  kind : ConditionProcKind
-}
-
-///|
-struct RecordConstructorDescriptor {
-  id : Int
-  record_type : RecordType
-  parent_desc : RecordConstructorDescriptor?
-  protocol : Value?
-}
-
-///|
-struct RecordTypeDescriptor {
-  id : Int
-  record_type : RecordType
-  constructor_desc : RecordConstructorDescriptor
-}
-
-///|
 priv struct Library {
   exports : Map[String, Value]
 }
@@ -377,7 +251,7 @@ fn enum_set_from_names(
   for name in names {
     match enum_set_index_of(universe, name) {
       Some(idx) => members[idx] = true
-      None => raise EvalError("enum-set: unknown symbol")
+      None => raise @core.EvalError("enum-set: unknown symbol")
     }
   }
   make_enum_set(universe, members)
@@ -568,7 +442,7 @@ fn value_as_datum(value : Value) -> Datum raise EvalError {
   match value {
     Value::Datum(d) => d
     Value::Record(record) => Datum::Record(record)
-    _ => raise EvalError("type error: datum expected")
+    _ => raise @core.EvalError("type error: datum expected")
   }
 }
 
@@ -594,7 +468,7 @@ fn value_from_datum(datum : Datum) -> Value {
 fn condition_base_type() -> RecordType raise EvalError {
   match lookup_record_type_descriptor("&condition") {
     Some(desc) => desc.record_type
-    None => raise EvalError("internal error: missing &condition")
+    None => raise @core.EvalError("internal error: missing &condition")
   }
 }
 
@@ -625,7 +499,7 @@ fn condition_components_opt(value : Value, base : RecordType) -> Array[Record]? 
 fn condition_components(value : Value, base : RecordType) -> Array[Record] raise EvalError {
   match condition_components_opt(value, base) {
     Some(items) => items
-    None => raise EvalError("type error: condition expected")
+    None => raise @core.EvalError("type error: condition expected")
   }
 }
 
@@ -771,9 +645,9 @@ fn value_as_pair(value : Value) -> (Datum, Datum) raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::Pair(a, b) => (a.val, b.val)
-        _ => raise EvalError("type error: pair expected")
+        _ => raise @core.EvalError("type error: pair expected")
       }
-    _ => raise EvalError("type error: pair expected")
+    _ => raise @core.EvalError("type error: pair expected")
   }
 }
 
@@ -783,9 +657,9 @@ fn value_as_pair_cells(value : Value) -> (Ref[Datum], Ref[Datum]) raise EvalErro
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::Pair(a, b) => (a, b)
-        _ => raise EvalError("type error: pair expected")
+        _ => raise @core.EvalError("type error: pair expected")
       }
-    _ => raise EvalError("type error: pair expected")
+    _ => raise @core.EvalError("type error: pair expected")
   }
 }
 
@@ -805,7 +679,7 @@ fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
         items.push(a.val)
         cur = b.val
       }
-      _ => raise EvalError("type error: proper list expected")
+      _ => raise @core.EvalError("type error: proper list expected")
     }
   }
   items
@@ -822,7 +696,7 @@ fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
         items.push(value_from_datum(a.val))
         cur = b.val
       }
-      _ => raise EvalError("type error: list expected")
+      _ => raise @core.EvalError("type error: list expected")
     }
   }
   items

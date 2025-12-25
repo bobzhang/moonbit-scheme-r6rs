@@ -1,6 +1,6 @@
 ///|
 fn arity_mismatch(expected : Int, got : Int) -> EvalError {
-  EvalError("arity mismatch: expected \{expected} got \{got}")
+  @core.EvalError("arity mismatch: expected \{expected} got \{got}")
 }
 
 ///|
@@ -341,17 +341,17 @@ fn value_as_number(value : Value) -> Datum raise EvalError {
         | Datum::BigRat(_, _)
         | Datum::Float(_)
         | Datum::Complex(_, _) => unlabel
-        _ => raise EvalError("type error: number expected")
+        _ => raise @core.EvalError("type error: number expected")
       }
     }
-    _ => raise EvalError("type error: number expected")
+    _ => raise @core.EvalError("type error: number expected")
   }
 }
 
 ///|
 fn bigint_to_float(value : @bigint.BigInt) -> Float raise EvalError {
   try @strconv.parse_double(value.to_string()) catch {
-    _ => raise EvalError("number too large")
+    _ => raise @core.EvalError("number too large")
   } noraise {
     v => Float::from_double(v)
   }
@@ -375,7 +375,7 @@ fn number_to_float(value : Datum) -> Float raise EvalError {
     Datum::Rat(n, d) => Float::from_int(n) / Float::from_int(d)
     Datum::BigRat(n, d) => bigint_to_float(n) / bigint_to_float(d)
     Datum::Float(f) => f
-    _ => raise EvalError("type error: number expected")
+    _ => raise @core.EvalError("type error: number expected")
   }
 }
 
@@ -385,7 +385,7 @@ fn number_to_rat(value : Datum) -> (Int, Int) raise EvalError {
   match real_value {
     Datum::Int(n) => (n, 1)
     Datum::Rat(n, d) => (n, d)
-    _ => raise EvalError("type error: number expected")
+    _ => raise @core.EvalError("type error: number expected")
   }
 }
 
@@ -397,14 +397,14 @@ fn number_to_bigrat(value : Datum) -> (@bigint.BigInt, @bigint.BigInt) raise Eva
     Datum::BigInt(n) => (n, bigint_from_int(1))
     Datum::Rat(n, d) => (bigint_from_int(n), bigint_from_int(d))
     Datum::BigRat(n, d) => (n, d)
-    _ => raise EvalError("type error: number expected")
+    _ => raise @core.EvalError("type error: number expected")
   }
 }
 
 ///|
 fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
   if !float_is_finite(value) {
-    raise EvalError("inexact->exact: unsupported")
+    raise @core.EvalError("inexact->exact: unsupported")
   }
   // Decode IEEE-754 f32 into an exact rational.
   let bits = Float::reinterpret_as_uint(value)
@@ -432,7 +432,7 @@ fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
   }
   match normalize_big_rat(num, den) {
     Some(datum) => datum
-    None => raise EvalError("inexact->exact: unsupported")
+    None => raise @core.EvalError("inexact->exact: unsupported")
   }
 }
 
@@ -441,7 +441,7 @@ fn inexact_component_to_exact(value : Datum) -> Datum raise EvalError {
   match value {
     Datum::Float(f) => float_to_exact_datum(f)
     Datum::Int(_) | Datum::BigInt(_) | Datum::Rat(_, _) | Datum::BigRat(_, _) => value
-    _ => raise EvalError("type error: number expected")
+    _ => raise @core.EvalError("type error: number expected")
   }
 }
 
@@ -449,7 +449,7 @@ fn inexact_component_to_exact(value : Datum) -> Datum raise EvalError {
 fn normalize_rat_or_error(num : Int, den : Int) -> Datum raise EvalError {
   match normalize_rat(num, den) {
     Some(result) => result
-    None => raise EvalError("division by zero")
+    None => raise @core.EvalError("division by zero")
   }
 }
 
@@ -457,7 +457,7 @@ fn normalize_rat_or_error(num : Int, den : Int) -> Datum raise EvalError {
 fn normalize_big_rat_or_error(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum raise EvalError {
   match normalize_big_rat(num, den) {
     Some(result) => result
-    None => raise EvalError("division by zero")
+    None => raise @core.EvalError("division by zero")
   }
 }
 
@@ -496,7 +496,7 @@ fn datum_to_real(value : Datum) -> Datum raise EvalError {
       if datum_is_zero(imag.val) {
         real.val
       } else {
-        raise EvalError("type error: real expected")
+        raise @core.EvalError("type error: real expected")
       }
     }
     _ => value
@@ -630,7 +630,7 @@ fn complex_mul_f(ar : Float, ai : Float, br : Float, bi : Float) -> (Float, Floa
 fn complex_div_f(ar : Float, ai : Float, br : Float, bi : Float) -> (Float, Float) raise EvalError {
   let denom = br * br + bi * bi
   if denom == 0.0 {
-    raise EvalError("division by zero")
+    raise @core.EvalError("division by zero")
   }
   ((ar * br + ai * bi) / denom, (ai * br - ar * bi) / denom)
 }
@@ -803,21 +803,21 @@ fn num_div(left : Datum, right : Datum) -> Datum raise EvalError {
   if left is Datum::Float(_) || right is Datum::Float(_) {
     let denom = number_to_float(right)
     if denom == 0.0 {
-      raise EvalError("division by zero")
+      raise @core.EvalError("division by zero")
     }
     Datum::Float(number_to_float(left) / denom)
   } else if datum_is_big_exact(left) || datum_is_big_exact(right) {
     let (n1, d1) = number_to_bigrat(left)
     let (n2, d2) = number_to_bigrat(right)
     if bigint_is_zero(n2) {
-      raise EvalError("division by zero")
+      raise @core.EvalError("division by zero")
     }
     normalize_big_rat_or_error(n1 * d2, d1 * n2)
   } else {
     let (n1, d1) = number_to_rat(left)
     let (n2, d2) = number_to_rat(right)
     if n2 == 0 {
-      raise EvalError("division by zero")
+      raise @core.EvalError("division by zero")
     }
     normalize_rat_or_error(n1 * d2, d1 * n2)
   }
@@ -1111,9 +1111,9 @@ fn value_as_string(value : Value) -> String raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::String(s) => s.val
-        _ => raise EvalError("type error: string expected")
+        _ => raise @core.EvalError("type error: string expected")
       }
-    _ => raise EvalError("type error: string expected")
+    _ => raise @core.EvalError("type error: string expected")
   }
 }
 
@@ -1123,9 +1123,9 @@ fn value_as_string_ref(value : Value) -> Ref[String] raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::String(s) => s
-        _ => raise EvalError("type error: string expected")
+        _ => raise @core.EvalError("type error: string expected")
       }
-    _ => raise EvalError("type error: string expected")
+    _ => raise @core.EvalError("type error: string expected")
   }
 }
 
@@ -1133,7 +1133,7 @@ fn value_as_string_ref(value : Value) -> Ref[String] raise EvalError {
 fn string_replace_range(s : String, start : Int, end : Int, fill : Char) -> String raise EvalError {
   let len = s.length()
   if start < 0 || end < start || end > len {
-    raise EvalError("index out of range")
+    raise @core.EvalError("index out of range")
   }
   let buf = @buffer.new()
   let mut i = 0
@@ -1146,7 +1146,7 @@ fn string_replace_range(s : String, start : Int, end : Int, fill : Char) -> Stri
           buf.write_char(ch)
         }
       }
-      None => raise EvalError("index out of range")
+      None => raise @core.EvalError("index out of range")
     }
     i = i + 1
   }
@@ -1159,9 +1159,9 @@ fn value_as_char(value : Value) -> Char raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::Char(ch) => ch
-        _ => raise EvalError("type error: char expected")
+        _ => raise @core.EvalError("type error: char expected")
       }
-    _ => raise EvalError("type error: char expected")
+    _ => raise @core.EvalError("type error: char expected")
   }
 }
 
@@ -1170,7 +1170,7 @@ fn char_from_int_value(value : Value) -> Char raise EvalError {
   let n = value_as_int_index(value)
   match n.to_char() {
     Some(ch) => ch
-    None => raise EvalError("type error: valid scalar value expected")
+    None => raise @core.EvalError("type error: valid scalar value expected")
   }
 }
 
@@ -1290,7 +1290,7 @@ fn value_as_int_index(value : Value) -> Int raise EvalError {
         Datum::BigInt(n) =>
           match bigint_to_int_option(n) {
             Some(v) => v
-            None => raise EvalError("index out of range")
+            None => raise @core.EvalError("index out of range")
           }
         Datum::Complex(real, imag) => {
           if datum_is_zero(imag.val) {
@@ -1299,17 +1299,17 @@ fn value_as_int_index(value : Value) -> Int raise EvalError {
               Datum::BigInt(n) =>
                 match bigint_to_int_option(n) {
                   Some(v) => v
-                  None => raise EvalError("index out of range")
+                  None => raise @core.EvalError("index out of range")
                 }
-              _ => raise EvalError("type error: exact integer expected")
+              _ => raise @core.EvalError("type error: exact integer expected")
             }
           } else {
-            raise EvalError("type error: exact integer expected")
+            raise @core.EvalError("type error: exact integer expected")
           }
         }
-        _ => raise EvalError("type error: exact integer expected")
+        _ => raise @core.EvalError("type error: exact integer expected")
       }
-    _ => raise EvalError("type error: exact integer expected")
+    _ => raise @core.EvalError("type error: exact integer expected")
   }
 }
 
@@ -1325,14 +1325,14 @@ fn value_as_exact_integer(value : Value) -> Datum raise EvalError {
             match datum_unlabel(real.val) {
               Datum::Int(n) => Datum::Int(n)
               Datum::BigInt(n) => Datum::BigInt(n)
-              _ => raise EvalError("type error: integer expected")
+              _ => raise @core.EvalError("type error: integer expected")
             }
           } else {
-            raise EvalError("type error: integer expected")
+            raise @core.EvalError("type error: integer expected")
           }
-        _ => raise EvalError("type error: integer expected")
+        _ => raise @core.EvalError("type error: integer expected")
       }
-    _ => raise EvalError("type error: integer expected")
+    _ => raise @core.EvalError("type error: integer expected")
   }
 }
 
@@ -1341,7 +1341,7 @@ fn datum_to_bigint(value : Datum) -> @bigint.BigInt raise EvalError {
   match datum_unlabel(value) {
     Datum::Int(n) => bigint_from_int(n)
     Datum::BigInt(n) => n
-    _ => raise EvalError("type error: integer expected")
+    _ => raise @core.EvalError("type error: integer expected")
   }
 }
 
@@ -1357,7 +1357,7 @@ fn bigint_to_integer_datum(value : @bigint.BigInt) -> Datum {
 fn value_as_nonnegative_int(value : Value) -> Int raise EvalError {
   let n = value_as_int_index(value)
   if n < 0 {
-    raise EvalError("type error: exact nonnegative integer expected")
+    raise @core.EvalError("type error: exact nonnegative integer expected")
   }
   n
 }
@@ -1365,7 +1365,7 @@ fn value_as_nonnegative_int(value : Value) -> Int raise EvalError {
 ///|
 fn check_index(idx : Int, len : Int) -> Unit raise EvalError {
   if idx < 0 || idx >= len {
-    raise EvalError("index out of range")
+    raise @core.EvalError("index out of range")
   }
 }
 
@@ -1457,7 +1457,7 @@ fn list_member(
         }
         cur = cdr.val
       }
-      _ => raise EvalError("type error: proper list expected")
+      _ => raise @core.EvalError("type error: proper list expected")
     }
   }
   bool_value(false)
@@ -1481,11 +1481,11 @@ fn list_assoc(
               return Value::Datum(entry_val)
             }
           }
-          _ => raise EvalError("type error: pair expected")
+          _ => raise @core.EvalError("type error: pair expected")
         }
         cur = rest.val
       }
-      _ => raise EvalError("type error: proper list expected")
+      _ => raise @core.EvalError("type error: proper list expected")
     }
   }
   bool_value(false)
@@ -1497,9 +1497,9 @@ fn value_as_vector(value : Value) -> Array[Datum] raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::Vector(items) => items
-        _ => raise EvalError("type error: vector expected")
+        _ => raise @core.EvalError("type error: vector expected")
       }
-    _ => raise EvalError("type error: vector expected")
+    _ => raise @core.EvalError("type error: vector expected")
   }
 }
 
@@ -1507,7 +1507,7 @@ fn value_as_vector(value : Value) -> Array[Datum] raise EvalError {
 fn value_as_bool(value : Value) -> Bool raise EvalError {
   match value {
     Value::Datum(Datum::Bool(flag)) => flag
-    _ => raise EvalError("type error: boolean expected")
+    _ => raise @core.EvalError("type error: boolean expected")
   }
 }
 
@@ -1517,9 +1517,9 @@ fn value_as_symbol(value : Value) -> String raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::Symbol(name) => name
-        _ => raise EvalError("type error: symbol expected")
+        _ => raise @core.EvalError("type error: symbol expected")
       }
-    _ => raise EvalError("type error: symbol expected")
+    _ => raise @core.EvalError("type error: symbol expected")
   }
 }
 
@@ -1527,16 +1527,16 @@ fn value_as_symbol(value : Value) -> String raise EvalError {
 fn parse_field_spec(item : Datum) -> RecordField raise EvalError {
   let parts = datum_list_to_array(item)
   if parts.length() != 2 {
-    raise EvalError("invalid record field spec")
+    raise @core.EvalError("invalid record field spec")
   }
   let mut_flag = match symbol_name(parts[0]) {
     Some("mutable") => true
     Some("immutable") => false
-    _ => raise EvalError("invalid record field spec")
+    _ => raise @core.EvalError("invalid record field spec")
   }
   let name = match symbol_name(parts[1]) {
     Some(field_name) => field_name
-    None => raise EvalError("invalid record field spec")
+    None => raise @core.EvalError("invalid record field spec")
   }
   RecordField::{ name, mutable: mut_flag }
 }
@@ -1556,9 +1556,9 @@ fn value_as_bytevector(value : Value) -> Array[Int] raise EvalError {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
         Datum::ByteVector(items) => items
-        _ => raise EvalError("type error: bytevector expected")
+        _ => raise @core.EvalError("type error: bytevector expected")
       }
-    _ => raise EvalError("type error: bytevector expected")
+    _ => raise @core.EvalError("type error: bytevector expected")
   }
 }
 
@@ -1567,11 +1567,11 @@ fn value_as_byte(value : Value) -> Int raise EvalError {
   match value {
     Value::Datum(Datum::Int(n)) => {
       if n < 0 || n > 255 {
-        raise EvalError("type error: byte expected")
+        raise @core.EvalError("type error: byte expected")
       }
       n
     }
-    _ => raise EvalError("type error: byte expected")
+    _ => raise @core.EvalError("type error: byte expected")
   }
 }
 
@@ -1579,7 +1579,7 @@ fn value_as_byte(value : Value) -> Int raise EvalError {
 fn value_as_port(value : Value) -> Port raise EvalError {
   match value {
     Value::Port(port) => port
-    _ => raise EvalError("type error: port expected")
+    _ => raise @core.EvalError("type error: port expected")
   }
 }
 
@@ -1587,7 +1587,7 @@ fn value_as_port(value : Value) -> Port raise EvalError {
 fn value_as_record_type_descriptor(value : Value) -> RecordTypeDescriptor raise EvalError {
   match value {
     Value::RecordTypeDescriptor(desc) => desc
-    _ => raise EvalError("type error: record type descriptor expected")
+    _ => raise @core.EvalError("type error: record type descriptor expected")
   }
 }
 
@@ -1595,7 +1595,7 @@ fn value_as_record_type_descriptor(value : Value) -> RecordTypeDescriptor raise 
 fn value_as_record_constructor_descriptor(value : Value) -> RecordConstructorDescriptor raise EvalError {
   match value {
     Value::RecordConstructorDescriptor(desc) => desc
-    _ => raise EvalError("type error: record constructor descriptor expected")
+    _ => raise @core.EvalError("type error: record constructor descriptor expected")
   }
 }
 
@@ -1603,7 +1603,7 @@ fn value_as_record_constructor_descriptor(value : Value) -> RecordConstructorDes
 fn value_as_hashtable(value : Value) -> Hashtable raise EvalError {
   match value {
     Value::Hashtable(table) => table
-    _ => raise EvalError("type error: hashtable expected")
+    _ => raise @core.EvalError("type error: hashtable expected")
   }
 }
 
@@ -1611,7 +1611,7 @@ fn value_as_hashtable(value : Value) -> Hashtable raise EvalError {
 fn value_as_enum_set(value : Value) -> EnumSet raise EvalError {
   match value {
     Value::EnumSet(set) => set
-    _ => raise EvalError("type error: enum-set expected")
+    _ => raise @core.EvalError("type error: enum-set expected")
   }
 }
 
@@ -1623,7 +1623,7 @@ fn hashtable_equiv_from_value(value : Value) -> HashtableEquiv raise EvalError {
     Value::Primitive(Primitive::Equal) => HashtableEquiv::Equal
     _ => {
       if !is_procedure_value(value) {
-        raise EvalError("type error: procedure expected")
+        raise @core.EvalError("type error: procedure expected")
       }
       HashtableEquiv::Proc(value)
     }
@@ -1644,14 +1644,14 @@ fn hashtable_equiv_to_value(equiv : HashtableEquiv) -> Value {
 fn validate_hashtable_size_arg(value : Value) -> Unit raise EvalError {
   let n = value_as_int_index(value)
   if n < 0 {
-    raise EvalError("type error: non-negative integer expected")
+    raise @core.EvalError("type error: non-negative integer expected")
   }
 }
 
 ///|
 fn enum_set_require_same_universe(a : EnumSet, b : EnumSet) -> Unit raise EvalError {
   if !enum_set_universe_equal(a, b) {
-    raise EvalError("type error: enum-set universe mismatch")
+    raise @core.EvalError("type error: enum-set universe mismatch")
   }
 }
 
@@ -1667,7 +1667,7 @@ fn ensure_unique_symbols(names : Array[String]) -> Unit raise EvalError {
   let seen : Map[String, Bool] = {}
   for name in names {
     if seen.contains(name) {
-      raise EvalError("type error: duplicate symbol")
+      raise @core.EvalError("type error: duplicate symbol")
     }
     seen[name] = true
   }
@@ -1678,7 +1678,7 @@ fn value_as_condition_type_descriptor(value : Value) -> RecordTypeDescriptor rai
   let desc = value_as_record_type_descriptor(value)
   let base = condition_base_type()
   if !record_type_is_a(desc.record_type, base) {
-    raise EvalError("type error: condition type expected")
+    raise @core.EvalError("type error: condition type expected")
   }
   desc
 }
@@ -1689,9 +1689,9 @@ fn record_accessor_info(value : Value) -> (RecordType, Int) raise EvalError {
     Value::RecordProc(proc) =>
       match proc.kind {
         RecordProcKind::Accessor(record_type, idx) => (record_type, idx)
-        _ => raise EvalError("type error: record accessor expected")
+        _ => raise @core.EvalError("type error: record accessor expected")
       }
-    _ => raise EvalError("type error: record accessor expected")
+    _ => raise @core.EvalError("type error: record accessor expected")
   }
 }
 
@@ -1896,7 +1896,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             | Value::Datum(Datum::BigInt(_))
             | Value::Datum(Datum::Rat(_, _))
             | Value::Datum(Datum::BigRat(_, _)) => args[0]
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -1909,7 +1909,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match value {
             Datum::Int(n) => {
               if n < 0 {
-                raise EvalError("type error: exact nonnegative integer expected")
+                raise @core.EvalError("type error: exact nonnegative integer expected")
               }
               let (s, r) = exact_integer_sqrt(n)
               Value::Values([
@@ -1919,7 +1919,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             }
             Datum::BigInt(n) => {
               if n.compare_int(0) < 0 {
-                raise EvalError("type error: exact nonnegative integer expected")
+                raise @core.EvalError("type error: exact nonnegative integer expected")
               }
               let (s, r) = exact_integer_sqrt_bigint(n)
               Value::Values([
@@ -1927,7 +1927,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                 Value::Datum(Datum::BigInt(r)),
               ])
             }
-            _ => raise EvalError("type error: exact integer expected")
+            _ => raise @core.EvalError("type error: exact integer expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -1940,7 +1940,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let tol_value = value_as_number(args[1])
           let tol = number_to_float(tol_value)
           if tol < 0.0 {
-            raise EvalError("type error: nonnegative real expected")
+            raise @core.EvalError("type error: nonnegative real expected")
           }
           match x {
             Datum::Int(_)
@@ -1951,7 +1951,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let (n, d) = rationalize_float(f, tol)
               Value::Datum(normalize_rat_or_error(n, d))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(2, n)
@@ -1967,7 +1967,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             10
           }
           if radix < 2 || radix > 36 {
-            raise EvalError("radix out of range")
+            raise @core.EvalError("radix out of range")
           }
           match num {
             Datum::Int(n) => {
@@ -1983,15 +1983,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             | Datum::Float(_)
             | Datum::Complex(_, _) => {
               if radix != 10 {
-                raise EvalError("type error: exact integer expected")
+                raise @core.EvalError("type error: exact integer expected")
               }
               let text = value_to_string(Value::Datum(num))
               Value::Datum(Datum::String(Ref::new(text)))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::StringToNumber => {
@@ -2004,7 +2004,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             10
           }
           if radix < 2 || radix > 36 {
-            raise EvalError("radix out of range")
+            raise @core.EvalError("radix out of range")
           }
           let parsed = if args.length() == 2 {
             parse_number_token_with_radix(s, radix)
@@ -2016,7 +2016,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             None => Value::Datum(Datum::Bool(false))
           }
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::MakeRectangular => {
@@ -2060,7 +2060,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Datum::Float(_) => Value::Datum(Datum::Float(0.0))
             Datum::Int(_) | Datum::BigInt(_) | Datum::Rat(_, _) | Datum::BigRat(_, _) =>
               Value::Datum(Datum::Int(0))
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2087,7 +2087,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               } else {
                 Value::Datum(Datum::Float(f))
               }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2176,7 +2176,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(bigint_to_integer_datum(pow_bigint_int(base_big, exp_int)))
                   } else {
                     if bigint_is_zero(base_big) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let denom = pow_bigint_int(base_big, -exp_int)
                     Value::Datum(normalize_big_rat_or_error(bigint_from_int(1), denom))
@@ -2200,7 +2200,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(normalize_big_rat_or_error(num, den))
                   } else {
                     if bigint_is_zero(n) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let num = pow_bigint_int(d, -exp_int)
                     let den = pow_bigint_int(n, -exp_int)
@@ -2220,7 +2220,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   let (rr, ri) = complex_expt_f(br, bi, Float::from_int(exp_int), 0.0)
                   Value::Datum(complex_from_float(rr, ri))
                 }
-                _ => raise EvalError("type error: number expected")
+                _ => raise @core.EvalError("type error: number expected")
               }
             }
             Datum::BigInt(exp_big) => {
@@ -2237,7 +2237,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(bigint_to_integer_datum(result))
                   } else {
                     if bigint_is_zero(base_big) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let denom = pow_bigint_bigint(base_big, abs_exp)
                     Value::Datum(normalize_big_rat_or_error(bigint_from_int(1), denom))
@@ -2251,7 +2251,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(bigint_to_integer_datum(result))
                   } else {
                     if bigint_is_zero(base_big) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let denom = pow_bigint_bigint(base_big, abs_exp)
                     Value::Datum(normalize_big_rat_or_error(bigint_from_int(1), denom))
@@ -2268,7 +2268,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(normalize_big_rat_or_error(num_pow, den_pow))
                   } else {
                     if bigint_is_zero(num) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let num_pow = pow_bigint_bigint(num, abs_exp)
                     let den_pow = pow_bigint_bigint(den, abs_exp)
@@ -2284,7 +2284,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     Value::Datum(normalize_big_rat_or_error(num_pow, den_pow))
                   } else {
                     if bigint_is_zero(n) {
-                      raise EvalError("division by zero")
+                      raise @core.EvalError("division by zero")
                     }
                     let num_pow = pow_bigint_bigint(n, abs_exp)
                     let den_pow = pow_bigint_bigint(d, abs_exp)
@@ -2310,7 +2310,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   let (rr, ri) = complex_expt_f(br, bi, exp_real, 0.0)
                   Value::Datum(complex_from_float(rr, ri))
                 }
-                _ => raise EvalError("type error: number expected")
+                _ => raise @core.EvalError("type error: number expected")
               }
             }
             Datum::Float(exp_f) => {
@@ -2368,7 +2368,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let (rr, ri) = complex_expt_f(br, bi, er, ei)
               Value::Datum(complex_from_float(rr, ri))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(2, n)
@@ -2472,7 +2472,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Rat(n, _)) => Value::Datum(Datum::Int(n))
             Value::Datum(Datum::BigInt(n)) => Value::Datum(Datum::BigInt(n))
             Value::Datum(Datum::BigRat(n, _)) => Value::Datum(Datum::BigInt(n))
-            _ => raise EvalError("type error: rational expected")
+            _ => raise @core.EvalError("type error: rational expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2486,7 +2486,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Rat(_, d)) => Value::Datum(Datum::Int(d))
             Value::Datum(Datum::BigInt(_)) => Value::Datum(Datum::Int(1))
             Value::Datum(Datum::BigRat(_, d)) => Value::Datum(Datum::BigInt(d))
-            _ => raise EvalError("type error: rational expected")
+            _ => raise @core.EvalError("type error: rational expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2517,7 +2517,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let mag = (real_f * real_f + imag_f * imag_f).sqrt()
               Value::Datum(Datum::Float(mag))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2531,7 +2531,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match (left_val, right_val) {
             (Datum::Int(left), Datum::Int(right)) => {
               if right == 0 {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               Value::Datum(Datum::Int(left / right))
             }
@@ -2539,7 +2539,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let left = datum_to_bigint(left_val)
               let right = datum_to_bigint(right_val)
               if right.is_zero() {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               Value::Datum(Datum::BigInt(left / right))
             }
@@ -2556,7 +2556,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match (left_val, right_val) {
             (Datum::Int(left), Datum::Int(right)) => {
               if right == 0 {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               Value::Datum(Datum::Int(left % right))
             }
@@ -2564,7 +2564,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let left = datum_to_bigint(left_val)
               let right = datum_to_bigint(right_val)
               if right.is_zero() {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               Value::Datum(Datum::BigInt(left % right))
             }
@@ -2581,7 +2581,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match (left_val, right_val) {
             (Datum::Int(left), Datum::Int(right)) => {
               if right == 0 {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               let rem = left % right
               let result =
@@ -2596,7 +2596,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let left = datum_to_bigint(left_val)
               let right = datum_to_bigint(right_val)
               if right.is_zero() {
-                raise EvalError("division by zero")
+                raise @core.EvalError("division by zero")
               }
               let rem = left % right
               let rem_sign = rem.compare_int(0)
@@ -2635,7 +2635,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             }
             acc_big = bigint_gcd(acc_big, n)
           }
-          _ => raise EvalError("type error: integer expected")
+          _ => raise @core.EvalError("type error: integer expected")
         }
       }
       if use_big {
@@ -2686,7 +2686,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               acc_big = bigint_abs((acc_big / g) * n)
             }
           }
-          _ => raise EvalError("type error: integer expected")
+          _ => raise @core.EvalError("type error: integer expected")
         }
       }
       if use_big {
@@ -2762,7 +2762,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let n = float_floor_int(f)
               Value::Datum(Datum::Float(Float::from_int(n)))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2784,7 +2784,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let n = float_ceiling_int(f)
               Value::Datum(Datum::Float(Float::from_int(n)))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2806,7 +2806,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let n = f.to_int()
               Value::Datum(Datum::Float(Float::from_int(n)))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2828,7 +2828,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let n = float_round_int(f)
               Value::Datum(Datum::Float(Float::from_int(n)))
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -2909,17 +2909,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             i = i - 1
             let op = match chain.get_char(i) {
               Some(ch) => ch
-              None => raise EvalError("internal error: invalid cxr")
+              None => raise @core.EvalError("internal error: invalid cxr")
             }
             match cur {
               Datum::Pair(car, cdr) => {
                 match op {
                   'a' => cur = car.val
                   'd' => cur = cdr.val
-                  _ => raise EvalError("internal error: invalid cxr")
+                  _ => raise @core.EvalError("internal error: invalid cxr")
                 }
               }
-              _ => raise EvalError("type error: pair expected")
+              _ => raise @core.EvalError("type error: pair expected")
             }
           }
           value_from_datum(cur)
@@ -2951,7 +2951,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Datum(list_from_array(items))
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::NullP => {
@@ -3014,7 +3014,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         2 => {
           match (args[0], args[1]) {
             (Value::Datum(Datum::Symbol(a)), Value::Datum(Datum::Symbol(b))) => bool_value(a == b)
-            _ => raise EvalError("type error: identifier expected")
+            _ => raise @core.EvalError("type error: identifier expected")
           }
         }
         n => raise arity_mismatch(2, n)
@@ -3025,7 +3025,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         2 => {
           match (args[0], args[1]) {
             (Value::Datum(Datum::Symbol(a)), Value::Datum(Datum::Symbol(b))) => bool_value(a == b)
-            _ => raise EvalError("type error: identifier expected")
+            _ => raise @core.EvalError("type error: identifier expected")
           }
         }
         n => raise arity_mismatch(2, n)
@@ -3036,7 +3036,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::Symbol(name)) => Value::Datum(Datum::String(Ref::new(name)))
-            _ => raise EvalError("type error: symbol expected")
+            _ => raise @core.EvalError("type error: symbol expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3047,7 +3047,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           match args[0] {
             Value::Datum(Datum::String(name)) => Value::Datum(Datum::Symbol(name.val))
-            _ => raise EvalError("type error: string expected")
+            _ => raise @core.EvalError("type error: string expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3241,7 +3241,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Float(n)) => bool_value(n == 0.0)
             Value::Datum(Datum::Complex(real, imag)) =>
               bool_value(datum_is_zero(real.val) && datum_is_zero(imag.val))
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3257,7 +3257,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Datum::BigInt(n) => bool_value(n.compare_int(0) > 0)
             Datum::BigRat(n, _) => bool_value(n.compare_int(0) > 0)
             Datum::Float(n) => bool_value(n > 0.0)
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3273,7 +3273,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Datum::BigInt(n) => bool_value(n.compare_int(0) < 0)
             Datum::BigRat(n, _) => bool_value(n.compare_int(0) < 0)
             Datum::Float(n) => bool_value(n < 0.0)
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3290,17 +3290,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                 match real.val {
                   Datum::Int(n) => Datum::Int(n)
                   Datum::BigInt(n) => Datum::BigInt(n)
-                  _ => raise EvalError("type error: exact integer expected")
+                  _ => raise @core.EvalError("type error: exact integer expected")
                 }
               } else {
-                raise EvalError("type error: exact integer expected")
+                raise @core.EvalError("type error: exact integer expected")
               }
-            _ => raise EvalError("type error: exact integer expected")
+            _ => raise @core.EvalError("type error: exact integer expected")
           }
           match value {
             Datum::Int(n) => bool_value(n % 2 != 0)
             Datum::BigInt(n) => bool_value(!bigint_is_zero(n % bigint_from_int(2)))
-            _ => raise EvalError("type error: exact integer expected")
+            _ => raise @core.EvalError("type error: exact integer expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3317,17 +3317,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                 match real.val {
                   Datum::Int(n) => Datum::Int(n)
                   Datum::BigInt(n) => Datum::BigInt(n)
-                  _ => raise EvalError("type error: exact integer expected")
+                  _ => raise @core.EvalError("type error: exact integer expected")
                 }
               } else {
-                raise EvalError("type error: exact integer expected")
+                raise @core.EvalError("type error: exact integer expected")
               }
-            _ => raise EvalError("type error: exact integer expected")
+            _ => raise @core.EvalError("type error: exact integer expected")
           }
           match value {
             Datum::Int(n) => bool_value(n % 2 == 0)
             Datum::BigInt(n) => bool_value(bigint_is_zero(n % bigint_from_int(2)))
-            _ => raise EvalError("type error: exact integer expected")
+            _ => raise @core.EvalError("type error: exact integer expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3348,13 +3348,13 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   Datum::Float(f) => bool_value(float_is_finite(f))
                   Datum::Int(_) | Datum::BigInt(_) | Datum::Rat(_, _) | Datum::BigRat(_, _) =>
                     bool_value(true)
-                  _ => raise EvalError("type error: number expected")
+                  _ => raise @core.EvalError("type error: number expected")
                 }
               } else {
-                raise EvalError("type error: real expected")
+                raise @core.EvalError("type error: real expected")
               }
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3375,13 +3375,13 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   Datum::Float(f) => bool_value(float_is_infinite(f))
                   Datum::Int(_) | Datum::BigInt(_) | Datum::Rat(_, _) | Datum::BigRat(_, _) =>
                     bool_value(false)
-                  _ => raise EvalError("type error: number expected")
+                  _ => raise @core.EvalError("type error: number expected")
                 }
               } else {
-                raise EvalError("type error: real expected")
+                raise @core.EvalError("type error: real expected")
               }
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3402,13 +3402,13 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   Datum::Float(f) => bool_value(float_is_nan(f))
                   Datum::Int(_) | Datum::BigInt(_) | Datum::Rat(_, _) | Datum::BigRat(_, _) =>
                     bool_value(false)
-                  _ => raise EvalError("type error: number expected")
+                  _ => raise @core.EvalError("type error: number expected")
                 }
               } else {
-                raise EvalError("type error: real expected")
+                raise @core.EvalError("type error: real expected")
               }
             }
-            _ => raise EvalError("type error: number expected")
+            _ => raise @core.EvalError("type error: number expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3450,14 +3450,14 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match args[0] {
             Value::Record(record) =>
               if record.record_type.is_opaque {
-                raise EvalError("record type is opaque")
+                raise @core.EvalError("record type is opaque")
               } else {
                 match lookup_record_type_descriptor_by_id(record.record_type.id) {
                   Some(desc) => Value::RecordTypeDescriptor(desc)
-                  None => raise EvalError("invalid record type descriptor")
+                  None => raise @core.EvalError("invalid record type descriptor")
                 }
               }
-            _ => raise EvalError("type error: record expected")
+            _ => raise @core.EvalError("type error: record expected")
           }
         }
         n => raise arity_mismatch(1, n)
@@ -3573,7 +3573,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
     }
     Primitive::RecordConstructor => {
-      raise EvalError("record-constructor requires evaluation context")
+      raise @core.EvalError("record-constructor requires evaluation context")
     }
     Primitive::RecordTypeFieldMutableP => {
       match args.length() {
@@ -3615,7 +3615,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           check_index(idx, desc.record_type.fields.length())
           let field = desc.record_type.fields[idx]
           if !field.mutable {
-            raise EvalError("record field is immutable: \{field.name}")
+            raise @core.EvalError("record field is immutable: \{field.name}")
           }
           Value::RecordProc(make_record_proc(RecordProcKind::Mutator(desc.record_type, idx)))
         }
@@ -3629,7 +3629,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let parent_desc = match args[1] {
             Value::Datum(Datum::Bool(false)) => None
             Value::RecordTypeDescriptor(desc) => Some(desc)
-            _ => raise EvalError("type error: record type descriptor expected")
+            _ => raise @core.EvalError("type error: record type descriptor expected")
           }
           let parent_type = match parent_desc {
             Some(desc) => Some(desc.record_type)
@@ -3638,7 +3638,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match parent_type {
             Some(parent) => {
               if parent.is_sealed {
-                raise EvalError("record type is sealed")
+                raise @core.EvalError("record type is sealed")
               }
             }
             None => ()
@@ -3646,7 +3646,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let uid = match args[2] {
             Value::Datum(Datum::Bool(false)) => None
             Value::Datum(Datum::Symbol(uid_name)) => Some(uid_name)
-            _ => raise EvalError("type error: symbol expected")
+            _ => raise @core.EvalError("type error: symbol expected")
           }
           let is_sealed = value_as_bool(args[3])
           let is_opaque = value_as_bool(args[4])
@@ -3678,7 +3678,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                     is_opaque,
                     fields,
                   ) {
-                    raise EvalError("invalid record type descriptor")
+                    raise @core.EvalError("invalid record type descriptor")
                   }
                   register_record_type_alias(name, existing_desc)
                   Value::RecordTypeDescriptor(existing_desc)
@@ -3737,14 +3737,14 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               match parent_desc {
                 Some(desc) => {
                   if desc.record_type.id != parent.id {
-                    raise EvalError("invalid record constructor descriptor")
+                    raise @core.EvalError("invalid record constructor descriptor")
                   }
                 }
-                None => raise EvalError("invalid record constructor descriptor")
+                None => raise @core.EvalError("invalid record constructor descriptor")
               }
             None =>
               match parent_desc {
-                Some(_) => raise EvalError("invalid record constructor descriptor")
+                Some(_) => raise @core.EvalError("invalid record constructor descriptor")
                 None => ()
               }
           }
@@ -3752,7 +3752,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::Bool(false)) => None
             value => {
               if !is_procedure_value(value) {
-                raise EvalError("type error: procedure expected")
+                raise @core.EvalError("type error: procedure expected")
               }
               Some(value)
             }
@@ -3760,7 +3760,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           match (protocol, parent_desc) {
             (None, Some(desc)) =>
               match desc.protocol {
-                Some(_) => raise EvalError("invalid record constructor descriptor")
+                Some(_) => raise @core.EvalError("invalid record constructor descriptor")
                 None => ()
               }
             _ => ()
@@ -3831,7 +3831,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let desc = value_as_condition_type_descriptor(args[0])
           let (accessor_type, idx) = record_accessor_info(args[1])
           if accessor_type.id != desc.record_type.id {
-            raise EvalError("type error: record accessor expected")
+            raise @core.EvalError("type error: record accessor expected")
           }
           Value::ConditionProc(
             make_condition_proc(ConditionProcKind::Accessor(desc.record_type, idx)),
@@ -3865,7 +3865,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         2 | 3 => {
           let hash = args[0]
           if !is_procedure_value(hash) {
-            raise EvalError("type error: procedure expected")
+            raise @core.EvalError("type error: procedure expected")
           }
           let equiv = hashtable_equiv_from_value(args[1])
           if args.length() == 3 {
@@ -3896,19 +3896,19 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
     }
     Primitive::HashtableRef => {
-      raise EvalError("internal error: hashtable-ref should be handled in apply_proc")
+      raise @core.EvalError("internal error: hashtable-ref should be handled in apply_proc")
     }
     Primitive::HashtableSet => {
-      raise EvalError("internal error: hashtable-set! should be handled in apply_proc")
+      raise @core.EvalError("internal error: hashtable-set! should be handled in apply_proc")
     }
     Primitive::HashtableDelete => {
-      raise EvalError("internal error: hashtable-delete! should be handled in apply_proc")
+      raise @core.EvalError("internal error: hashtable-delete! should be handled in apply_proc")
     }
     Primitive::HashtableContainsP => {
-      raise EvalError("internal error: hashtable-contains? should be handled in apply_proc")
+      raise @core.EvalError("internal error: hashtable-contains? should be handled in apply_proc")
     }
     Primitive::HashtableUpdate => {
-      raise EvalError("internal error: hashtable-update! should be handled in apply_proc")
+      raise @core.EvalError("internal error: hashtable-update! should be handled in apply_proc")
     }
     Primitive::HashtableCopy => {
       match args.length() {
@@ -3937,7 +3937,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 | 2 => {
           let table = value_as_hashtable(args[0])
           if !table.mutable {
-            raise EvalError("hashtable is immutable")
+            raise @core.EvalError("hashtable is immutable")
           }
           if args.length() == 2 {
             validate_hashtable_size_arg(args[1])
@@ -4344,7 +4344,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
               let zero = 0
               match zero.to_char() {
                 Some(ch) => ch
-                None => raise EvalError("internal error: invalid default char")
+                None => raise @core.EvalError("internal error: invalid default char")
               }
             }
           let buf = @buffer.new()
@@ -4355,7 +4355,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Datum(Datum::String(Ref::new(buf.to_string())))
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::StringP => {
@@ -4393,7 +4393,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           check_index(idx, s.length())
           match s.get_char(idx) {
             Some(ch) => Value::Datum(Datum::Char(ch))
-            None => raise EvalError("index out of range")
+            None => raise @core.EvalError("index out of range")
           }
         }
         n => raise arity_mismatch(2, n)
@@ -4427,15 +4427,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             s.length()
           }
           if start < 0 || end < start || end > s.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let view = try? s[start:end]
           match view {
             Ok(slice) => Value::Datum(Datum::String(Ref::new(slice.to_string())))
-            Err(_) => raise EvalError("index out of range")
+            Err(_) => raise @core.EvalError("index out of range")
           }
         }
-        n => raise EvalError("arity mismatch: expected 1 to 3 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 to 3 got \{n}")
       }
     }
     Primitive::Substring => {
@@ -4445,12 +4445,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let start = value_as_int_index(args[1])
           let end = value_as_int_index(args[2])
           if start < 0 || end < start || end > s.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let view = try? s[start:end]
           match view {
             Ok(slice) => Value::Datum(Datum::String(Ref::new(slice.to_string())))
-            Err(_) => raise EvalError("index out of range")
+            Err(_) => raise @core.EvalError("index out of range")
           }
         }
         n => raise arity_mismatch(3, n)
@@ -4473,13 +4473,13 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             from_str.length()
           }
           if start < 0 || end < start || end > from_str.length() || at < 0 {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let count = end - start
           let to_str = to_ref.val
           let to_len = to_str.length()
           if at + count > to_len {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let buf = @buffer.new()
           let mut i = 0
@@ -4490,20 +4490,20 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
                   let from_idx = start + (i - at)
                   match from_str.get_char(from_idx) {
                     Some(fch) => buf.write_char(fch)
-                    None => raise EvalError("index out of range")
+                    None => raise @core.EvalError("index out of range")
                   }
                 } else {
                   buf.write_char(ch)
                 }
               }
-              None => raise EvalError("index out of range")
+              None => raise @core.EvalError("index out of range")
             }
             i = i + 1
           }
           to_ref.val = buf.to_string()
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 3 to 5 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 3 to 5 got \{n}")
       }
     }
     Primitive::StringFill => {
@@ -4525,7 +4525,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           sref.val = updated
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 2 to 4 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 2 to 4 got \{n}")
       }
     }
     Primitive::StringToList => {
@@ -4537,7 +4537,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           while i < s.length() {
             match s.get_char(i) {
               Some(ch) => items.push(Datum::Char(ch))
-              None => raise EvalError("index out of range")
+              None => raise @core.EvalError("index out of range")
             }
             i = i + 1
           }
@@ -4555,7 +4555,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           for item in items {
             match item {
               Datum::Char(ch) => buf.write_char(ch)
-              _ => raise EvalError("type error: char expected")
+              _ => raise @core.EvalError("type error: char expected")
             }
           }
           Value::Datum(Datum::String(Ref::new(buf.to_string())))
@@ -4614,7 +4614,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Datum(Datum::Vector(items))
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::VectorP => {
@@ -4676,7 +4676,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             items.length()
           }
           if start < 0 || end < start || end > items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let mut i = start
           while i < end {
@@ -4685,7 +4685,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 2 to 4 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 2 to 4 got \{n}")
       }
     }
     Primitive::VectorCopy => {
@@ -4703,12 +4703,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             items.length()
           }
           if start < 0 || end < start || end > items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let slice = items.sub(start=start, end=end).to_array()
           Value::Datum(Datum::Vector(slice))
         }
-        n => raise EvalError("arity mismatch: expected 1 to 3 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 to 3 got \{n}")
       }
     }
     Primitive::VectorCopyBang => {
@@ -4728,11 +4728,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             from_items.length()
           }
           if start < 0 || end < start || end > from_items.length() || at < 0 {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let count = end - start
           if at + count > to_items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let temp : Array[Datum] = []
           let mut i = 0
@@ -4747,7 +4747,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 3 to 5 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 3 to 5 got \{n}")
       }
     }
     Primitive::VectorAppend => {
@@ -4799,7 +4799,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Datum(Datum::ByteVector(items))
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::ByteVectorP => {
@@ -4860,12 +4860,12 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             items.length()
           }
           if start < 0 || end < start || end > items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let slice = items.sub(start=start, end=end).to_array()
           Value::Datum(Datum::ByteVector(slice))
         }
-        n => raise EvalError("arity mismatch: expected 1 to 3 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 to 3 got \{n}")
       }
     }
     Primitive::ByteVectorCopyBang => {
@@ -4885,11 +4885,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             from_items.length()
           }
           if start < 0 || end < start || end > from_items.length() || at < 0 {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let count = end - start
           if at + count > to_items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let temp : Array[Int] = []
           let mut i = 0
@@ -4904,7 +4904,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 3 to 5 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 3 to 5 got \{n}")
       }
     }
     Primitive::ByteVectorAppend => {
@@ -4933,7 +4933,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             items.length()
           }
           if start < 0 || end < start || end > items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           let mut i = start
           while i < end {
@@ -4942,7 +4942,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 2 to 4 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 2 to 4 got \{n}")
       }
     }
     Primitive::ByteVectorToU8List => {
@@ -4968,11 +4968,11 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             match item {
               Datum::Int(n) => {
                 if n < 0 || n > 255 {
-                  raise EvalError("type error: byte expected")
+                  raise @core.EvalError("type error: byte expected")
                 }
                 bytes.push(n)
               }
-              _ => raise EvalError("type error: byte expected")
+              _ => raise @core.EvalError("type error: byte expected")
             }
           }
           Value::Datum(Datum::ByteVector(bytes))
@@ -4992,7 +4992,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           port_write(port, display_string(args[0]))
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::Write => {
@@ -5007,7 +5007,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           port_write(port, value_to_string(args[0]))
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 1 or 2 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::Newline => {
@@ -5022,7 +5022,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           port_write(port, "\n")
           Value::Void
         }
-        n => raise EvalError("arity mismatch: expected 0 or 1 got \{n}")
+        n => raise @core.EvalError("arity mismatch: expected 0 or 1 got \{n}")
       }
     }
     Primitive::OpenOutputString => {
@@ -5047,30 +5047,30 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
     }
     Primitive::WithExceptionHandler => {
-      raise EvalError("internal error: with-exception-handler should be handled in apply_proc")
+      raise @core.EvalError("internal error: with-exception-handler should be handled in apply_proc")
     }
     Primitive::Raise => {
-      raise EvalError("internal error: raise should be handled in apply_proc")
+      raise @core.EvalError("internal error: raise should be handled in apply_proc")
     }
     Primitive::RaiseContinuable => {
-      raise EvalError("internal error: raise-continuable should be handled in apply_proc")
+      raise @core.EvalError("internal error: raise-continuable should be handled in apply_proc")
     }
     Primitive::Error => {
-      raise EvalError("internal error: error should be handled in apply_proc")
+      raise @core.EvalError("internal error: error should be handled in apply_proc")
     }
     Primitive::AssertionViolation => {
-      raise EvalError("internal error: assertion-violation should be handled in apply_proc")
+      raise @core.EvalError("internal error: assertion-violation should be handled in apply_proc")
     }
     Primitive::ImplementationRestrictionViolation => {
-      raise EvalError(
+      raise @core.EvalError(
         "internal error: implementation-restriction-violation should be handled in apply_proc",
       )
     }
     Primitive::UndefinedViolation => {
-      raise EvalError("internal error: undefined-violation should be handled in apply_proc")
+      raise @core.EvalError("internal error: undefined-violation should be handled in apply_proc")
     }
     Primitive::SyntaxViolation => {
-      raise EvalError("internal error: syntax-violation should be handled in apply_proc")
+      raise @core.EvalError("internal error: syntax-violation should be handled in apply_proc")
     }
     Primitive::Not => {
       match args.length() {
@@ -5080,44 +5080,44 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::Apply => {
       // handled by apply_proc to allow proper argument flattening
-      raise EvalError("internal error: apply should be handled in apply_proc")
+      raise @core.EvalError("internal error: apply should be handled in apply_proc")
     }
     Primitive::CallCC => {
-      raise EvalError("internal error: call/cc should be handled in apply_proc")
+      raise @core.EvalError("internal error: call/cc should be handled in apply_proc")
     }
     Primitive::Map => {
-      raise EvalError("internal error: map should be handled in apply_proc")
+      raise @core.EvalError("internal error: map should be handled in apply_proc")
     }
     Primitive::ForEach => {
-      raise EvalError("internal error: for-each should be handled in apply_proc")
+      raise @core.EvalError("internal error: for-each should be handled in apply_proc")
     }
     Primitive::VectorMap => {
-      raise EvalError("internal error: vector-map should be handled in apply_proc")
+      raise @core.EvalError("internal error: vector-map should be handled in apply_proc")
     }
     Primitive::VectorForEach => {
-      raise EvalError("internal error: vector-for-each should be handled in apply_proc")
+      raise @core.EvalError("internal error: vector-for-each should be handled in apply_proc")
     }
     Primitive::StringMap => {
-      raise EvalError("internal error: string-map should be handled in apply_proc")
+      raise @core.EvalError("internal error: string-map should be handled in apply_proc")
     }
     Primitive::StringForEach => {
-      raise EvalError("internal error: string-for-each should be handled in apply_proc")
+      raise @core.EvalError("internal error: string-for-each should be handled in apply_proc")
     }
     Primitive::Values => Value::Values(args)
     Primitive::CallWithValues => {
-      raise EvalError("internal error: call-with-values should be handled in apply_proc")
+      raise @core.EvalError("internal error: call-with-values should be handled in apply_proc")
     }
     Primitive::MakeParameter => {
-      raise EvalError("internal error: make-parameter should be handled in apply_proc")
+      raise @core.EvalError("internal error: make-parameter should be handled in apply_proc")
     }
     Primitive::DynamicWind => {
-      raise EvalError("internal error: dynamic-wind should be handled in apply_proc")
+      raise @core.EvalError("internal error: dynamic-wind should be handled in apply_proc")
     }
     Primitive::Eval => {
-      raise EvalError("internal error: eval should be handled in apply_proc")
+      raise @core.EvalError("internal error: eval should be handled in apply_proc")
     }
     Primitive::Environment => {
-      raise EvalError("internal error: environment should be handled in apply_proc")
+      raise @core.EvalError("internal error: environment should be handled in apply_proc")
     }
     Primitive::PromiseP => {
       match args.length() {
@@ -5130,10 +5130,10 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       }
     }
     Primitive::MakePromise => {
-      raise EvalError("internal error: make-promise should be handled in apply_proc")
+      raise @core.EvalError("internal error: make-promise should be handled in apply_proc")
     }
     Primitive::Force => {
-      raise EvalError("internal error: force should be handled in apply_proc")
+      raise @core.EvalError("internal error: force should be handled in apply_proc")
     }
     Primitive::ListP => {
       match args.length() {
@@ -5151,7 +5151,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let datum = match args[0] {
             Value::Datum(d) => d
-            _ => raise EvalError("type error: list expected")
+            _ => raise @core.EvalError("type error: list expected")
           }
           let items = datum_list_to_array(datum)
           Value::Datum(Datum::Int(items.length()))
@@ -5169,7 +5169,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           while i < args.length() - 1 {
             let datum = match args[i] {
               Value::Datum(d) => d
-              _ => raise EvalError("type error: list expected")
+              _ => raise @core.EvalError("type error: list expected")
             }
             let part = datum_list_to_array(datum)
             for item in part {
@@ -5187,7 +5187,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let datum = match args[0] {
             Value::Datum(d) => d
-            _ => raise EvalError("type error: list expected")
+            _ => raise @core.EvalError("type error: list expected")
           }
           let items = datum_list_to_array(datum)
           let mut result = Datum::Nil
@@ -5218,7 +5218,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           let idx = value_as_int_index(args[1])
           let items = datum_list_to_array(datum)
           if idx < 0 || idx > items.length() {
-            raise EvalError("index out of range")
+            raise @core.EvalError("index out of range")
           }
           Value::Datum(list_from_array(items.sub(start=idx).to_array()))
         }

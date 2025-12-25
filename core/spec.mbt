@@ -73,7 +73,7 @@ pub(all) suberror EvalError String derive(Show, Eq)
 /// It is also used to store list/vector elements, so it includes runtime-only
 /// variants for records/conditions even though the reader never produces them.
 ///|
-pub enum Datum {
+pub(all) enum Datum {
   Nil
   Bool(Bool)
   Int(Int)
@@ -97,7 +97,7 @@ pub enum Datum {
 ///|
 /// Primitive procedures provided by the base environment.
 ///|
-pub enum Primitive {
+pub(all) enum Primitive {
   Add
   Sub
   Mul
@@ -364,7 +364,7 @@ pub type Env = Array[Map[String, Value]]
 ///|
 /// A syntax-rules transformer.
 ///|
-pub struct SyntaxRule {
+pub(all) struct SyntaxRule {
   pattern : Datum
   template : Datum
   fender : Datum?
@@ -373,7 +373,7 @@ pub struct SyntaxRule {
 ///|
 /// A collection of syntax-rules with literal identifiers.
 ///|
-pub struct SyntaxRules {
+pub(all) struct SyntaxRules {
   literals : Array[String]
   rules : Array[SyntaxRule]
   ellipsis : String
@@ -383,7 +383,7 @@ pub struct SyntaxRules {
 /// Closure is an opaque procedure value produced by lambda.
 /// The interpreter may store extra data internally; tests treat it as opaque.
 ///|
-pub struct Closure {
+pub(all) struct Closure {
   id : Int
   params : Array[String]
   rest : String?
@@ -392,21 +392,21 @@ pub struct Closure {
 }
 
 ///|
-pub struct CaseClause {
+pub(all) struct CaseClause {
   params : Array[String]
   rest : String?
   body : Array[Datum]
 }
 
 ///|
-pub struct CaseClosure {
+pub(all) struct CaseClosure {
   id : Int
   clauses : Array[CaseClause]
   env : Env
 }
 
 ///|
-pub struct GuardHandler {
+pub(all) struct GuardHandler {
   id : Int
   name : String
   clauses : Array[Datum]
@@ -416,26 +416,26 @@ pub struct GuardHandler {
 }
 
 ///|
-pub struct Parameter {
+pub(all) struct Parameter {
   id : Int
   value : Ref[Value]
   converter : Value?
 }
 
 ///|
-pub enum PromiseState {
+pub(all) enum PromiseState {
   Thunk(Value)
   Value(Value)
 }
 
 ///|
-pub struct Promise {
+pub(all) struct Promise {
   id : Int
   state : Ref[PromiseState]
 }
 
 ///|
-pub struct EvalEnv {
+pub(all) struct EvalEnv {
   id : Int
   env : Env
 }
@@ -443,7 +443,7 @@ pub struct EvalEnv {
 ///|
 /// Runtime values produced by evaluation.
 ///|
-pub enum Value {
+pub(all) enum Value {
   Void
   Datum(Datum)
   Primitive(Primitive)
@@ -465,45 +465,4 @@ pub enum Value {
   RecordTypeDescriptor(RecordTypeDescriptor)
   RecordConstructorDescriptor(RecordConstructorDescriptor)
   Macro(SyntaxRules)
-}
-
-///|
-/// Evaluate a Scheme program consisting of one or more forms.
-/// Returns the last value produced.
-///
-/// Parse errors raise ParseError, evaluation errors raise EvalError.
-///|
-#declaration_only
-pub fn eval_program(src : String) -> Value raise {
-  ...
-}
-
-///|
-/// Evaluate all top-level forms and return each value in order.
-///
-/// Parse errors raise ParseError, evaluation errors raise EvalError.
-///|
-#declaration_only
-pub fn eval_program_all(src : String) -> Array[Value] raise {
-  ...
-}
-
-///|
-/// Render a runtime value using Scheme surface syntax.
-///
-/// - Void prints as "#<void>"
-/// - Booleans print as "#t" or "#f"
-/// - Integers print in base-10 without prefixes
-/// - Symbols print as their identifier names
-/// - Strings print with double quotes and backslash escapes
-/// - Proper lists print as "(a b c)"
-/// - Improper lists print as "(a b . c)"
-/// - Macros print as "#<syntax>"
-/// - Continuations print as "#<procedure>"
-/// - Ports print as "#<port>"
-/// - Multiple values print as "#<values>"
-///|
-#declaration_only
-pub fn value_to_string(value : Value) -> String {
-  ...
 }

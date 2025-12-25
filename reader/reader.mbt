@@ -1,4 +1,7 @@
 ///|
+using @core {type Datum, type ParseError, unicode_char_foldcase}
+
+///|
 priv struct Reader {
   chars : Array[Char]
   mut pos : Int
@@ -87,7 +90,7 @@ fn skip_block_comment(r : Reader) -> Unit raise ParseError {
   let mut depth = 1
   while depth > 0 {
     if r.pos >= r.chars.length() {
-      raise ParseError("unterminated block comment")
+      raise @core.ParseError("unterminated block comment")
     }
     if r.chars[r.pos] == '#' && r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == '|' {
       depth = depth + 1
@@ -185,10 +188,10 @@ fn read_token(r : Reader) -> String raise ParseError {
     }
   }
   if in_bar {
-    raise ParseError("unterminated identifier")
+    raise @core.ParseError("unterminated identifier")
   }
   if !started {
-    raise ParseError("expected token")
+    raise @core.ParseError("expected token")
   }
   String::from_array(chars)
 }
@@ -198,7 +201,7 @@ fn read_identifier_escape(r : Reader) -> Char raise ParseError {
   match reader_next(r) {
     Some('x') | Some('X') => read_hex_escape(r)
     Some(ch) => ch
-    None => raise ParseError("unterminated identifier")
+    None => raise @core.ParseError("unterminated identifier")
   }
 }
 
@@ -266,6 +269,120 @@ fn parse_label_token(tok : String) -> (Bool, Int)? {
     i = i + 1
   }
   Some((last == '=', acc))
+}
+
+///|
+fn int_abs(value : Int) -> Int {
+  if value < 0 { -value } else { value }
+}
+
+///|
+fn gcd(a : Int, b : Int) -> Int {
+  let mut x = int_abs(a)
+  let mut y = int_abs(b)
+  while y != 0 {
+    let temp = x % y
+    x = y
+    y = temp
+  }
+  x
+}
+
+///|
+fn normalize_rat(num : Int, den : Int) -> Datum? {
+  if den == 0 {
+    None
+  } else if num == 0 {
+    Some(Datum::Int(0))
+  } else {
+    let mut n = num
+    let mut d = den
+    if d < 0 {
+      n = -n
+      d = -d
+    }
+    let g = gcd(n, d)
+    let nn = n / g
+    let dd = d / g
+    if dd == 1 {
+      Some(Datum::Int(nn))
+    } else {
+      Some(Datum::Rat(nn, dd))
+    }
+  }
+}
+
+///|
+fn bigint_from_int(value : Int) -> @bigint.BigInt {
+  @bigint.BigInt::from_int(value)
+}
+
+///|
+fn bigint_is_zero(value : @bigint.BigInt) -> Bool {
+  value.is_zero()
+}
+
+///|
+fn bigint_abs(value : @bigint.BigInt) -> @bigint.BigInt {
+  if value.compare_int(0) < 0 { -value } else { value }
+}
+
+///|
+fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
+  let int_max = 2147483647
+  let int_min = -2147483648
+  if value.compare_int(int_max) > 0 || value.compare_int(int_min) < 0 {
+    None
+  } else {
+    Some(value.to_int())
+  }
+}
+
+///|
+fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
+  let mut x = bigint_abs(a)
+  let mut y = bigint_abs(b)
+  while !bigint_is_zero(y) {
+    let temp = x % y
+    x = y
+    y = temp
+  }
+  x
+}
+
+///|
+fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
+  if bigint_is_zero(den) {
+    None
+  } else if bigint_is_zero(num) {
+    Some(Datum::Int(0))
+  } else {
+    let mut n = num
+    let mut d = den
+    if d.compare_int(0) < 0 {
+      n = -n
+      d = -d
+    }
+    let g = bigint_gcd(n, d)
+    let nn = n / g
+    let dd = d / g
+    if dd.compare_int(1) == 0 {
+      Some(match bigint_to_int_option(nn) {
+        Some(v) => Datum::Int(v)
+        None => Datum::BigInt(nn)
+      })
+    } else {
+      match (bigint_to_int_option(nn), bigint_to_int_option(dd)) {
+        (Some(nv), Some(dv)) => Some(Datum::Rat(nv, dv))
+        _ => Some(Datum::BigRat(nn, dd))
+      }
+    }
+  }
+}
+
+///|
+fn pair_new(car : Datum, cdr : Datum) -> Datum {
+  Datum::Pair(Ref::new(car), Ref::new(cdr))
 }
 
 ///|
@@ -927,12 +1044,12 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
 }
 
 ///|
-fn parse_number_token(tok : String) -> Datum? {
+pub fn parse_number_token(tok : String) -> Datum? {
   parse_number_token_internal(tok, None)
 }
 
 ///|
-fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
+pub fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
   parse_number_token_internal(tok, Some(radix))
 }
 
@@ -1008,7 +1125,7 @@ fn read_string(r : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   while true {
     match reader_next(r) {
-      None => raise ParseError("unterminated string")
+      None => raise @core.ParseError("unterminated string")
       Some('"') => break
       Some('\\') => {
         match reader_next(r) {
@@ -1030,7 +1147,7 @@ fn read_string(r : Reader) -> String raise ParseError {
           Some('"') => chars.push('"')
           Some('\\') => chars.push('\\')
           Some(ch) => chars.push(ch)
-          None => raise ParseError("unterminated string")
+          None => raise @core.ParseError("unterminated string")
         }
       }
       Some(ch) => chars.push(ch)
@@ -1058,14 +1175,14 @@ fn read_hex_escape(r : Reader) -> Char raise ParseError {
   let mut has_digit = false
   while true {
     match reader_next(r) {
-      None => raise ParseError("unterminated string")
+      None => raise @core.ParseError("unterminated string")
       Some(';') => {
         if !has_digit {
-          raise ParseError("invalid hex escape")
+          raise @core.ParseError("invalid hex escape")
         }
         match acc.to_char() {
           Some(ch) => return ch
-          None => raise ParseError("invalid hex escape")
+          None => raise @core.ParseError("invalid hex escape")
         }
       }
       Some(ch) =>
@@ -1074,11 +1191,11 @@ fn read_hex_escape(r : Reader) -> Char raise ParseError {
             acc = acc * 16 + digit
             has_digit = true
           }
-          _ => raise ParseError("invalid hex escape")
+          _ => raise @core.ParseError("invalid hex escape")
         }
     }
   }
-  raise ParseError("invalid hex escape")
+  raise @core.ParseError("invalid hex escape")
 }
 
 ///|
@@ -1128,7 +1245,7 @@ fn read_list(r : Reader) -> Datum raise ParseError {
   while true {
     skip_ws_and_comments(r)
     match reader_peek(r) {
-      None => raise ParseError("unexpected EOF while reading list")
+      None => raise @core.ParseError("unexpected EOF while reading list")
       Some(')') => {
         r.pos = r.pos + 1
         break
@@ -1139,7 +1256,7 @@ fn read_list(r : Reader) -> Datum raise ParseError {
           items.push(Datum::Symbol(tok))
         } else {
           if items.is_empty() {
-            raise ParseError("unexpected dot")
+            raise @core.ParseError("unexpected dot")
           }
           r.pos = r.pos + 1
           skip_ws_and_comments(r)
@@ -1147,7 +1264,7 @@ fn read_list(r : Reader) -> Datum raise ParseError {
           skip_ws_and_comments(r)
           match reader_peek(r) {
             Some(')') => r.pos = r.pos + 1
-            _ => raise ParseError("expected ) after dotted tail")
+            _ => raise @core.ParseError("expected ) after dotted tail")
           }
           dotted_tail = Some(tail)
           break
@@ -1180,7 +1297,7 @@ fn datum_list_to_array_parse(list : Datum) -> Array[Datum] raise ParseError {
         items.push(a.val)
         cur = b.val
       }
-      _ => raise ParseError("expected proper list")
+      _ => raise @core.ParseError("expected proper list")
     }
   }
   items
@@ -1202,11 +1319,11 @@ fn read_bytevector_literal(r : Reader) -> Datum raise ParseError {
     match item {
       Datum::Int(n) => {
         if n < 0 || n > 255 {
-          raise ParseError("bytevector element out of range")
+          raise @core.ParseError("bytevector element out of range")
         }
         bytes.push(n)
       }
-      _ => raise ParseError("bytevector element must be integer")
+      _ => raise @core.ParseError("bytevector element must be integer")
     }
   }
   Datum::ByteVector(bytes)
@@ -1235,14 +1352,14 @@ fn token_to_datum(tok : String) -> Datum {
 fn read_expr(r : Reader) -> Datum raise ParseError {
   skip_ws_and_comments(r)
   match reader_peek(r) {
-    None => raise ParseError("unexpected EOF")
+    None => raise @core.ParseError("unexpected EOF")
     Some('(') => {
       r.pos = r.pos + 1
       read_list(r)
     }
     Some(')') => {
       r.pos = r.pos + 1
-      raise ParseError("unexpected )")
+      raise @core.ParseError("unexpected )")
     }
     Some('\'') => {
       r.pos = r.pos + 1
@@ -1286,7 +1403,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
         match parse_label_token(tok) {
           Some((true, label)) => {
             match r.labels.get(label) {
-              Some(_) => raise ParseError("duplicate label")
+              Some(_) => raise @core.ParseError("duplicate label")
               None => ()
             }
             let cell = Ref::new(Datum::Nil)
@@ -1298,7 +1415,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
           Some((false, label)) =>
             match r.labels.get(label) {
               Some(cell) => Datum::Label(label, cell)
-              None => raise ParseError("undefined label")
+              None => raise @core.ParseError("undefined label")
             }
           None => token_to_datum(tok)
         }
@@ -1371,7 +1488,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
 }
 
 ///|
-fn parse_program(src : String) -> Array[Datum] raise ParseError {
+pub fn parse_program(src : String) -> Array[Datum] raise ParseError {
   let r = make_reader(src)
   let exprs : Array[Datum] = []
   while true {
