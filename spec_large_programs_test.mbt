@@ -397,3 +397,38 @@ test "large program: graph path dfs" {
   )
   inspect(value_to_string(eval_program(program)), content="(a b d f)")
 }
+
+///|
+test "large program: lazy stream primes" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define-syntax cons-stream
+      #|    (syntax-rules ()
+      #|      ((_ a b) (cons a (delay b)))))
+      #|  (define (stream-car s) (car s))
+      #|  (define (stream-cdr s) (force (cdr s)))
+      #|  (define (stream-filter pred s)
+      #|    (let ((h (stream-car s)))
+      #|      (if (pred h)
+      #|          (cons-stream h (stream-filter pred (stream-cdr s)))
+      #|          (stream-filter pred (stream-cdr s)))))
+      #|  (define (integers-from n)
+      #|    (cons-stream n (integers-from (+ n 1))))
+      #|  (define (sieve s)
+      #|    (cons-stream
+      #|      (stream-car s)
+      #|      (sieve
+      #|        (stream-filter
+      #|          (lambda (x) (not (= 0 (modulo x (stream-car s)))))
+      #|          (stream-cdr s)))))
+      #|  (define primes (sieve (integers-from 2)))
+      #|  (define (stream-take s n)
+      #|    (if (= n 0)
+      #|        '()
+      #|        (cons (stream-car s) (stream-take (stream-cdr s) (- n 1)))))
+      #|  (stream-take primes 10))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(2 3 5 7 11 13 17 19 23 29)")
+}
