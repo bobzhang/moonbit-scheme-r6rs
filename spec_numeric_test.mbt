@@ -647,6 +647,14 @@ test "r6rs numeric: conversions and fractions" {
   inspect(
     value_to_string(eval_program(
       (
+        #|(inexact->exact 0.1)
+      )
+    )),
+    content="13421773/134217728",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
         #|(number->string 3)
       )
     )),

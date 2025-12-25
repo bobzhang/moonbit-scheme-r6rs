@@ -406,8 +406,31 @@ fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
   if !float_is_finite(value) {
     raise EvalError("inexact->exact: unsupported")
   }
-  let text = value.to_string()
-  match parse_exact_decimal(text) {
+  // Decode IEEE-754 f32 into an exact rational.
+  let bits = Float::reinterpret_as_uint(value)
+  let sign_bit = (bits >> 31) & 0x1U
+  let exp_bits = (bits >> 23) & 0xFFU
+  let frac_bits = bits & 0x7FFFFFU
+  if exp_bits == 0U && frac_bits == 0U {
+    return Datum::Int(0)
+  }
+  let mantissa_bits = if exp_bits == 0U { frac_bits } else { (1U << 23) | frac_bits }
+  let exp_adjusted = if exp_bits == 0U {
+    -149
+  } else {
+    exp_bits.reinterpret_as_int() - 150
+  }
+  let mut num = bigint_from_int(mantissa_bits.reinterpret_as_int())
+  let mut den = bigint_from_int(1)
+  if exp_adjusted >= 0 {
+    num = num * pow_bigint_int(bigint_from_int(2), exp_adjusted)
+  } else {
+    den = pow_bigint_int(bigint_from_int(2), -exp_adjusted)
+  }
+  if sign_bit != 0U {
+    num = -num
+  }
+  match normalize_big_rat(num, den) {
     Some(datum) => datum
     None => raise EvalError("inexact->exact: unsupported")
   }
