@@ -274,3 +274,21 @@ test "large program: memoized fibonacci" {
   )
   inspect(value_to_string(eval_program(program)), content="6765")
 }
+
+///|
+test "large program: towers of hanoi" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (hanoi n from to spare)
+      #|    (if (= n 0)
+      #|        '()
+      #|        (append (hanoi (- n 1) from spare to)
+      #|                (list (list from to))
+      #|                (hanoi (- n 1) spare to from))))
+      #|  (define moves (hanoi 5 'a 'b 'c))
+      #|  (list (length moves) (car moves) (car (reverse moves))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(31 (a b) (a b))")
+}
