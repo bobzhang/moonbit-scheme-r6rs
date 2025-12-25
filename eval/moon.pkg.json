@@ -1,3 +1,7 @@
 {
-  "import": ["dii/scheme-r6rs/core", "dii/scheme-r6rs/parser"]
+  "import": [
+    "dii/scheme-r6rs/core",
+    "dii/scheme-r6rs/parser",
+    "dii/scheme-r6rs/runtime"
+  ]
 }

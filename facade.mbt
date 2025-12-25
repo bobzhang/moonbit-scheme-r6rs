@@ -20,5 +20,5 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 
 ///|
 pub fn value_to_string(value : Value) -> String {
-  @eval.value_to_string(value)
+  @runtime.value_to_string(value)
 }

@@ -1,10 +1,10 @@
 ///|
-fn bool_value(value : Bool) -> Value {
+pub fn bool_value(value : Bool) -> Value {
   Value::Datum(Datum::Bool(value))
 }
 
 ///|
-priv struct Library {
+pub(all) struct Library {
   exports : Map[String, Value]
 }
 
@@ -82,7 +82,7 @@ fn next_condition_proc_id() -> Int {
 }
 
 ///|
-fn next_hashtable_id() -> Int {
+pub fn next_hashtable_id() -> Int {
   let id = hashtable_counter.val
   hashtable_counter.val = id + 1
   id
@@ -103,7 +103,7 @@ fn next_enum_set_proc_id() -> Int {
 }
 
 ///|
-fn make_record_type(
+pub fn make_record_type(
   name : String,
   parent : RecordType?,
   is_sealed : Bool,
@@ -115,17 +115,17 @@ fn make_record_type(
 }
 
 ///|
-fn make_record_proc(kind : RecordProcKind) -> RecordProc {
+pub fn make_record_proc(kind : RecordProcKind) -> RecordProc {
   RecordProc::{ id: next_record_proc_id(), kind }
 }
 
 ///|
-fn make_condition_proc(kind : ConditionProcKind) -> ConditionProc {
+pub fn make_condition_proc(kind : ConditionProcKind) -> ConditionProc {
   ConditionProc::{ id: next_condition_proc_id(), kind }
 }
 
 ///|
-fn make_record_constructor_descriptor(
+pub fn make_record_constructor_descriptor(
   record_type : RecordType,
   parent_desc : RecordConstructorDescriptor?,
   protocol : Value?
@@ -139,7 +139,7 @@ fn make_record_constructor_descriptor(
 }
 
 ///|
-fn make_record_type_descriptor(
+pub fn make_record_type_descriptor(
   record_type : RecordType,
   constructor_desc : RecordConstructorDescriptor
 ) -> RecordTypeDescriptor {
@@ -151,7 +151,7 @@ fn make_record_type_descriptor(
 }
 
 ///|
-fn make_record_instance(record_type : RecordType, values : Array[Value]) -> Record {
+pub fn make_record_instance(record_type : RecordType, values : Array[Value]) -> Record {
   let fields : Array[Ref[Value]] = []
   for value in values {
     fields.push(Ref::new(value))
@@ -160,12 +160,12 @@ fn make_record_instance(record_type : RecordType, values : Array[Value]) -> Reco
 }
 
 ///|
-fn make_condition(components : Array[Record]) -> Condition {
+pub fn make_condition(components : Array[Record]) -> Condition {
   Condition::{ id: next_condition_id(), components }
 }
 
 ///|
-fn make_hashtable(
+pub fn make_hashtable(
   equiv : HashtableEquiv,
   hash : Value?,
   mutable : Bool,
@@ -180,17 +180,17 @@ fn make_hashtable(
 }
 
 ///|
-fn make_enum_set(universe : Array[String], members : Array[Bool]) -> EnumSet {
+pub fn make_enum_set(universe : Array[String], members : Array[Bool]) -> EnumSet {
   EnumSet::{ id: next_enum_set_id(), universe, members }
 }
 
 ///|
-fn make_enum_set_proc(kind : EnumSetProcKind) -> EnumSetProc {
+pub fn make_enum_set_proc(kind : EnumSetProcKind) -> EnumSetProc {
   EnumSetProc::{ id: next_enum_set_proc_id(), kind }
 }
 
 ///|
-fn enum_set_members_all_true(universe : Array[String]) -> Array[Bool] {
+pub fn enum_set_members_all_true(universe : Array[String]) -> Array[Bool] {
   let members : Array[Bool] = []
   for _ in universe {
     members.push(true)
@@ -199,7 +199,7 @@ fn enum_set_members_all_true(universe : Array[String]) -> Array[Bool] {
 }
 
 ///|
-fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
+pub fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
   let members : Array[Bool] = []
   for _ in universe {
     members.push(false)
@@ -208,7 +208,7 @@ fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
 }
 
 ///|
-fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
+pub fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
   if a.universe.length() != b.universe.length() {
     return false
   }
@@ -223,7 +223,7 @@ fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
 }
 
 ///|
-fn enum_set_index_of(universe : Array[String], name : String) -> Int? {
+pub fn enum_set_index_of(universe : Array[String], name : String) -> Int? {
   let mut i = 0
   while i < universe.length() {
     if universe[i] == name {
@@ -235,7 +235,7 @@ fn enum_set_index_of(universe : Array[String], name : String) -> Int? {
 }
 
 ///|
-fn enum_set_member_by_name(set : EnumSet, name : String) -> Bool {
+pub fn enum_set_member_by_name(set : EnumSet, name : String) -> Bool {
   match enum_set_index_of(set.universe, name) {
     Some(idx) => set.members[idx]
     None => false
@@ -243,7 +243,7 @@ fn enum_set_member_by_name(set : EnumSet, name : String) -> Bool {
 }
 
 ///|
-fn enum_set_from_names(
+pub fn enum_set_from_names(
   universe : Array[String],
   names : Array[String],
 ) -> EnumSet raise EvalError {
@@ -257,19 +257,19 @@ fn enum_set_from_names(
   make_enum_set(universe, members)
 }
 ///|
-fn reset_library_registry() -> Unit {
+pub fn reset_library_registry() -> Unit {
   library_registry.val = {}
 }
 
 ///|
-fn reset_record_type_registry() -> Unit {
+pub fn reset_record_type_registry() -> Unit {
   record_type_registry.val = {}
   record_type_uid_registry.val = {}
   record_type_id_registry.val = {}
 }
 
 ///|
-fn register_record_type(name : String, desc : RecordTypeDescriptor) -> RecordTypeDescriptor {
+pub fn register_record_type(name : String, desc : RecordTypeDescriptor) -> RecordTypeDescriptor {
   record_type_registry.val[name] = desc
   record_type_id_registry.val[desc.record_type.id] = desc
   match desc.record_type.uid {
@@ -280,7 +280,7 @@ fn register_record_type(name : String, desc : RecordTypeDescriptor) -> RecordTyp
 }
 
 ///|
-fn register_record_type_alias(name : String, desc : RecordTypeDescriptor) -> Unit {
+pub fn register_record_type_alias(name : String, desc : RecordTypeDescriptor) -> Unit {
   record_type_registry.val[name] = desc
   record_type_id_registry.val[desc.record_type.id] = desc
   match desc.record_type.uid {
@@ -291,22 +291,22 @@ fn register_record_type_alias(name : String, desc : RecordTypeDescriptor) -> Uni
 
 ///|
 ///|
-fn lookup_record_type_descriptor(name : String) -> RecordTypeDescriptor? {
+pub fn lookup_record_type_descriptor(name : String) -> RecordTypeDescriptor? {
   record_type_registry.val.get(name)
 }
 
 ///|
-fn lookup_record_type_descriptor_by_uid(uid : String) -> RecordTypeDescriptor? {
+pub fn lookup_record_type_descriptor_by_uid(uid : String) -> RecordTypeDescriptor? {
   record_type_uid_registry.val.get(uid)
 }
 
 ///|
-fn lookup_record_type_descriptor_by_id(id : Int) -> RecordTypeDescriptor? {
+pub fn lookup_record_type_descriptor_by_id(id : Int) -> RecordTypeDescriptor? {
   record_type_id_registry.val.get(id)
 }
 
 ///|
-fn default_constructor_descriptor(record_type : RecordType) -> RecordConstructorDescriptor {
+pub fn default_constructor_descriptor(record_type : RecordType) -> RecordConstructorDescriptor {
   let parent_desc = match record_type.parent {
     Some(parent) => Some(default_constructor_descriptor(parent))
     None => None
@@ -315,7 +315,7 @@ fn default_constructor_descriptor(record_type : RecordType) -> RecordConstructor
 }
 
 ///|
-fn is_procedure_value(value : Value) -> Bool {
+pub fn is_procedure_value(value : Value) -> Bool {
   match value {
     Value::Primitive(_)
     | Value::Closure(_)
@@ -330,7 +330,7 @@ fn is_procedure_value(value : Value) -> Bool {
 }
 
 ///|
-fn record_type_matches(
+pub fn record_type_matches(
   existing : RecordType,
   parent : RecordType?,
   is_sealed : Bool,
@@ -370,7 +370,7 @@ fn record_type_matches(
 }
 
 ///|
-fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
+pub fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
   let mut cur : RecordType? = Some(actual)
   while true {
     match cur {
@@ -387,17 +387,17 @@ fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
 }
 
 ///|
-fn register_library(name : String, exports : Map[String, Value]) -> Unit {
+pub fn register_library(name : String, exports : Map[String, Value]) -> Unit {
   library_registry.val[name] = Library::{ exports }
 }
 
 ///|
-fn lookup_library(name : String) -> Library? {
+pub fn lookup_library(name : String) -> Library? {
   library_registry.val.get(name)
 }
 
 ///|
-fn new_output_string_port() -> Port {
+pub fn new_output_string_port() -> Port {
   let buffer = Ref::new("")
   Port::{ id: next_port_id(), kind: PortKind::OutputString(buffer) }
 }
@@ -406,31 +406,31 @@ fn new_output_string_port() -> Port {
 let current_output_port : Ref[Port] = Ref::new(new_output_string_port())
 
 ///|
-fn get_current_output_port() -> Port {
+pub fn get_current_output_port() -> Port {
   current_output_port.val
 }
 
 ///|
-fn set_current_output_port(port : Port) -> Unit {
+pub fn set_current_output_port(port : Port) -> Unit {
   current_output_port.val = port
 }
 
 ///|
-fn port_write(port : Port, text : String) -> Unit {
+pub fn port_write(port : Port, text : String) -> Unit {
   match port.kind {
     PortKind::OutputString(buffer) => buffer.val = buffer.val + text
   }
 }
 
 ///|
-fn port_get_output_string(port : Port) -> String {
+pub fn port_get_output_string(port : Port) -> String {
   match port.kind {
     PortKind::OutputString(buffer) => buffer.val
   }
 }
 
 ///|
-fn is_false(value : Value) -> Bool {
+pub fn is_false(value : Value) -> Bool {
   match value {
     Value::Datum(Datum::Bool(false)) => true
     _ => false
@@ -438,7 +438,7 @@ fn is_false(value : Value) -> Bool {
 }
 
 ///|
-fn value_as_datum(value : Value) -> Datum raise EvalError {
+pub fn value_as_datum(value : Value) -> Datum raise EvalError {
   match value {
     Value::Datum(d) => d
     Value::Record(record) => Datum::Record(record)
@@ -447,7 +447,7 @@ fn value_as_datum(value : Value) -> Datum raise EvalError {
 }
 
 ///|
-fn value_to_datum_element(value : Value) -> Datum {
+pub fn value_to_datum_element(value : Value) -> Datum {
   match value {
     Value::Datum(d) => d
     Value::Record(record) => Datum::Record(record)
@@ -456,7 +456,7 @@ fn value_to_datum_element(value : Value) -> Datum {
 }
 
 ///|
-fn value_from_datum(datum : Datum) -> Value {
+pub fn value_from_datum(datum : Datum) -> Value {
   match datum {
     Datum::Record(record) => Value::Record(record)
     Datum::Value(value) => value
@@ -465,7 +465,7 @@ fn value_from_datum(datum : Datum) -> Value {
 }
 
 ///|
-fn condition_base_type() -> RecordType raise EvalError {
+pub fn condition_base_type() -> RecordType raise EvalError {
   match lookup_record_type_descriptor("&condition") {
     Some(desc) => desc.record_type
     None => raise @core.EvalError("internal error: missing &condition")
@@ -484,7 +484,7 @@ fn value_as_condition_record(value : Value, base : RecordType) -> Record? {
 }
 
 ///|
-fn condition_components_opt(value : Value, base : RecordType) -> Array[Record]? {
+pub fn condition_components_opt(value : Value, base : RecordType) -> Array[Record]? {
   match value {
     Value::Datum(Datum::Condition(cond)) => Some(cond.components)
     _ =>
@@ -496,7 +496,7 @@ fn condition_components_opt(value : Value, base : RecordType) -> Array[Record]? 
 }
 
 ///|
-fn condition_components(value : Value, base : RecordType) -> Array[Record] raise EvalError {
+pub fn condition_components(value : Value, base : RecordType) -> Array[Record] raise EvalError {
   match condition_components_opt(value, base) {
     Some(items) => items
     None => raise @core.EvalError("type error: condition expected")
@@ -505,12 +505,12 @@ fn condition_components(value : Value, base : RecordType) -> Array[Record] raise
 
 ///|
 ///|
-fn int_abs(value : Int) -> Int {
+pub fn int_abs(value : Int) -> Int {
   if value < 0 { -value } else { value }
 }
 
 ///|
-fn gcd(a : Int, b : Int) -> Int {
+pub fn gcd(a : Int, b : Int) -> Int {
   let mut x = int_abs(a)
   let mut y = int_abs(b)
   while y != 0 {
@@ -522,7 +522,7 @@ fn gcd(a : Int, b : Int) -> Int {
 }
 
 ///|
-fn normalize_rat(num : Int, den : Int) -> Datum? {
+pub fn normalize_rat(num : Int, den : Int) -> Datum? {
   if den == 0 {
     None
   } else if num == 0 {
@@ -546,22 +546,22 @@ fn normalize_rat(num : Int, den : Int) -> Datum? {
 }
 
 ///|
-fn bigint_from_int(value : Int) -> @bigint.BigInt {
+pub fn bigint_from_int(value : Int) -> @bigint.BigInt {
   @bigint.BigInt::from_int(value)
 }
 
 ///|
-fn bigint_is_zero(value : @bigint.BigInt) -> Bool {
+pub fn bigint_is_zero(value : @bigint.BigInt) -> Bool {
   value.is_zero()
 }
 
 ///|
-fn bigint_abs(value : @bigint.BigInt) -> @bigint.BigInt {
+pub fn bigint_abs(value : @bigint.BigInt) -> @bigint.BigInt {
   if value.compare_int(0) < 0 { -value } else { value }
 }
 
 ///|
-fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
+pub fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
   let int_max = 2147483647
   let int_min = -2147483648
   if value.compare_int(int_max) > 0 || value.compare_int(int_min) < 0 {
@@ -572,7 +572,7 @@ fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
 }
 
 ///|
-fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
+pub fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
   let mut x = bigint_abs(a)
   let mut y = bigint_abs(b)
   while !bigint_is_zero(y) {
@@ -584,7 +584,7 @@ fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
 }
 
 ///|
-fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
+pub fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
   if bigint_is_zero(den) {
     None
   } else if bigint_is_zero(num) {
@@ -614,7 +614,7 @@ fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
 }
 
 ///|
-fn datum_unlabel(value : Datum) -> Datum {
+pub fn datum_unlabel(value : Datum) -> Datum {
   let mut cur = value
   let seen : Array[Int] = []
   while true {
@@ -640,7 +640,7 @@ fn datum_unlabel(value : Datum) -> Datum {
 }
 
 ///|
-fn value_as_pair(value : Value) -> (Datum, Datum) raise EvalError {
+pub fn value_as_pair(value : Value) -> (Datum, Datum) raise EvalError {
   match value {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
@@ -652,7 +652,7 @@ fn value_as_pair(value : Value) -> (Datum, Datum) raise EvalError {
 }
 
 ///|
-fn value_as_pair_cells(value : Value) -> (Ref[Datum], Ref[Datum]) raise EvalError {
+pub fn value_as_pair_cells(value : Value) -> (Ref[Datum], Ref[Datum]) raise EvalError {
   match value {
     Value::Datum(datum) =>
       match datum_unlabel(datum) {
@@ -664,12 +664,12 @@ fn value_as_pair_cells(value : Value) -> (Ref[Datum], Ref[Datum]) raise EvalErro
 }
 
 ///|
-fn pair_new(car : Datum, cdr : Datum) -> Datum {
+pub fn pair_new(car : Datum, cdr : Datum) -> Datum {
   Datum::Pair(Ref::new(car), Ref::new(cdr))
 }
 
 ///|
-fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
+pub fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
   let items : Array[Datum] = []
   let mut cur = list
   while true {
@@ -686,7 +686,7 @@ fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
 }
 
 ///|
-fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
+pub fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
   let items : Array[Value] = []
   let mut cur = list
   while true {
@@ -703,7 +703,7 @@ fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
 }
 
 ///|
-fn list_from_array(items : Array[Datum]) -> Datum {
+pub fn list_from_array(items : Array[Datum]) -> Datum {
   let mut tail = Datum::Nil
   for item in items.rev_iter() {
     tail = pair_new(item, tail)
@@ -712,7 +712,7 @@ fn list_from_array(items : Array[Datum]) -> Datum {
 }
 
 ///|
-fn symbol_name(expr : Datum) -> String? {
+pub fn symbol_name(expr : Datum) -> String? {
   match expr {
     Datum::Symbol(name) => Some(name)
     _ => None
