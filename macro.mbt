@@ -11,7 +11,6 @@ fn gensym(base : String) -> String {
 ///|
 fn is_core_identifier(name : String) -> Bool {
   let core : Array[String] = [
-    "...",
     "quote",
     "quasiquote",
     "unquote",
@@ -362,9 +361,21 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
     Datum::Symbol("syntax-rules") => ()
     _ => raise EvalError("invalid syntax-rules")
   }
-  let literals = parse_literal_list(parts[1])
+  let mut ellipsis = "..."
+  let mut literal_idx = 1
+  match parts[1] {
+    Datum::Symbol(name) => {
+      ellipsis = name
+      literal_idx = 2
+      if parts.length() < 4 {
+        raise EvalError("invalid syntax-rules")
+      }
+    }
+    _ => ()
+  }
+  let literals = parse_literal_list(parts[literal_idx])
   let rules : Array[SyntaxRule] = []
-  let mut i = 2
+  let mut i = literal_idx + 1
   while i < parts.length() {
     let rule_parts = datum_list_to_array(parts[i])
     if rule_parts.length() != 2 {
@@ -373,7 +384,7 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
     rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
     i = i + 1
   }
-  { literals, rules }
+  { literals, rules, ellipsis }
 }
 
 ///|
@@ -403,7 +414,7 @@ fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise Eva
   let pattern_vars : Map[String, Bool] = {}
   let pattern_literals = ["set!"]
   for rule in rules {
-    collect_pattern_vars(rule.pattern, pattern_literals, pattern_vars)
+    collect_pattern_vars(rule.pattern, pattern_literals, "...", pattern_vars)
   }
   let literal_set : Map[String, Bool] = {}
   for rule in rules {
@@ -415,7 +426,7 @@ fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise Eva
       literals.push(key)
     }
   }
-  { literals, rules }
+  { literals, rules, ellipsis: "..." }
 }
 
 ///|
@@ -463,7 +474,7 @@ fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
     }
     i = i + 1
   }
-  { literals, rules }
+  { literals, rules, ellipsis: "..." }
 }
 
 ///|
@@ -634,7 +645,7 @@ fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise Eva
       (Datum::Symbol(_), Datum::Pair(_, _)) => ()
       (Datum::Pair(_, _), Datum::Symbol(_)) => ()
       _ => {
-        if match_pattern(rule.pattern, call, rules.literals, bindings) {
+        if match_pattern(rule.pattern, call, rules.literals, rules.ellipsis, bindings) {
           match rule.fender {
             Some(fender) => {
               if !fender_allows(fender, bindings, env) {
@@ -644,8 +655,8 @@ fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise Eva
             }
             None => ()
           }
-          let renames = build_rename_map(rule.template, bindings, rules.literals, env)
-          return expand_template(rule.template, bindings, renames)
+          let renames = build_rename_map(rule.template, bindings, rules.literals, rules.ellipsis, env)
+          return expand_template(rule.template, bindings, renames, rules.ellipsis)
         }
       }
     }
@@ -659,6 +670,7 @@ fn match_pattern(
   pattern : Datum,
   input : Datum,
   literals : Array[String],
+  ellipsis : String,
   bindings : Map[String, BindingVal],
 ) -> Bool {
   let pat = datum_unlabel(pattern)
@@ -736,7 +748,7 @@ fn match_pattern(
     Datum::Vector(items) => {
       match inp {
         Datum::Vector(other) =>
-          match_pattern_list(items, other, literals, bindings)
+          match_pattern_list(items, other, literals, ellipsis, bindings)
         _ => false
       }
     }
@@ -761,12 +773,12 @@ fn match_pattern(
     Datum::Value(value) => value_eqv(value, value_from_datum(inp))
     Datum::Pair(pa, pb) => {
       match (datum_list_to_array_opt(pat), datum_list_to_array_opt(inp)) {
-        (Some(pats), Some(inputs)) => match_pattern_list(pats, inputs, literals, bindings)
+        (Some(pats), Some(inputs)) => match_pattern_list(pats, inputs, literals, ellipsis, bindings)
         _ => {
           match inp {
             Datum::Pair(ia, ib) =>
-              if match_pattern(pa.val, ia.val, literals, bindings) {
-                match_pattern(pb.val, ib.val, literals, bindings)
+              if match_pattern(pa.val, ia.val, literals, ellipsis, bindings) {
+                match_pattern(pb.val, ib.val, literals, ellipsis, bindings)
               } else {
                 false
               }
@@ -783,20 +795,21 @@ fn match_pattern_list(
   pats : Array[Datum],
   inputs : Array[Datum],
   literals : Array[String],
+  ellipsis : String,
   bindings : Map[String, BindingVal],
 ) -> Bool {
-  if pats.length() >= 2 && pats[pats.length() - 1] is Datum::Symbol("...") {
+  if pats.length() >= 2 && datum_is_symbol(pats[pats.length() - 1], ellipsis) {
     let repeat_pat = pats[pats.length() - 2]
     let prefix = pats.sub(end=pats.length() - 2).to_array()
     if inputs.length() < prefix.length() {
       false
-    } else if !match_pattern_prefix(prefix, inputs, literals, bindings) {
+    } else if !match_pattern_prefix(prefix, inputs, literals, ellipsis, bindings) {
       false
     } else {
       let mut i = prefix.length()
       if i >= inputs.length() {
         let names : Map[String, Bool] = {}
-        collect_pattern_vars(repeat_pat, literals, names)
+        collect_pattern_vars(repeat_pat, literals, ellipsis, names)
         for name in names.keys() {
           match bindings.get(name) {
             Some(existing) => {
@@ -812,7 +825,7 @@ fn match_pattern_list(
         let repeated : Map[String, Array[BindingVal]] = {}
         while i < inputs.length() {
           let iter_bindings : Map[String, BindingVal] = {}
-          if !match_pattern(repeat_pat, inputs[i], literals, iter_bindings) {
+          if !match_pattern(repeat_pat, inputs[i], literals, ellipsis, iter_bindings) {
             return false
           }
           for name in iter_bindings.keys() {
@@ -845,7 +858,7 @@ fn match_pattern_list(
   } else {
     if pats.length() != inputs.length() {
       false
-    } else if !match_pattern_prefix(pats, inputs, literals, bindings) {
+    } else if !match_pattern_prefix(pats, inputs, literals, ellipsis, bindings) {
       false
     } else {
       true
@@ -858,11 +871,12 @@ fn match_pattern_prefix(
   pats : Array[Datum],
   inputs : Array[Datum],
   literals : Array[String],
+  ellipsis : String,
   bindings : Map[String, BindingVal],
 ) -> Bool {
   let mut i = 0
   while i < pats.length() {
-    if !match_pattern(pats[i], inputs[i], literals, bindings) {
+    if !match_pattern(pats[i], inputs[i], literals, ellipsis, bindings) {
       return false
     }
     i = i + 1
@@ -887,10 +901,15 @@ fn bind_var(
 }
 
 ///|
-fn collect_pattern_vars(pattern : Datum, literals : Array[String], names : Map[String, Bool]) -> Unit {
+fn collect_pattern_vars(
+  pattern : Datum,
+  literals : Array[String],
+  ellipsis : String,
+  names : Map[String, Bool],
+) -> Unit {
   match pattern {
     Datum::Symbol(name) => {
-      if name != "_" && name != "..." && !is_literal(literals, name) {
+      if name != "_" && name != ellipsis && !is_literal(literals, name) {
         names[name] = true
       }
     }
@@ -898,14 +917,14 @@ fn collect_pattern_vars(pattern : Datum, literals : Array[String], names : Map[S
       match datum_list_to_array_opt(pattern) {
         Some(items) => {
           for item in items {
-            collect_pattern_vars(item, literals, names)
+            collect_pattern_vars(item, literals, ellipsis, names)
           }
         }
         None => {
           match pattern {
             Datum::Pair(a, b) => {
-              collect_pattern_vars(a.val, literals, names)
-              collect_pattern_vars(b.val, literals, names)
+              collect_pattern_vars(a.val, literals, ellipsis, names)
+              collect_pattern_vars(b.val, literals, ellipsis, names)
             }
             _ => ()
           }
@@ -914,7 +933,7 @@ fn collect_pattern_vars(pattern : Datum, literals : Array[String], names : Map[S
     }
     Datum::Vector(items) => {
       for item in items {
-        collect_pattern_vars(item, literals, names)
+        collect_pattern_vars(item, literals, ellipsis, names)
       }
     }
     _ => ()
@@ -936,6 +955,14 @@ fn datum_list_to_array_opt(list : Datum) -> Array[Datum]? {
     }
   }
   Some(items)
+}
+
+///|
+fn datum_is_symbol(value : Datum, name : String) -> Bool {
+  match datum_unlabel(value) {
+    Datum::Symbol(sym) => sym == name
+    _ => false
+  }
 }
 
 ///|
@@ -1016,9 +1043,10 @@ fn should_rename(
   name : String,
   bindings : Map[String, BindingVal],
   literals : Array[String],
+  ellipsis : String,
   env : Env,
 ) -> Bool {
-  if name == "_" || name == "..." {
+  if name == "_" || name == ellipsis {
     false
   } else if is_literal(literals, name) {
     false
@@ -1038,10 +1066,11 @@ fn build_rename_map(
   template : Datum,
   bindings : Map[String, BindingVal],
   literals : Array[String],
+  ellipsis : String,
   env : Env,
 ) -> Map[String, String] {
   let renames : Map[String, String] = {}
-  collect_renames(template, bindings, literals, env, renames)
+  collect_renames(template, bindings, literals, ellipsis, env, renames)
   renames
 }
 
@@ -1050,12 +1079,13 @@ fn collect_renames(
   template : Datum,
   bindings : Map[String, BindingVal],
   literals : Array[String],
+  ellipsis : String,
   env : Env,
   renames : Map[String, String],
 ) -> Unit {
   match template {
     Datum::Symbol(name) => {
-      if should_rename(name, bindings, literals, env) && !renames.contains(name) {
+      if should_rename(name, bindings, literals, ellipsis, env) && !renames.contains(name) {
         renames[name] = gensym(name)
       }
     }
@@ -1064,15 +1094,15 @@ fn collect_renames(
         Some(items) => {
           if !is_quote_form(items) {
             for item in items {
-              collect_renames(item, bindings, literals, env, renames)
+              collect_renames(item, bindings, literals, ellipsis, env, renames)
             }
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => {
-              collect_renames(a.val, bindings, literals, env, renames)
-              collect_renames(b.val, bindings, literals, env, renames)
+              collect_renames(a.val, bindings, literals, ellipsis, env, renames)
+              collect_renames(b.val, bindings, literals, ellipsis, env, renames)
             }
             _ => ()
           }
@@ -1081,7 +1111,7 @@ fn collect_renames(
     }
     Datum::Vector(items) => {
       for item in items {
-        collect_renames(item, bindings, literals, env, renames)
+        collect_renames(item, bindings, literals, ellipsis, env, renames)
       }
     }
     _ => ()
@@ -1126,9 +1156,10 @@ fn expand_template(
   template : Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
+  ellipsis : String,
 ) -> Datum {
   let indices : Array[Int] = []
-  expand_template_indexed(template, bindings, renames, indices)
+  expand_template_indexed(template, bindings, renames, ellipsis, indices)
 }
 
 ///|
@@ -1136,6 +1167,7 @@ fn expand_template_indexed(
   template : Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
+  ellipsis : String,
   indices : Array[Int],
 ) -> Datum {
   match template {
@@ -1146,21 +1178,21 @@ fn expand_template_indexed(
           if is_quote_form(items) {
             template
           } else {
-            expand_template_list(items, bindings, renames, indices)
+            expand_template_list(items, bindings, renames, ellipsis, indices)
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => pair_new(
-              expand_template_indexed(a.val, bindings, renames, indices),
-              expand_template_indexed(b.val, bindings, renames, indices),
+              expand_template_indexed(a.val, bindings, renames, ellipsis, indices),
+              expand_template_indexed(b.val, bindings, renames, ellipsis, indices),
             )
             _ => template
           }
         }
       }
     }
-    Datum::Vector(items) => expand_template_vector(items, bindings, renames, indices)
+    Datum::Vector(items) => expand_template_vector(items, bindings, renames, ellipsis, indices)
     _ => template
   }
 }
@@ -1193,14 +1225,15 @@ fn expand_template_list(
   items : Array[Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
+  ellipsis : String,
   indices : Array[Int],
 ) -> Datum {
-  if items.length() >= 2 && items[items.length() - 1] is Datum::Symbol("...") {
+  if items.length() >= 2 && datum_is_symbol(items[items.length() - 1], ellipsis) {
     let repeat_template = items[items.length() - 2]
     let prefix = items.sub(end=items.length() - 2).to_array()
     let expanded : Array[Datum] = []
     for item in prefix {
-      expanded.push(expand_template_indexed(item, bindings, renames, indices))
+      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
     }
     let count = max_binding_len(repeat_template, bindings, indices)
     let mut i = 0
@@ -1210,14 +1243,14 @@ fn expand_template_list(
         next_indices.push(idx)
       }
       next_indices.push(i)
-      expanded.push(expand_template_indexed(repeat_template, bindings, renames, next_indices))
+      expanded.push(expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices))
       i = i + 1
     }
     list_from_array(expanded)
   } else {
     let expanded : Array[Datum] = []
     for item in items {
-      expanded.push(expand_template_indexed(item, bindings, renames, indices))
+      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
     }
     list_from_array(expanded)
   }
@@ -1228,14 +1261,15 @@ fn expand_template_vector(
   items : Array[Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
+  ellipsis : String,
   indices : Array[Int],
 ) -> Datum {
-  if items.length() >= 2 && items[items.length() - 1] is Datum::Symbol("...") {
+  if items.length() >= 2 && datum_is_symbol(items[items.length() - 1], ellipsis) {
     let repeat_template = items[items.length() - 2]
     let prefix = items.sub(end=items.length() - 2).to_array()
     let expanded : Array[Datum] = []
     for item in prefix {
-      expanded.push(expand_template_indexed(item, bindings, renames, indices))
+      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
     }
     let count = max_binding_len(repeat_template, bindings, indices)
     let mut i = 0
@@ -1245,14 +1279,14 @@ fn expand_template_vector(
         next_indices.push(idx)
       }
       next_indices.push(i)
-      expanded.push(expand_template_indexed(repeat_template, bindings, renames, next_indices))
+      expanded.push(expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices))
       i = i + 1
     }
     Datum::Vector(expanded)
   } else {
     let expanded : Array[Datum] = []
     for item in items {
-      expanded.push(expand_template_indexed(item, bindings, renames, indices))
+      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
     }
     Datum::Vector(expanded)
   }

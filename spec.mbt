@@ -376,6 +376,7 @@ pub struct SyntaxRule {
 pub struct SyntaxRules {
   literals : Array[String]
   rules : Array[SyntaxRule]
+  ellipsis : String
 }
 
 ///|

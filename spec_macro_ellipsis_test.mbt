@@ -39,3 +39,16 @@ test "r6rs macro: ellipsis with list patterns" {
   )
   inspect(value_to_string(eval_program(program)), content="((1 2) (3 4))")
 }
+
+///|
+test "r6rs macro: custom ellipsis identifier" {
+  let program = (
+    (
+      #|(define-syntax collect
+      #|  (syntax-rules ::: ()
+      #|    ((collect x :::) (list x :::))))
+      #|(collect 1 2 3)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(1 2 3)")
+}
