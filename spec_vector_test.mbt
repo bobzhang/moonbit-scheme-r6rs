@@ -202,6 +202,22 @@ test "r6rs vectors" {
   inspect(
     value_to_string(eval_program(
       (
+        #|(vector->list #(1 2 3 4) 1)
+      )
+    )),
+    content="(2 3 4)",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(vector->list #(1 2 3 4) 1 3)
+      )
+    )),
+    content="(2 3)",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
         #|(list->vector '(1 2 3))
       )
     )),

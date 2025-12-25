@@ -4775,11 +4775,24 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
     }
     Primitive::VectorToList => {
       match args.length() {
-        1 => {
+        1 | 2 | 3 => {
           let items = value_as_vector(args[0])
-          Value::Datum(list_from_array(items))
+          let start = if args.length() >= 2 {
+            value_as_int_index(args[1])
+          } else {
+            0
+          }
+          let end = if args.length() == 3 {
+            value_as_int_index(args[2])
+          } else {
+            items.length()
+          }
+          if start < 0 || end < start || end > items.length() {
+            raise @core.EvalError("index out of range")
+          }
+          Value::Datum(list_from_array(items.sub(start=start, end=end).to_array()))
         }
-        n => raise arity_mismatch(1, n)
+        n => raise @core.EvalError("arity mismatch: expected 1 to 3 got \{n}")
       }
     }
     Primitive::ListToVector => {
