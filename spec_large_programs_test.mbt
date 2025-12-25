@@ -91,3 +91,78 @@ test "large program: prime sum" {
   )
   inspect(value_to_string(eval_program(program)), content="1060")
 }
+
+///|
+test "large program: takeuchi recursion" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (tak x y z)
+      #|    (if (not (< y x))
+      #|        z
+      #|        (tak (tak (- x 1) y z)
+      #|             (tak (- y 1) z x)
+      #|             (tak (- z 1) x y))))
+      #|  (tak 18 12 6))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="7")
+}
+
+///|
+test "large program: tree sum" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (tree-sum t)
+      #|    (cond ((null? t) 0)
+      #|          ((pair? t) (+ (tree-sum (car t)) (tree-sum (cdr t))))
+      #|          (else t)))
+      #|  (tree-sum '(1 (2 (3 4) 5) (6 7) 8)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="36")
+}
+
+///|
+test "large program: matrix multiply" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (transpose m)
+      #|    (if (null? (car m))
+      #|        '()
+      #|        (cons (map car m) (transpose (map cdr m)))))
+      #|  (define (dot v w)
+      #|    (apply + (map * v w)))
+      #|  (define (matmul a b)
+      #|    (let ((cols (transpose b)))
+      #|      (map (lambda (row)
+      #|             (map (lambda (col) (dot row col)) cols))
+      #|           a)))
+      #|  (matmul '((1 2 3) (4 5 6)) '((7 8) (9 10) (11 12))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="((58 64) (139 154))")
+}
+
+///|
+test "large program: call/cc early exit" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (find-negative tree)
+      #|    (call/cc
+      #|      (lambda (exit)
+      #|        (define (walk t)
+      #|          (cond ((null? t) #f)
+      #|                ((pair? t) (begin (walk (car t)) (walk (cdr t))))
+      #|                ((< t 0) (exit t))
+      #|                (else #f)))
+      #|        (walk tree)
+      #|        #f)))
+      #|  (find-negative '(1 (2 3) (4 (-5 6)) 7)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="-5")
+}
