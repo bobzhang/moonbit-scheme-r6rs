@@ -603,6 +603,22 @@ test "r6rs numeric: elementary functions" {
   inspect(
     value_to_string(eval_program(
       (
+        #|(< (abs (- (atan 0 1) 0.0)) 0.001)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(< (abs (- (atan 1 0) 1.5707963)) 0.001)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
         #|(< (abs (- (sin (asin 2)) 2)) 0.001)
       )
     )),

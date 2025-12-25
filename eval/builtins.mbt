@@ -2461,7 +2461,14 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(complex_from_float(ar, ai))
           }
         }
-        n => raise arity_mismatch(1, n)
+        2 => {
+          let y = datum_to_real(value_as_number(args[0]))
+          let x = datum_to_real(value_as_number(args[1]))
+          let y_f = number_to_float(y)
+          let x_f = number_to_float(x)
+          Value::Datum(Datum::Float(@math.atan2f(y_f, x_f)))
+        }
+        n => raise @core.EvalError("arity mismatch: expected 1 or 2 got \{n}")
       }
     }
     Primitive::Numerator => {
