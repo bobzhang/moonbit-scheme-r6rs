@@ -342,3 +342,32 @@ test "large program: meta-circular evaluator" {
   )
   inspect(value_to_string(eval_program(program)), content="(8 8)")
 }
+
+///|
+test "large program: binary search tree" {
+  let program = (
+    (
+      #|(let ()
+      #|  (define (make-node key left right) (list key left right))
+      #|  (define (node-key n) (car n))
+      #|  (define (node-left n) (cadr n))
+      #|  (define (node-right n) (caddr n))
+      #|  (define (insert x tree)
+      #|    (if (null? tree)
+      #|        (make-node x '() '())
+      #|        (let ((k (node-key tree)))
+      #|          (cond ((= x k) tree)
+      #|                ((< x k) (make-node k (insert x (node-left tree)) (node-right tree)))
+      #|                (else (make-node k (node-left tree) (insert x (node-right tree))))))))
+      #|  (define (inorder t)
+      #|    (if (null? t)
+      #|        '()
+      #|        (append (inorder (node-left t))
+      #|                (list (node-key t))
+      #|                (inorder (node-right t)))))
+      #|  (define tree (fold-left (lambda (t x) (insert x t)) '() '(5 3 7 2 4 6 8 5 1)))
+      #|  (inorder tree))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(1 2 3 4 5 6 7 8)")
+}
