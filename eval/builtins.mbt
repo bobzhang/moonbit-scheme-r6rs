@@ -182,6 +182,49 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::BitwiseCopyBitField, Primitive::BitwiseCopyBitField)
     | (Primitive::BitwiseRotateBitField, Primitive::BitwiseRotateBitField)
     | (Primitive::BitwiseReverseBitField, Primitive::BitwiseReverseBitField)
+    | (Primitive::FixnumP, Primitive::FixnumP)
+    | (Primitive::FixnumWidth, Primitive::FixnumWidth)
+    | (Primitive::LeastFixnum, Primitive::LeastFixnum)
+    | (Primitive::GreatestFixnum, Primitive::GreatestFixnum)
+    | (Primitive::FxEq, Primitive::FxEq)
+    | (Primitive::FxLess, Primitive::FxLess)
+    | (Primitive::FxGreater, Primitive::FxGreater)
+    | (Primitive::FxLessEq, Primitive::FxLessEq)
+    | (Primitive::FxGreaterEq, Primitive::FxGreaterEq)
+    | (Primitive::FxZeroP, Primitive::FxZeroP)
+    | (Primitive::FxPositiveP, Primitive::FxPositiveP)
+    | (Primitive::FxNegativeP, Primitive::FxNegativeP)
+    | (Primitive::FxOddP, Primitive::FxOddP)
+    | (Primitive::FxEvenP, Primitive::FxEvenP)
+    | (Primitive::FxMin, Primitive::FxMin)
+    | (Primitive::FxMax, Primitive::FxMax)
+    | (Primitive::FxAdd, Primitive::FxAdd)
+    | (Primitive::FxSub, Primitive::FxSub)
+    | (Primitive::FxMul, Primitive::FxMul)
+    | (Primitive::FxDiv, Primitive::FxDiv)
+    | (Primitive::FxMod, Primitive::FxMod)
+    | (Primitive::FxDiv0, Primitive::FxDiv0)
+    | (Primitive::FxMod0, Primitive::FxMod0)
+    | (Primitive::FxAddCarry, Primitive::FxAddCarry)
+    | (Primitive::FxSubCarry, Primitive::FxSubCarry)
+    | (Primitive::FxMulCarry, Primitive::FxMulCarry)
+    | (Primitive::FxNot, Primitive::FxNot)
+    | (Primitive::FxAnd, Primitive::FxAnd)
+    | (Primitive::FxIor, Primitive::FxIor)
+    | (Primitive::FxXor, Primitive::FxXor)
+    | (Primitive::FxIf, Primitive::FxIf)
+    | (Primitive::FxBitCount, Primitive::FxBitCount)
+    | (Primitive::FxLength, Primitive::FxLength)
+    | (Primitive::FxFirstBitSet, Primitive::FxFirstBitSet)
+    | (Primitive::FxBitSetP, Primitive::FxBitSetP)
+    | (Primitive::FxCopyBit, Primitive::FxCopyBit)
+    | (Primitive::FxBitField, Primitive::FxBitField)
+    | (Primitive::FxCopyBitField, Primitive::FxCopyBitField)
+    | (Primitive::FxRotateBitField, Primitive::FxRotateBitField)
+    | (Primitive::FxReverseBitField, Primitive::FxReverseBitField)
+    | (Primitive::FxArithmeticShift, Primitive::FxArithmeticShift)
+    | (Primitive::FxArithmeticShiftLeft, Primitive::FxArithmeticShiftLeft)
+    | (Primitive::FxArithmeticShiftRight, Primitive::FxArithmeticShiftRight)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
@@ -1375,6 +1418,128 @@ fn value_as_nonnegative_int(value : Value) -> Int raise EvalError {
     raise @core.EvalError("type error: exact nonnegative integer expected")
   }
   n
+}
+
+///|
+let fixnum_width_cache : Ref[Int] = Ref::new(0)
+
+///|
+fn fixnum_width_value() -> Int {
+  let cached = fixnum_width_cache.val
+  if cached != 0 {
+    return cached
+  }
+  let mut exp = 0
+  let mut value = bigint_from_int(1)
+  let two = bigint_from_int(2)
+  while true {
+    match bigint_to_int_option(value) {
+      Some(_) => {
+        exp = exp + 1
+        value = value * two
+      }
+      None => break
+    }
+  }
+  let width = exp + 1
+  fixnum_width_cache.val = width
+  width
+}
+
+///|
+fn fixnum_base_bigint() -> @bigint.BigInt {
+  bigint_pow2(fixnum_width_value())
+}
+
+///|
+fn fixnum_half_bigint() -> @bigint.BigInt {
+  bigint_pow2(fixnum_width_value() - 1)
+}
+
+///|
+fn datum_fixnum_bigint(datum : Datum) -> @bigint.BigInt? {
+  match datum_unlabel(datum) {
+    Datum::Int(n) => Some(bigint_from_int(n))
+    Datum::BigInt(n) =>
+      match bigint_to_int_option(n) {
+        Some(_) => Some(n)
+        None => None
+      }
+    Datum::Complex(real, imag) =>
+      if datum_is_zero(imag.val) {
+        datum_fixnum_bigint(real.val)
+      } else {
+        None
+      }
+    _ => None
+  }
+}
+
+///|
+fn value_is_fixnum(value : Value) -> Bool {
+  match value {
+    Value::Datum(datum) => datum_fixnum_bigint(datum) is Some(_)
+    _ => false
+  }
+}
+
+///|
+fn value_as_fixnum_bigint(value : Value) -> @bigint.BigInt raise EvalError {
+  match value {
+    Value::Datum(datum) =>
+      match datum_fixnum_bigint(datum) {
+        Some(n) => n
+        None => raise @core.EvalError("type error: fixnum expected")
+      }
+    _ => raise @core.EvalError("type error: fixnum expected")
+  }
+}
+
+///|
+fn value_as_fixnum_datum(value : Value) -> Datum raise EvalError {
+  fixnum_from_bigint(value_as_fixnum_bigint(value))
+}
+
+///|
+fn value_as_fixnum_int(value : Value) -> Int raise EvalError {
+  let big = value_as_fixnum_bigint(value)
+  match bigint_to_int_option(big) {
+    Some(v) => v
+    None => raise @core.EvalError("type error: fixnum expected")
+  }
+}
+
+///|
+fn value_as_nonnegative_fixnum_int(value : Value) -> Int raise EvalError {
+  let n = value_as_fixnum_int(value)
+  if n < 0 {
+    raise @core.EvalError("type error: exact nonnegative integer expected")
+  }
+  n
+}
+
+///|
+fn fixnum_from_bigint(value : @bigint.BigInt) -> Datum raise EvalError {
+  match bigint_to_int_option(value) {
+    Some(v) => Datum::Int(v)
+    None => raise @core.EvalError("fixnum overflow")
+  }
+}
+
+///|
+fn fixnum_from_datum(value : Datum) -> Datum raise EvalError {
+  fixnum_from_bigint(datum_to_bigint(value))
+}
+
+///|
+fn bigint_floor_div(value : @bigint.BigInt, base : @bigint.BigInt) -> @bigint.BigInt {
+  let q = value / base
+  let r = value % base
+  if r.compare_int(0) < 0 {
+    q - bigint_from_int(1)
+  } else {
+    q
+  }
 }
 
 ///|
@@ -3336,6 +3501,570 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Datum(datum_bitwise_reverse_bit_field(value, start, end))
         }
         n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FixnumP => {
+      match args.length() {
+        1 => bool_value(value_is_fixnum(args[0]))
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FixnumWidth => {
+      match args.length() {
+        0 => Value::Datum(Datum::Int(fixnum_width_value()))
+        n => raise arity_mismatch(0, n)
+      }
+    }
+    Primitive::LeastFixnum => {
+      match args.length() {
+        0 => {
+          let half = fixnum_half_bigint()
+          Value::Datum(fixnum_from_bigint(-half))
+        }
+        n => raise arity_mismatch(0, n)
+      }
+    }
+    Primitive::GreatestFixnum => {
+      match args.length() {
+        0 => {
+          let half = fixnum_half_bigint()
+          Value::Datum(fixnum_from_bigint(half - bigint_from_int(1)))
+        }
+        n => raise arity_mismatch(0, n)
+      }
+    }
+    Primitive::FxEq => {
+      if args.length() <= 1 {
+        bool_value(true)
+      } else {
+        let first = value_as_fixnum_int(args[0])
+        let mut ok = true
+        let mut i = 1
+        while i < args.length() {
+          if value_as_fixnum_int(args[i]) != first {
+            ok = false
+            break
+          } else {
+            i = i + 1
+          }
+        }
+        bool_value(ok)
+      }
+    }
+    Primitive::FxLess => {
+      if args.length() <= 1 {
+        bool_value(true)
+      } else {
+        let mut ok = true
+        let mut prev = value_as_fixnum_int(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let cur = value_as_fixnum_int(args[i])
+          if prev >= cur {
+            ok = false
+            break
+          } else {
+            prev = cur
+            i = i + 1
+          }
+        }
+        bool_value(ok)
+      }
+    }
+    Primitive::FxGreater => {
+      if args.length() <= 1 {
+        bool_value(true)
+      } else {
+        let mut ok = true
+        let mut prev = value_as_fixnum_int(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let cur = value_as_fixnum_int(args[i])
+          if prev <= cur {
+            ok = false
+            break
+          } else {
+            prev = cur
+            i = i + 1
+          }
+        }
+        bool_value(ok)
+      }
+    }
+    Primitive::FxLessEq => {
+      if args.length() <= 1 {
+        bool_value(true)
+      } else {
+        let mut ok = true
+        let mut prev = value_as_fixnum_int(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let cur = value_as_fixnum_int(args[i])
+          if prev > cur {
+            ok = false
+            break
+          } else {
+            prev = cur
+            i = i + 1
+          }
+        }
+        bool_value(ok)
+      }
+    }
+    Primitive::FxGreaterEq => {
+      if args.length() <= 1 {
+        bool_value(true)
+      } else {
+        let mut ok = true
+        let mut prev = value_as_fixnum_int(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let cur = value_as_fixnum_int(args[i])
+          if prev < cur {
+            ok = false
+            break
+          } else {
+            prev = cur
+            i = i + 1
+          }
+        }
+        bool_value(ok)
+      }
+    }
+    Primitive::FxZeroP => {
+      match args.length() {
+        1 => bool_value(value_as_fixnum_int(args[0]) == 0)
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxPositiveP => {
+      match args.length() {
+        1 => bool_value(value_as_fixnum_int(args[0]) > 0)
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxNegativeP => {
+      match args.length() {
+        1 => bool_value(value_as_fixnum_int(args[0]) < 0)
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxOddP => {
+      match args.length() {
+        1 => bool_value(value_as_fixnum_int(args[0]) % 2 != 0)
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxEvenP => {
+      match args.length() {
+        1 => bool_value(value_as_fixnum_int(args[0]) % 2 == 0)
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxMin => {
+      if args.is_empty() {
+        raise arity_mismatch(1, 0)
+      }
+      let mut current = value_as_fixnum_int(args[0])
+      let mut i = 1
+      while i < args.length() {
+        let cur = value_as_fixnum_int(args[i])
+        if cur < current {
+          current = cur
+        }
+        i = i + 1
+      }
+      Value::Datum(Datum::Int(current))
+    }
+    Primitive::FxMax => {
+      if args.is_empty() {
+        raise arity_mismatch(1, 0)
+      }
+      let mut current = value_as_fixnum_int(args[0])
+      let mut i = 1
+      while i < args.length() {
+        let cur = value_as_fixnum_int(args[i])
+        if cur > current {
+          current = cur
+        }
+        i = i + 1
+      }
+      Value::Datum(Datum::Int(current))
+    }
+    Primitive::FxAdd => {
+      let mut acc = bigint_from_int(0)
+      for arg in args {
+        acc = acc + value_as_fixnum_bigint(arg)
+      }
+      Value::Datum(fixnum_from_bigint(acc))
+    }
+    Primitive::FxSub => {
+      match args.length() {
+        0 => raise arity_mismatch(1, 0)
+        1 => {
+          let value = value_as_fixnum_bigint(args[0])
+          Value::Datum(fixnum_from_bigint(-value))
+        }
+        _ => {
+          let mut result = value_as_fixnum_bigint(args[0])
+          let mut i = 1
+          while i < args.length() {
+            result = result - value_as_fixnum_bigint(args[i])
+            i = i + 1
+          }
+          Value::Datum(fixnum_from_bigint(result))
+        }
+      }
+    }
+    Primitive::FxMul => {
+      let mut acc = bigint_from_int(1)
+      for arg in args {
+        acc = acc * value_as_fixnum_bigint(arg)
+      }
+      Value::Datum(fixnum_from_bigint(acc))
+    }
+    Primitive::FxDiv => {
+      match args.length() {
+        2 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          if right.is_zero() {
+            raise @core.EvalError("division by zero")
+          }
+          let mut q = left / right
+          let r = left % right
+          if !bigint_is_zero(r) {
+            let r_sign = r.compare_int(0)
+            let right_sign = right.compare_int(0)
+            if (r_sign > 0 && right_sign < 0) || (r_sign < 0 && right_sign > 0) {
+              q = q - bigint_from_int(1)
+            }
+          }
+          Value::Datum(fixnum_from_bigint(q))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxMod => {
+      match args.length() {
+        2 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          if right.is_zero() {
+            raise @core.EvalError("division by zero")
+          }
+          let mut r = left % right
+          if !bigint_is_zero(r) {
+            let r_sign = r.compare_int(0)
+            let right_sign = right.compare_int(0)
+            if (r_sign > 0 && right_sign < 0) || (r_sign < 0 && right_sign > 0) {
+              r = r + right
+            }
+          }
+          Value::Datum(fixnum_from_bigint(r))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxDiv0 => {
+      match args.length() {
+        2 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          if right.is_zero() {
+            raise @core.EvalError("division by zero")
+          }
+          Value::Datum(fixnum_from_bigint(left / right))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxMod0 => {
+      match args.length() {
+        2 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          if right.is_zero() {
+            raise @core.EvalError("division by zero")
+          }
+          Value::Datum(fixnum_from_bigint(left % right))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxAddCarry => {
+      match args.length() {
+        3 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          let carry = value_as_fixnum_bigint(args[2])
+          let total = left + right + carry
+          let base = fixnum_base_bigint()
+          let half = fixnum_half_bigint()
+          let carry_out = bigint_floor_div(total + half, base)
+          let sum = total - carry_out * base
+          Value::Values([
+            Value::Datum(fixnum_from_bigint(sum)),
+            Value::Datum(fixnum_from_bigint(carry_out)),
+          ])
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxSubCarry => {
+      match args.length() {
+        3 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          let carry = value_as_fixnum_bigint(args[2])
+          let total = left - right - carry
+          let base = fixnum_base_bigint()
+          let half = fixnum_half_bigint()
+          let carry_out = bigint_floor_div(total + half, base)
+          let sum = total - carry_out * base
+          Value::Values([
+            Value::Datum(fixnum_from_bigint(sum)),
+            Value::Datum(fixnum_from_bigint(carry_out)),
+          ])
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxMulCarry => {
+      match args.length() {
+        3 => {
+          let left = value_as_fixnum_bigint(args[0])
+          let right = value_as_fixnum_bigint(args[1])
+          let carry = value_as_fixnum_bigint(args[2])
+          let total = left * right + carry
+          let base = fixnum_base_bigint()
+          let half = fixnum_half_bigint()
+          let carry_out = bigint_floor_div(total + half, base)
+          let sum = total - carry_out * base
+          Value::Values([
+            Value::Datum(fixnum_from_bigint(sum)),
+            Value::Datum(fixnum_from_bigint(carry_out)),
+          ])
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxNot => {
+      match args.length() {
+        1 => {
+          let value = value_as_fixnum_datum(args[0])
+          let result = datum_bitwise_not(value)
+          Value::Datum(fixnum_from_datum(result))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxAnd => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(-1))
+      } else {
+        let mut acc = value_as_fixnum_datum(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_fixnum_datum(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::And)
+          i = i + 1
+        }
+        Value::Datum(fixnum_from_datum(acc))
+      }
+    }
+    Primitive::FxIor => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(0))
+      } else {
+        let mut acc = value_as_fixnum_datum(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_fixnum_datum(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::Or)
+          i = i + 1
+        }
+        Value::Datum(fixnum_from_datum(acc))
+      }
+    }
+    Primitive::FxXor => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(0))
+      } else {
+        let mut acc = value_as_fixnum_datum(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_fixnum_datum(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::Xor)
+          i = i + 1
+        }
+        Value::Datum(fixnum_from_datum(acc))
+      }
+    }
+    Primitive::FxIf => {
+      match args.length() {
+        3 => {
+          let mask = value_as_fixnum_datum(args[0])
+          let yes_value = value_as_fixnum_datum(args[1])
+          let no_value = value_as_fixnum_datum(args[2])
+          let masked_yes = datum_bitwise_binop(mask, yes_value, BitOp::And)
+          let masked_no = datum_bitwise_binop(datum_bitwise_not(mask), no_value, BitOp::And)
+          Value::Datum(
+            fixnum_from_datum(datum_bitwise_binop(masked_yes, masked_no, BitOp::Or)),
+          )
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxBitCount => {
+      match args.length() {
+        1 => {
+          let value = value_as_fixnum_datum(args[0])
+          let count = datum_bitwise_bit_count(value)
+          Value::Datum(Datum::Int(count))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxLength => {
+      match args.length() {
+        1 => {
+          let value = value_as_fixnum_datum(args[0])
+          let count = datum_bitwise_length(value)
+          Value::Datum(Datum::Int(count))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxFirstBitSet => {
+      match args.length() {
+        1 => {
+          let value = value_as_fixnum_datum(args[0])
+          let big = datum_to_bigint(value)
+          if bigint_is_zero(big) {
+            Value::Datum(Datum::Int(-1))
+          } else {
+            let lsb = bigint_bitwise_binop(big, -big, BitOp::And)
+            let idx = bigint_bit_length_nonneg(lsb) - 1
+            Value::Datum(Datum::Int(idx))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::FxBitSetP => {
+      match args.length() {
+        2 => {
+          let value = value_as_fixnum_datum(args[0])
+          let index = value_as_nonnegative_fixnum_int(args[1])
+          bool_value(datum_bitwise_bit_set(value, index))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxCopyBit => {
+      match args.length() {
+        3 => {
+          let value = value_as_fixnum_datum(args[0])
+          let index = value_as_nonnegative_fixnum_int(args[1])
+          let bit_value = value_as_fixnum_bigint(args[2])
+          let bit =
+            if bigint_is_zero(bit_value) {
+              0
+            } else if bit_value.compare_int(1) == 0 {
+              1
+            } else {
+              raise @core.EvalError("type error: bit expected")
+            }
+          let mask = bigint_to_integer_datum(bigint_pow2(index))
+          let result = if bit == 0 {
+            datum_bitwise_binop(value, datum_bitwise_not(mask), BitOp::And)
+          } else {
+            datum_bitwise_binop(value, mask, BitOp::Or)
+          }
+          Value::Datum(fixnum_from_datum(result))
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxBitField => {
+      match args.length() {
+        3 => {
+          let value = value_as_fixnum_datum(args[0])
+          let start = value_as_nonnegative_fixnum_int(args[1])
+          let end = value_as_nonnegative_fixnum_int(args[2])
+          Value::Datum(fixnum_from_datum(datum_bitwise_bit_field(value, start, end)))
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxCopyBitField => {
+      match args.length() {
+        4 => {
+          let value = value_as_fixnum_datum(args[0])
+          let start = value_as_nonnegative_fixnum_int(args[1])
+          let end = value_as_nonnegative_fixnum_int(args[2])
+          let from = value_as_fixnum_datum(args[3])
+          Value::Datum(
+            fixnum_from_datum(datum_bitwise_copy_bit_field(value, start, end, from)),
+          )
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::FxRotateBitField => {
+      match args.length() {
+        4 => {
+          let value = value_as_fixnum_datum(args[0])
+          let start = value_as_nonnegative_fixnum_int(args[1])
+          let end = value_as_nonnegative_fixnum_int(args[2])
+          let count = value_as_fixnum_int(args[3])
+          Value::Datum(
+            fixnum_from_datum(datum_bitwise_rotate_bit_field(value, start, end, count)),
+          )
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::FxReverseBitField => {
+      match args.length() {
+        3 => {
+          let value = value_as_fixnum_datum(args[0])
+          let start = value_as_nonnegative_fixnum_int(args[1])
+          let end = value_as_nonnegative_fixnum_int(args[2])
+          Value::Datum(fixnum_from_datum(datum_bitwise_reverse_bit_field(value, start, end)))
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::FxArithmeticShift => {
+      match args.length() {
+        2 => {
+          let value = value_as_fixnum_datum(args[0])
+          let shift = value_as_fixnum_int(args[1])
+          Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, shift)))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxArithmeticShiftLeft => {
+      match args.length() {
+        2 => {
+          let value = value_as_fixnum_datum(args[0])
+          let shift = value_as_nonnegative_fixnum_int(args[1])
+          Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, shift)))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::FxArithmeticShiftRight => {
+      match args.length() {
+        2 => {
+          let value = value_as_fixnum_datum(args[0])
+          let shift = value_as_nonnegative_fixnum_int(args[1])
+          Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, -shift)))
+        }
+        n => raise arity_mismatch(2, n)
       }
     }
     Primitive::Eq => {

@@ -181,6 +181,49 @@ fn init_env() -> Env {
   env_define(env, "bitwise-copy-bit-field", Value::Primitive(Primitive::BitwiseCopyBitField))
   env_define(env, "bitwise-rotate-bit-field", Value::Primitive(Primitive::BitwiseRotateBitField))
   env_define(env, "bitwise-reverse-bit-field", Value::Primitive(Primitive::BitwiseReverseBitField))
+  env_define(env, "fixnum?", Value::Primitive(Primitive::FixnumP))
+  env_define(env, "fixnum-width", Value::Primitive(Primitive::FixnumWidth))
+  env_define(env, "least-fixnum", Value::Primitive(Primitive::LeastFixnum))
+  env_define(env, "greatest-fixnum", Value::Primitive(Primitive::GreatestFixnum))
+  env_define(env, "fx=?", Value::Primitive(Primitive::FxEq))
+  env_define(env, "fx<?", Value::Primitive(Primitive::FxLess))
+  env_define(env, "fx>?", Value::Primitive(Primitive::FxGreater))
+  env_define(env, "fx<=?", Value::Primitive(Primitive::FxLessEq))
+  env_define(env, "fx>=?", Value::Primitive(Primitive::FxGreaterEq))
+  env_define(env, "fxzero?", Value::Primitive(Primitive::FxZeroP))
+  env_define(env, "fxpositive?", Value::Primitive(Primitive::FxPositiveP))
+  env_define(env, "fxnegative?", Value::Primitive(Primitive::FxNegativeP))
+  env_define(env, "fxodd?", Value::Primitive(Primitive::FxOddP))
+  env_define(env, "fxeven?", Value::Primitive(Primitive::FxEvenP))
+  env_define(env, "fxmin", Value::Primitive(Primitive::FxMin))
+  env_define(env, "fxmax", Value::Primitive(Primitive::FxMax))
+  env_define(env, "fx+", Value::Primitive(Primitive::FxAdd))
+  env_define(env, "fx-", Value::Primitive(Primitive::FxSub))
+  env_define(env, "fx*", Value::Primitive(Primitive::FxMul))
+  env_define(env, "fxdiv", Value::Primitive(Primitive::FxDiv))
+  env_define(env, "fxmod", Value::Primitive(Primitive::FxMod))
+  env_define(env, "fxdiv0", Value::Primitive(Primitive::FxDiv0))
+  env_define(env, "fxmod0", Value::Primitive(Primitive::FxMod0))
+  env_define(env, "fx+/carry", Value::Primitive(Primitive::FxAddCarry))
+  env_define(env, "fx-/carry", Value::Primitive(Primitive::FxSubCarry))
+  env_define(env, "fx*/carry", Value::Primitive(Primitive::FxMulCarry))
+  env_define(env, "fxnot", Value::Primitive(Primitive::FxNot))
+  env_define(env, "fxand", Value::Primitive(Primitive::FxAnd))
+  env_define(env, "fxior", Value::Primitive(Primitive::FxIor))
+  env_define(env, "fxxor", Value::Primitive(Primitive::FxXor))
+  env_define(env, "fxif", Value::Primitive(Primitive::FxIf))
+  env_define(env, "fxbit-count", Value::Primitive(Primitive::FxBitCount))
+  env_define(env, "fxlength", Value::Primitive(Primitive::FxLength))
+  env_define(env, "fxfirst-bit-set", Value::Primitive(Primitive::FxFirstBitSet))
+  env_define(env, "fxbit-set?", Value::Primitive(Primitive::FxBitSetP))
+  env_define(env, "fxcopy-bit", Value::Primitive(Primitive::FxCopyBit))
+  env_define(env, "fxbit-field", Value::Primitive(Primitive::FxBitField))
+  env_define(env, "fxcopy-bit-field", Value::Primitive(Primitive::FxCopyBitField))
+  env_define(env, "fxrotate-bit-field", Value::Primitive(Primitive::FxRotateBitField))
+  env_define(env, "fxreverse-bit-field", Value::Primitive(Primitive::FxReverseBitField))
+  env_define(env, "fxarithmetic-shift", Value::Primitive(Primitive::FxArithmeticShift))
+  env_define(env, "fxarithmetic-shift-left", Value::Primitive(Primitive::FxArithmeticShiftLeft))
+  env_define(env, "fxarithmetic-shift-right", Value::Primitive(Primitive::FxArithmeticShiftRight))
   env_define(env, "eq?", Value::Primitive(Primitive::Eq))
   env_define(env, "eqv?", Value::Primitive(Primitive::Eqv))
   env_define(env, "equal?", Value::Primitive(Primitive::Equal))
@@ -747,6 +790,18 @@ fn stdlib_source() -> String {
     "  (subform syntax-violation-subform))",
     "(define-condition-type &undefined &violation",
     "  make-undefined-violation undefined-violation?)",
+    "(library (rnrs arithmetic fixnums (6))",
+    "  (export fixnum? fixnum-width least-fixnum greatest-fixnum",
+    "          fx=? fx<? fx>? fx<=? fx>=?",
+    "          fxzero? fxpositive? fxnegative? fxodd? fxeven?",
+    "          fxmax fxmin",
+    "          fx+ fx- fx* fxdiv fxmod fxdiv0 fxmod0 fx+/carry fx-/carry fx*/carry",
+    "          fxnot fxand fxior fxxor fxif",
+    "          fxbit-count fxlength fxfirst-bit-set fxbit-set? fxcopy-bit fxbit-field",
+    "          fxcopy-bit-field fxrotate-bit-field fxreverse-bit-field",
+    "          fxarithmetic-shift fxarithmetic-shift-left fxarithmetic-shift-right)",
+    "  (import)",
+    ")",
     "(library (rnrs arithmetic bitwise (6))",
     "  (export bitwise-and bitwise-ior bitwise-xor bitwise-not bitwise-if",
     "          arithmetic-shift bitwise-bit-count bitwise-length bitwise-first-bit-set",

@@ -260,6 +260,49 @@ pub(all) enum Primitive {
   BitwiseCopyBitField
   BitwiseRotateBitField
   BitwiseReverseBitField
+  FixnumP
+  FixnumWidth
+  LeastFixnum
+  GreatestFixnum
+  FxEq
+  FxLess
+  FxGreater
+  FxLessEq
+  FxGreaterEq
+  FxZeroP
+  FxPositiveP
+  FxNegativeP
+  FxOddP
+  FxEvenP
+  FxMin
+  FxMax
+  FxAdd
+  FxSub
+  FxMul
+  FxDiv
+  FxMod
+  FxDiv0
+  FxMod0
+  FxAddCarry
+  FxSubCarry
+  FxMulCarry
+  FxNot
+  FxAnd
+  FxIor
+  FxXor
+  FxIf
+  FxBitCount
+  FxLength
+  FxFirstBitSet
+  FxBitSetP
+  FxCopyBit
+  FxBitField
+  FxCopyBitField
+  FxRotateBitField
+  FxReverseBitField
+  FxArithmeticShift
+  FxArithmeticShiftLeft
+  FxArithmeticShiftRight
   ListP
   MakeList
   Length
