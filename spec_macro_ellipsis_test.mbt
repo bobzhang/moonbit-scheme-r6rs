@@ -66,3 +66,16 @@ test "r6rs macro: custom ellipsis leaves ... as literal" {
   )
   inspect(value_to_string(eval_program(program)), content="ok")
 }
+
+///|
+test "r6rs macro: ellipsis in middle of pattern" {
+  let program = (
+    (
+      #|(define-syntax tail
+      #|  (syntax-rules ()
+      #|    ((tail a ... b) (list a ... b))))
+      #|(list (tail 1 2 3) (tail 1))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="((1 2 3) (1))")
+}

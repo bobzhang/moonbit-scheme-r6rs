@@ -553,6 +553,43 @@ fn binding_equal(left : BindingVal, right : BindingVal) -> Bool {
 }
 
 ///|
+fn binding_clone(value : BindingVal) -> BindingVal {
+  match value {
+    BindingVal::Leaf(datum) => BindingVal::Leaf(datum)
+    BindingVal::Seq(values) => {
+      let cloned : Array[BindingVal] = []
+      for item in values {
+        cloned.push(binding_clone(item))
+      }
+      BindingVal::Seq(cloned)
+    }
+  }
+}
+
+///|
+fn bindings_clone(bindings : Map[String, BindingVal]) -> Map[String, BindingVal] {
+  let result : Map[String, BindingVal] = {}
+  for name in bindings.keys() {
+    match bindings.get(name) {
+      Some(value) => result[name] = binding_clone(value)
+      None => ()
+    }
+  }
+  result
+}
+
+///|
+fn bindings_overwrite(dest : Map[String, BindingVal], src : Map[String, BindingVal]) -> Unit {
+  dest.clear()
+  for name in src.keys() {
+    match src.get(name) {
+      Some(value) => dest[name] = value
+      None => ()
+    }
+  }
+}
+
+///|
 fn merge_bindings(dest : Map[String, BindingVal], src : Map[String, BindingVal]) -> Bool {
   for name in src.keys() {
     match src.get(name) {
@@ -798,90 +835,109 @@ fn match_pattern_list(
   ellipsis : String,
   bindings : Map[String, BindingVal],
 ) -> Bool {
-  if pats.length() >= 2 && datum_is_symbol(pats[pats.length() - 1], ellipsis) {
-    let repeat_pat = pats[pats.length() - 2]
-    let prefix = pats.sub(end=pats.length() - 2).to_array()
-    if inputs.length() < prefix.length() {
-      false
-    } else if !match_pattern_prefix(prefix, inputs, literals, ellipsis, bindings) {
-      false
-    } else {
-      let mut i = prefix.length()
-      if i >= inputs.length() {
-        let names : Map[String, Bool] = {}
-        collect_pattern_vars(repeat_pat, literals, ellipsis, names)
-        for name in names.keys() {
-          match bindings.get(name) {
-            Some(existing) => {
-              if !binding_equal(existing, BindingVal::Seq([])) {
-                return false
-              }
-            }
-            None => bindings[name] = BindingVal::Seq([])
-          }
-        }
-        true
-      } else {
-        let repeated : Map[String, Array[BindingVal]] = {}
-        while i < inputs.length() {
-          let iter_bindings : Map[String, BindingVal] = {}
-          if !match_pattern(repeat_pat, inputs[i], literals, ellipsis, iter_bindings) {
-            return false
-          }
-          for name in iter_bindings.keys() {
-            match iter_bindings.get(name) {
-              Some(value) => {
-                match repeated.get(name) {
-                  Some(values) => values.push(value)
-                  None => {
-                    let values : Array[BindingVal] = []
-                    values.push(value)
-                    repeated[name] = values
-                  }
-                }
-              }
-              None => ()
-            }
-          }
-          i = i + 1
-        }
-        let repeated_bindings : Map[String, BindingVal] = {}
-        for name in repeated.keys() {
-          match repeated.get(name) {
-            Some(values) => repeated_bindings[name] = BindingVal::Seq(values)
-            None => ()
-          }
-        }
-        merge_bindings(bindings, repeated_bindings)
-      }
-    }
-  } else {
-    if pats.length() != inputs.length() {
-      false
-    } else if !match_pattern_prefix(pats, inputs, literals, ellipsis, bindings) {
-      false
-    } else {
-      true
-    }
-  }
+  match_pattern_list_from(pats, inputs, 0, 0, literals, ellipsis, bindings)
 }
 
 ///|
-fn match_pattern_prefix(
+fn collect_repeat_bindings(
+  repeat_pat : Datum,
+  inputs : Array[Datum],
+  start : Int,
+  count : Int,
+  literals : Array[String],
+  ellipsis : String,
+)
+ -> Map[String, BindingVal]? {
+  let result : Map[String, BindingVal] = {}
+  if count == 0 {
+    let names : Map[String, Bool] = {}
+    collect_pattern_vars(repeat_pat, literals, ellipsis, names)
+    for name in names.keys() {
+      result[name] = BindingVal::Seq([])
+    }
+    return Some(result)
+  }
+  let repeated : Map[String, Array[BindingVal]] = {}
+  let mut i = 0
+  while i < count {
+    let iter_bindings : Map[String, BindingVal] = {}
+    if !match_pattern(repeat_pat, inputs[start + i], literals, ellipsis, iter_bindings) {
+      return None
+    }
+    for name in iter_bindings.keys() {
+      match iter_bindings.get(name) {
+        Some(value) => {
+          match repeated.get(name) {
+            Some(values) => values.push(value)
+            None => {
+              let values : Array[BindingVal] = []
+              values.push(value)
+              repeated[name] = values
+            }
+          }
+        }
+        None => ()
+      }
+    }
+    i = i + 1
+  }
+  for name in repeated.keys() {
+    match repeated.get(name) {
+      Some(values) => result[name] = BindingVal::Seq(values)
+      None => ()
+    }
+  }
+  Some(result)
+}
+
+///|
+fn match_pattern_list_from(
   pats : Array[Datum],
   inputs : Array[Datum],
+  pat_idx : Int,
+  inp_idx : Int,
   literals : Array[String],
   ellipsis : String,
   bindings : Map[String, BindingVal],
 ) -> Bool {
-  let mut i = 0
-  while i < pats.length() {
-    if !match_pattern(pats[i], inputs[i], literals, ellipsis, bindings) {
+  if pat_idx >= pats.length() {
+    return inp_idx == inputs.length()
+  }
+  if pat_idx + 1 < pats.length() && datum_is_symbol(pats[pat_idx + 1], ellipsis) {
+    let max_count = inputs.length() - inp_idx
+    let mut count = max_count
+    while count >= 0 {
+      let base = bindings_clone(bindings)
+      match collect_repeat_bindings(pats[pat_idx], inputs, inp_idx, count, literals, ellipsis) {
+        Some(repeat_bindings) =>
+          if merge_bindings(base, repeat_bindings) {
+            if match_pattern_list_from(
+              pats,
+              inputs,
+              pat_idx + 2,
+              inp_idx + count,
+              literals,
+              ellipsis,
+              base,
+            ) {
+              bindings_overwrite(bindings, base)
+              return true
+            }
+          }
+        None => ()
+      }
+      count = count - 1
+    }
+    false
+  } else {
+    if inp_idx >= inputs.length() {
       return false
     }
-    i = i + 1
+    if !match_pattern(pats[pat_idx], inputs[inp_idx], literals, ellipsis, bindings) {
+      return false
+    }
+    match_pattern_list_from(pats, inputs, pat_idx + 1, inp_idx + 1, literals, ellipsis, bindings)
   }
-  true
 }
 
 ///|
@@ -1228,32 +1284,31 @@ fn expand_template_list(
   ellipsis : String,
   indices : Array[Int],
 ) -> Datum {
-  if items.length() >= 2 && datum_is_symbol(items[items.length() - 1], ellipsis) {
-    let repeat_template = items[items.length() - 2]
-    let prefix = items.sub(end=items.length() - 2).to_array()
-    let expanded : Array[Datum] = []
-    for item in prefix {
-      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
-    }
-    let count = max_binding_len(repeat_template, bindings, indices)
-    let mut i = 0
-    while i < count {
-      let next_indices : Array[Int] = []
-      for idx in indices {
-        next_indices.push(idx)
+  let expanded : Array[Datum] = []
+  let mut i = 0
+  while i < items.length() {
+    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+      let repeat_template = items[i]
+      let count = max_binding_len(repeat_template, bindings, indices)
+      let mut j = 0
+      while j < count {
+        let next_indices : Array[Int] = []
+        for idx in indices {
+          next_indices.push(idx)
+        }
+        next_indices.push(j)
+        expanded.push(
+          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices),
+        )
+        j = j + 1
       }
-      next_indices.push(i)
-      expanded.push(expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices))
+      i = i + 2
+    } else {
+      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices))
       i = i + 1
     }
-    list_from_array(expanded)
-  } else {
-    let expanded : Array[Datum] = []
-    for item in items {
-      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
-    }
-    list_from_array(expanded)
   }
+  list_from_array(expanded)
 }
 
 ///|
@@ -1264,32 +1319,31 @@ fn expand_template_vector(
   ellipsis : String,
   indices : Array[Int],
 ) -> Datum {
-  if items.length() >= 2 && datum_is_symbol(items[items.length() - 1], ellipsis) {
-    let repeat_template = items[items.length() - 2]
-    let prefix = items.sub(end=items.length() - 2).to_array()
-    let expanded : Array[Datum] = []
-    for item in prefix {
-      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
-    }
-    let count = max_binding_len(repeat_template, bindings, indices)
-    let mut i = 0
-    while i < count {
-      let next_indices : Array[Int] = []
-      for idx in indices {
-        next_indices.push(idx)
+  let expanded : Array[Datum] = []
+  let mut i = 0
+  while i < items.length() {
+    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+      let repeat_template = items[i]
+      let count = max_binding_len(repeat_template, bindings, indices)
+      let mut j = 0
+      while j < count {
+        let next_indices : Array[Int] = []
+        for idx in indices {
+          next_indices.push(idx)
+        }
+        next_indices.push(j)
+        expanded.push(
+          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices),
+        )
+        j = j + 1
       }
-      next_indices.push(i)
-      expanded.push(expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices))
+      i = i + 2
+    } else {
+      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices))
       i = i + 1
     }
-    Datum::Vector(expanded)
-  } else {
-    let expanded : Array[Datum] = []
-    for item in items {
-      expanded.push(expand_template_indexed(item, bindings, renames, ellipsis, indices))
-    }
-    Datum::Vector(expanded)
   }
+  Datum::Vector(expanded)
 }
 
 ///|
