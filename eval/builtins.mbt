@@ -167,6 +167,21 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::Ceiling, Primitive::Ceiling)
     | (Primitive::Truncate, Primitive::Truncate)
     | (Primitive::Round, Primitive::Round)
+    | (Primitive::BitwiseAnd, Primitive::BitwiseAnd)
+    | (Primitive::BitwiseIor, Primitive::BitwiseIor)
+    | (Primitive::BitwiseXor, Primitive::BitwiseXor)
+    | (Primitive::BitwiseNot, Primitive::BitwiseNot)
+    | (Primitive::BitwiseIf, Primitive::BitwiseIf)
+    | (Primitive::ArithmeticShift, Primitive::ArithmeticShift)
+    | (Primitive::BitwiseBitCount, Primitive::BitwiseBitCount)
+    | (Primitive::BitwiseLength, Primitive::BitwiseLength)
+    | (Primitive::BitwiseFirstBitSet, Primitive::BitwiseFirstBitSet)
+    | (Primitive::BitwiseBitSetP, Primitive::BitwiseBitSetP)
+    | (Primitive::BitwiseCopyBit, Primitive::BitwiseCopyBit)
+    | (Primitive::BitwiseBitField, Primitive::BitwiseBitField)
+    | (Primitive::BitwiseCopyBitField, Primitive::BitwiseCopyBitField)
+    | (Primitive::BitwiseRotateBitField, Primitive::BitwiseRotateBitField)
+    | (Primitive::BitwiseReverseBitField, Primitive::BitwiseReverseBitField)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
@@ -1360,6 +1375,291 @@ fn value_as_nonnegative_int(value : Value) -> Int raise EvalError {
     raise @core.EvalError("type error: exact nonnegative integer expected")
   }
   n
+}
+
+///|
+priv enum BitOp {
+  And
+  Or
+  Xor
+}
+
+///|
+fn bigint_pow2(exp : Int) -> @bigint.BigInt {
+  pow_bigint_int(bigint_from_int(2), exp)
+}
+
+///|
+fn bigint_ge(left : @bigint.BigInt, right : @bigint.BigInt) -> Bool {
+  (left - right).compare_int(0) >= 0
+}
+
+///|
+fn bigint_bit_length_nonneg(value : @bigint.BigInt) -> Int {
+  if bigint_is_zero(value) {
+    return 0
+  }
+  let mut n = value
+  let two = bigint_from_int(2)
+  let mut count = 0
+  while n.compare_int(0) > 0 {
+    n = n / two
+    count = count + 1
+  }
+  count
+}
+
+///|
+fn bigint_bit_count_nonneg(value : @bigint.BigInt) -> Int {
+  let mut n = value
+  let two = bigint_from_int(2)
+  let mut count = 0
+  while n.compare_int(0) > 0 {
+    let bit = n % two
+    if !bigint_is_zero(bit) {
+      count = count + 1
+    }
+    n = n / two
+  }
+  count
+}
+
+///|
+fn bigint_twos_length(value : @bigint.BigInt) -> Int {
+  if value.compare_int(0) >= 0 {
+    bigint_bit_length_nonneg(value)
+  } else {
+    bigint_bit_length_nonneg(-value - bigint_from_int(1))
+  }
+}
+
+///|
+fn bigint_to_twos(value : @bigint.BigInt, width : Int) -> @bigint.BigInt {
+  if value.compare_int(0) >= 0 {
+    value
+  } else {
+    value + bigint_pow2(width)
+  }
+}
+
+///|
+fn bigint_from_twos(value : @bigint.BigInt, width : Int) -> @bigint.BigInt {
+  let limit = bigint_pow2(width - 1)
+  if bigint_ge(value, limit) {
+    value - bigint_pow2(width)
+  } else {
+    value
+  }
+}
+
+///|
+fn bigint_bitwise_nonneg(
+  left : @bigint.BigInt,
+  right : @bigint.BigInt,
+  op : BitOp,
+) -> @bigint.BigInt {
+  let mut a = left
+  let mut b = right
+  let two = bigint_from_int(2)
+  let mut bit = bigint_from_int(1)
+  let mut result = bigint_from_int(0)
+  while !bigint_is_zero(a) || !bigint_is_zero(b) {
+    let a_bit = a % two
+    let b_bit = b % two
+    let a_one = !bigint_is_zero(a_bit)
+    let b_one = !bigint_is_zero(b_bit)
+    let out_one = match op {
+      BitOp::And => a_one && b_one
+      BitOp::Or => a_one || b_one
+      BitOp::Xor => a_one != b_one
+    }
+    if out_one {
+      result = result + bit
+    }
+    a = a / two
+    b = b / two
+    bit = bit * two
+  }
+  result
+}
+
+///|
+fn bigint_bitwise_binop(
+  left : @bigint.BigInt,
+  right : @bigint.BigInt,
+  op : BitOp,
+) -> @bigint.BigInt {
+  let len_left = bigint_twos_length(left)
+  let len_right = bigint_twos_length(right)
+  let width = (if len_left > len_right { len_left } else { len_right }) + 1
+  let left_rep = bigint_to_twos(left, width)
+  let right_rep = bigint_to_twos(right, width)
+  let result_rep = bigint_bitwise_nonneg(left_rep, right_rep, op)
+  bigint_from_twos(result_rep, width)
+}
+
+///|
+fn datum_bitwise_binop(left : Datum, right : Datum, op : BitOp) -> Datum raise EvalError {
+  let left_big = datum_to_bigint(left)
+  let right_big = datum_to_bigint(right)
+  bigint_to_integer_datum(bigint_bitwise_binop(left_big, right_big, op))
+}
+
+///|
+fn datum_bitwise_not(value : Datum) -> Datum raise EvalError {
+  let big = datum_to_bigint(value)
+  bigint_to_integer_datum(-big - bigint_from_int(1))
+}
+
+///|
+fn datum_arithmetic_shift(value : Datum, shift : Int) -> Datum raise EvalError {
+  let big = datum_to_bigint(value)
+  if shift == 0 {
+    return bigint_to_integer_datum(big)
+  }
+  if shift > 0 {
+    let factor = bigint_pow2(shift)
+    return bigint_to_integer_datum(big * factor)
+  }
+  let count = -shift
+  let divisor = bigint_pow2(count)
+  let q = big / divisor
+  let r = big % divisor
+  if big.compare_int(0) < 0 && !bigint_is_zero(r) {
+    bigint_to_integer_datum(q - bigint_from_int(1))
+  } else {
+    bigint_to_integer_datum(q)
+  }
+}
+
+///|
+fn datum_bitwise_length(value : Datum) -> Int raise EvalError {
+  let big = datum_to_bigint(value)
+  if big.compare_int(0) >= 0 {
+    bigint_bit_length_nonneg(big)
+  } else {
+    bigint_bit_length_nonneg(-big - bigint_from_int(1))
+  }
+}
+
+///|
+fn datum_bitwise_bit_count(value : Datum) -> Int raise EvalError {
+  let big = datum_to_bigint(value)
+  if big.compare_int(0) >= 0 {
+    bigint_bit_count_nonneg(big)
+  } else {
+    bigint_bit_count_nonneg(-big - bigint_from_int(1))
+  }
+}
+
+///|
+fn datum_bitwise_bit_set(value : Datum, index : Int) -> Bool raise EvalError {
+  let big = datum_to_bigint(value)
+  let mask = bigint_pow2(index)
+  let res = bigint_bitwise_binop(big, mask, BitOp::And)
+  !bigint_is_zero(res)
+}
+
+///|
+fn datum_bitwise_bit_field(value : Datum, start : Int, end : Int) -> Datum raise EvalError {
+  if end < start {
+    raise @core.EvalError("index out of range")
+  }
+  let width = end - start
+  if width == 0 {
+    return Datum::Int(0)
+  }
+  let shifted = datum_arithmetic_shift(value, -start)
+  let mask = bigint_pow2(width) - bigint_from_int(1)
+  let field = bigint_bitwise_binop(datum_to_bigint(shifted), mask, BitOp::And)
+  bigint_to_integer_datum(field)
+}
+
+///|
+fn datum_bitwise_copy_bit_field(
+  value : Datum,
+  start : Int,
+  end : Int,
+  from : Datum,
+) -> Datum raise EvalError {
+  if end < start {
+    raise @core.EvalError("index out of range")
+  }
+  let width = end - start
+  if width == 0 {
+    return value
+  }
+  let mask_low = bigint_pow2(width) - bigint_from_int(1)
+  let shift_factor = bigint_pow2(start)
+  let mask = mask_low * shift_factor
+  let mask_not = -mask - bigint_from_int(1)
+  let cleared_value = bigint_bitwise_binop(
+    datum_to_bigint(value),
+    mask_not,
+    BitOp::And,
+  )
+  let from_shifted = datum_arithmetic_shift(from, start)
+  let insert = bigint_bitwise_binop(datum_to_bigint(from_shifted), mask, BitOp::And)
+  let result = bigint_bitwise_binop(cleared_value, insert, BitOp::Or)
+  bigint_to_integer_datum(result)
+}
+
+///|
+fn datum_bitwise_rotate_bit_field(
+  value : Datum,
+  start : Int,
+  end : Int,
+  count : Int,
+) -> Datum raise EvalError {
+  if end < start {
+    raise @core.EvalError("index out of range")
+  }
+  let width = end - start
+  if width == 0 {
+    return value
+  }
+  let mut shift = count % width
+  if shift < 0 {
+    shift = shift + width
+  }
+  let field = datum_bitwise_bit_field(value, start, end)
+  let mask = bigint_pow2(width) - bigint_from_int(1)
+  let field_big = datum_to_bigint(field)
+  let left = field_big * bigint_pow2(shift)
+  let right = if shift == 0 {
+    bigint_from_int(0)
+  } else {
+    field_big / bigint_pow2(width - shift)
+  }
+  let rotated = bigint_bitwise_binop(left, right, BitOp::Or)
+  let rotated_masked = bigint_bitwise_binop(rotated, mask, BitOp::And)
+  let rotated_value = bigint_to_integer_datum(rotated_masked)
+  datum_bitwise_copy_bit_field(value, start, end, rotated_value)
+}
+
+///|
+fn datum_bitwise_reverse_bit_field(
+  value : Datum,
+  start : Int,
+  end : Int,
+) -> Datum raise EvalError {
+  if end < start {
+    raise @core.EvalError("index out of range")
+  }
+  let width = end - start
+  if width == 0 {
+    return value
+  }
+  let field = datum_bitwise_bit_field(value, start, end)
+  let mut reversed = bigint_from_int(0)
+  let mut i = 0
+  while i < width {
+    if datum_bitwise_bit_set(field, i) {
+      reversed = reversed + bigint_pow2(width - 1 - i)
+    }
+    i = i + 1
+  }
+  datum_bitwise_copy_bit_field(value, start, end, bigint_to_integer_datum(reversed))
 }
 
 ///|
@@ -2839,6 +3139,203 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           }
         }
         n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::BitwiseAnd => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(-1))
+      } else {
+        let mut acc = value_as_exact_integer(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_exact_integer(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::And)
+          i = i + 1
+        }
+        Value::Datum(acc)
+      }
+    }
+    Primitive::BitwiseIor => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(0))
+      } else {
+        let mut acc = value_as_exact_integer(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_exact_integer(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::Or)
+          i = i + 1
+        }
+        Value::Datum(acc)
+      }
+    }
+    Primitive::BitwiseXor => {
+      if args.is_empty() {
+        Value::Datum(Datum::Int(0))
+      } else {
+        let mut acc = value_as_exact_integer(args[0])
+        let mut i = 1
+        while i < args.length() {
+          let next = value_as_exact_integer(args[i])
+          acc = datum_bitwise_binop(acc, next, BitOp::Xor)
+          i = i + 1
+        }
+        Value::Datum(acc)
+      }
+    }
+    Primitive::BitwiseNot => {
+      match args.length() {
+        1 => {
+          let value = value_as_exact_integer(args[0])
+          Value::Datum(datum_bitwise_not(value))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::BitwiseIf => {
+      match args.length() {
+        3 => {
+          let mask = value_as_exact_integer(args[0])
+          let yes_value = value_as_exact_integer(args[1])
+          let no_value = value_as_exact_integer(args[2])
+          let masked_yes = datum_bitwise_binop(mask, yes_value, BitOp::And)
+          let masked_no = datum_bitwise_binop(datum_bitwise_not(mask), no_value, BitOp::And)
+          Value::Datum(datum_bitwise_binop(masked_yes, masked_no, BitOp::Or))
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::ArithmeticShift => {
+      match args.length() {
+        2 => {
+          let value = value_as_exact_integer(args[0])
+          let shift = value_as_int_index(args[1])
+          Value::Datum(datum_arithmetic_shift(value, shift))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::BitwiseBitCount => {
+      match args.length() {
+        1 => {
+          let value = value_as_exact_integer(args[0])
+          let count = datum_bitwise_bit_count(value)
+          Value::Datum(Datum::Int(count))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::BitwiseLength => {
+      match args.length() {
+        1 => {
+          let value = value_as_exact_integer(args[0])
+          let count = datum_bitwise_length(value)
+          Value::Datum(Datum::Int(count))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::BitwiseFirstBitSet => {
+      match args.length() {
+        1 => {
+          let value = value_as_exact_integer(args[0])
+          let big = datum_to_bigint(value)
+          if bigint_is_zero(big) {
+            Value::Datum(Datum::Int(-1))
+          } else {
+            let lsb = bigint_bitwise_binop(big, -big, BitOp::And)
+            let idx = bigint_bit_length_nonneg(lsb) - 1
+            Value::Datum(Datum::Int(idx))
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::BitwiseBitSetP => {
+      match args.length() {
+        2 => {
+          let value = value_as_exact_integer(args[0])
+          let index = value_as_nonnegative_int(args[1])
+          bool_value(datum_bitwise_bit_set(value, index))
+        }
+        n => raise arity_mismatch(2, n)
+      }
+    }
+    Primitive::BitwiseCopyBit => {
+      match args.length() {
+        3 => {
+          let value = value_as_exact_integer(args[0])
+          let index = value_as_nonnegative_int(args[1])
+          let bit_value = value_as_exact_integer(args[2])
+          let bit = match bit_value {
+            Datum::Int(n) => n
+            Datum::BigInt(n) =>
+              if bigint_is_zero(n) {
+                0
+              } else if n.compare_int(1) == 0 {
+                1
+              } else {
+                raise @core.EvalError("type error: bit expected")
+              }
+            _ => raise @core.EvalError("type error: bit expected")
+          }
+          let mask = bigint_to_integer_datum(bigint_pow2(index))
+          let result = if bit == 0 {
+            datum_bitwise_binop(value, datum_bitwise_not(mask), BitOp::And)
+          } else if bit == 1 {
+            datum_bitwise_binop(value, mask, BitOp::Or)
+          } else {
+            raise @core.EvalError("type error: bit expected")
+          }
+          Value::Datum(result)
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::BitwiseBitField => {
+      match args.length() {
+        3 => {
+          let value = value_as_exact_integer(args[0])
+          let start = value_as_nonnegative_int(args[1])
+          let end = value_as_nonnegative_int(args[2])
+          Value::Datum(datum_bitwise_bit_field(value, start, end))
+        }
+        n => raise arity_mismatch(3, n)
+      }
+    }
+    Primitive::BitwiseCopyBitField => {
+      match args.length() {
+        4 => {
+          let value = value_as_exact_integer(args[0])
+          let start = value_as_nonnegative_int(args[1])
+          let end = value_as_nonnegative_int(args[2])
+          let from = value_as_exact_integer(args[3])
+          Value::Datum(datum_bitwise_copy_bit_field(value, start, end, from))
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::BitwiseRotateBitField => {
+      match args.length() {
+        4 => {
+          let value = value_as_exact_integer(args[0])
+          let start = value_as_nonnegative_int(args[1])
+          let end = value_as_nonnegative_int(args[2])
+          let count = value_as_int_index(args[3])
+          Value::Datum(datum_bitwise_rotate_bit_field(value, start, end, count))
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::BitwiseReverseBitField => {
+      match args.length() {
+        3 => {
+          let value = value_as_exact_integer(args[0])
+          let start = value_as_nonnegative_int(args[1])
+          let end = value_as_nonnegative_int(args[2])
+          Value::Datum(datum_bitwise_reverse_bit_field(value, start, end))
+        }
+        n => raise arity_mismatch(3, n)
       }
     }
     Primitive::Eq => {

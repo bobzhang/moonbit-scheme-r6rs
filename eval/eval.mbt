@@ -166,6 +166,21 @@ fn init_env() -> Env {
   env_define(env, "ceiling", Value::Primitive(Primitive::Ceiling))
   env_define(env, "truncate", Value::Primitive(Primitive::Truncate))
   env_define(env, "round", Value::Primitive(Primitive::Round))
+  env_define(env, "bitwise-and", Value::Primitive(Primitive::BitwiseAnd))
+  env_define(env, "bitwise-ior", Value::Primitive(Primitive::BitwiseIor))
+  env_define(env, "bitwise-xor", Value::Primitive(Primitive::BitwiseXor))
+  env_define(env, "bitwise-not", Value::Primitive(Primitive::BitwiseNot))
+  env_define(env, "bitwise-if", Value::Primitive(Primitive::BitwiseIf))
+  env_define(env, "arithmetic-shift", Value::Primitive(Primitive::ArithmeticShift))
+  env_define(env, "bitwise-bit-count", Value::Primitive(Primitive::BitwiseBitCount))
+  env_define(env, "bitwise-length", Value::Primitive(Primitive::BitwiseLength))
+  env_define(env, "bitwise-first-bit-set", Value::Primitive(Primitive::BitwiseFirstBitSet))
+  env_define(env, "bitwise-bit-set?", Value::Primitive(Primitive::BitwiseBitSetP))
+  env_define(env, "bitwise-copy-bit", Value::Primitive(Primitive::BitwiseCopyBit))
+  env_define(env, "bitwise-bit-field", Value::Primitive(Primitive::BitwiseBitField))
+  env_define(env, "bitwise-copy-bit-field", Value::Primitive(Primitive::BitwiseCopyBitField))
+  env_define(env, "bitwise-rotate-bit-field", Value::Primitive(Primitive::BitwiseRotateBitField))
+  env_define(env, "bitwise-reverse-bit-field", Value::Primitive(Primitive::BitwiseReverseBitField))
   env_define(env, "eq?", Value::Primitive(Primitive::Eq))
   env_define(env, "eqv?", Value::Primitive(Primitive::Eqv))
   env_define(env, "equal?", Value::Primitive(Primitive::Equal))
@@ -675,6 +690,13 @@ fn stdlib_source() -> String {
     "  (subform syntax-violation-subform))",
     "(define-condition-type &undefined &violation",
     "  make-undefined-violation undefined-violation?)",
+    "(library (rnrs arithmetic bitwise (6))",
+    "  (export bitwise-and bitwise-ior bitwise-xor bitwise-not bitwise-if",
+    "          arithmetic-shift bitwise-bit-count bitwise-length bitwise-first-bit-set",
+    "          bitwise-bit-set? bitwise-copy-bit bitwise-bit-field bitwise-copy-bit-field",
+    "          bitwise-rotate-bit-field bitwise-reverse-bit-field)",
+    "  (import)",
+    ")",
     "(library (rnrs lists (6))",
     "  (export find find-tail for-all exists filter partition fold-left fold-right",
     "          remp remove remq remv memp memq memv assp assq assv assoc",

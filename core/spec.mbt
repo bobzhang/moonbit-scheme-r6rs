@@ -245,6 +245,21 @@ pub(all) enum Primitive {
   Ceiling
   Truncate
   Round
+  BitwiseAnd
+  BitwiseIor
+  BitwiseXor
+  BitwiseNot
+  BitwiseIf
+  ArithmeticShift
+  BitwiseBitCount
+  BitwiseLength
+  BitwiseFirstBitSet
+  BitwiseBitSetP
+  BitwiseCopyBit
+  BitwiseBitField
+  BitwiseCopyBitField
+  BitwiseRotateBitField
+  BitwiseReverseBitField
   ListP
   MakeList
   Length
