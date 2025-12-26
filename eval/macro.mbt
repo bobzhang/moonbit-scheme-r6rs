@@ -487,6 +487,12 @@ fn parse_transformer(expr : Datum, name : String) -> SyntaxRules raise EvalError
     Datum::Symbol("syntax-rules") => parse_syntax_rules(expr)
     Datum::Symbol("identifier-syntax") => parse_identifier_syntax(expr, name)
     Datum::Symbol("lambda") => parse_syntax_case_transformer(expr)
+    Datum::Symbol("make-variable-transformer") => {
+      if parts.length() != 2 {
+        raise @core.EvalError("invalid syntax transformer")
+      }
+      parse_transformer(parts[1], name)
+    }
     _ => raise @core.EvalError("invalid syntax transformer")
   }
 }

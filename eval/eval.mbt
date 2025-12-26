@@ -37,6 +37,11 @@ fn init_env() -> Env {
   env_define(env, "string->symbol", Value::Primitive(Primitive::StringToSymbol))
   env_define(env, "syntax->datum", Value::Primitive(Primitive::SyntaxToDatum))
   env_define(env, "datum->syntax", Value::Primitive(Primitive::DatumToSyntax))
+  env_define(
+    env,
+    "make-variable-transformer",
+    Value::Primitive(Primitive::MakeVariableTransformer),
+  )
   env_define(env, "boolean?", Value::Primitive(Primitive::BooleanP))
   env_define(env, "number?", Value::Primitive(Primitive::NumberP))
   env_define(env, "integer?", Value::Primitive(Primitive::IntegerP))
@@ -908,6 +913,10 @@ fn stdlib_source() -> String {
     "  (define-syntax unless",
     "    (syntax-rules ()",
     "      ((_ test body ...) (if (not test) (begin body ...) (begin)))))",
+    ")",
+    "(library (rnrs syntax-case (6))",
+    "  (export make-variable-transformer)",
+    "  (import)",
     ")",
     "(library (rnrs arithmetic fixnums (6))",
     "  (export fixnum? fixnum-width least-fixnum greatest-fixnum",

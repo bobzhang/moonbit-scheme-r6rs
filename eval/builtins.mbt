@@ -271,6 +271,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::FlAtan, Primitive::FlAtan)
     | (Primitive::FlSqrt, Primitive::FlSqrt)
     | (Primitive::FlExpt, Primitive::FlExpt)
+    | (Primitive::MakeVariableTransformer, Primitive::MakeVariableTransformer)
     | (Primitive::ListP, Primitive::ListP)
     | (Primitive::MakeList, Primitive::MakeList)
     | (Primitive::Length, Primitive::Length)
@@ -7001,6 +7002,17 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       raise @core.EvalError("internal error: string-for-each should be handled in apply_proc")
     }
     Primitive::Values => Value::Values(args)
+    Primitive::MakeVariableTransformer => {
+      match args.length() {
+        1 => {
+          if !is_procedure_value(args[0]) {
+            raise @core.EvalError("type error: procedure expected")
+          }
+          args[0]
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
     Primitive::CallWithValues => {
       raise @core.EvalError("internal error: call-with-values should be handled in apply_proc")
     }
