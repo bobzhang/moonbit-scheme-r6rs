@@ -570,5 +570,6 @@ pub(all) enum Value {
   EnumSetProc(EnumSetProc)
   RecordTypeDescriptor(RecordTypeDescriptor)
   RecordConstructorDescriptor(RecordConstructorDescriptor)
+  SyntaxKeyword(String)
   Macro(SyntaxRules)
 }

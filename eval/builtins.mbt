@@ -425,6 +425,7 @@ fn value_eqv(left : Value, right : Value) -> Bool {
     (Value::EnumSetProc(a), Value::EnumSetProc(b)) => a.id == b.id
     (Value::RecordTypeDescriptor(a), Value::RecordTypeDescriptor(b)) => a.id == b.id
     (Value::RecordConstructorDescriptor(a), Value::RecordConstructorDescriptor(b)) => a.id == b.id
+    (Value::SyntaxKeyword(a), Value::SyntaxKeyword(b)) => a == b
     (Value::Void, Value::Void) => true
     _ => false
   }

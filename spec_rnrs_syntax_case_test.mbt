@@ -50,3 +50,22 @@ test "r6rs libraries: syntax-case value exports" {
   )
   inspect(value_to_string(eval_program(program)), content="(#t #t #t #t (a b) (1 2) #t)")
 }
+
+///|
+test "r6rs libraries: syntax-case syntactic keyword exports" {
+  let program = (
+    (
+      #|(begin
+      #|  (import (only (rnrs syntax-case)
+      #|                syntax-rules syntax-case identifier-syntax syntax quasisyntax))
+      #|  (define env (environment '(only (rnrs syntax-case)
+      #|                             syntax-rules syntax-case identifier-syntax syntax quasisyntax)))
+      #|  (list (procedure? (eval 'syntax-rules env))
+      #|        (procedure? (eval 'syntax-case env))
+      #|        (procedure? (eval 'identifier-syntax env))
+      #|        (procedure? (eval 'syntax env))
+      #|        (procedure? (eval 'quasisyntax env))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(#f #f #f #f #f)")
+}

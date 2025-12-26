@@ -920,7 +920,8 @@ fn stdlib_source() -> String {
     "      ((_ test body ...) (if (not test) (begin body ...) (begin)))))",
     ")",
     "(library (rnrs syntax-case (6))",
-    "  (export make-variable-transformer generate-temporaries",
+    "  (export syntax-rules syntax-case identifier-syntax syntax quasisyntax",
+    "          make-variable-transformer generate-temporaries",
     "          syntax->datum datum->syntax free-identifier=? bound-identifier=?",
     "          identifier? syntax? syntax-violation)",
     "  (import)",
@@ -4019,6 +4020,25 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
 }
 
 ///|
+fn is_syntax_keyword(name : String) -> Bool {
+  let keywords : Array[String] = [
+    "syntax-rules",
+    "syntax-case",
+    "identifier-syntax",
+    "syntax",
+    "quasisyntax",
+  ]
+  let mut i = 0
+  while i < keywords.length() {
+    if keywords[i] == name {
+      return true
+    }
+    i = i + 1
+  }
+  false
+}
+
+///|
 fn parse_import_clause(expr : Datum) -> Array[Datum] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
@@ -4208,6 +4228,10 @@ fn filter_exports_by_phase(
         if phases.expand {
           result[key] = exports[key]
         }
+      Some(Value::SyntaxKeyword(_)) =>
+        if phases.expand {
+          result[key] = exports[key]
+        }
       Some(_) =>
         if phases.run {
           result[key] = exports[key]
@@ -4307,7 +4331,11 @@ fn eval_library_state(
   let export_map : Map[String, Value] = {}
   for export_spec in exports {
     let (external, internal) = export_spec
-    export_map[external] = env_lookup(lib_env, internal)
+    if is_syntax_keyword(internal) {
+      export_map[external] = Value::SyntaxKeyword(external)
+    } else {
+      export_map[external] = env_lookup(lib_env, internal)
+    }
   }
   register_library_entry(name_spec.base, name_spec.version, export_map)
   MachineState::Apply(Value::Void, kont, handlers)
