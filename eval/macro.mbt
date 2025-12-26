@@ -343,7 +343,7 @@ fn is_core_identifier(name : String) -> Bool {
 }
 
 ///|
-fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
+fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 3 {
     raise @core.EvalError("invalid syntax-rules")
@@ -375,11 +375,11 @@ fn parse_syntax_rules(expr : Datum) -> SyntaxRules raise EvalError {
     rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
     i = i + 1
   }
-  { literals, rules, ellipsis, kind: SyntaxRulesKind::SyntaxRules }
+  { literals, rules, ellipsis, kind: SyntaxRulesKind::SyntaxRules, def_env: env }
 }
 
 ///|
-fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise EvalError {
+fn parse_identifier_syntax(expr : Datum, name : String, env : Env) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 2 {
     raise @core.EvalError("invalid identifier-syntax")
@@ -417,13 +417,14 @@ fn parse_identifier_syntax(expr : Datum, name : String) -> SyntaxRules raise Eva
       literals.push(key)
     }
   }
-  { literals, rules, ellipsis: "...", kind: SyntaxRulesKind::SyntaxRules }
+  { literals, rules, ellipsis: "...", kind: SyntaxRulesKind::SyntaxRules, def_env: env }
 }
 
 ///|
 fn parse_syntax_case_rules(
   literals_expr : Datum,
   clauses : Array[Datum],
+  env : Env,
 ) -> SyntaxRules raise EvalError {
   let literals = parse_literal_list(literals_expr)
   let rules : Array[SyntaxRule] = []
@@ -443,11 +444,11 @@ fn parse_syntax_case_rules(
     }
     i = i + 1
   }
-  { literals, rules, ellipsis: "...", kind: SyntaxRulesKind::SyntaxCase }
+  { literals, rules, ellipsis: "...", kind: SyntaxRulesKind::SyntaxCase, def_env: env }
 }
 
 ///|
-fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
+fn parse_syntax_case_transformer(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
   let parts = datum_list_to_array(expr)
   if parts.length() < 3 {
     raise @core.EvalError("invalid syntax-case")
@@ -475,7 +476,7 @@ fn parse_syntax_case_transformer(expr : Datum) -> SyntaxRules raise EvalError {
   }
   let literals_expr = sc_parts[2]
   let clauses = sc_parts.sub(start=3).to_array()
-  parse_syntax_case_rules(literals_expr, clauses)
+  parse_syntax_case_rules(literals_expr, clauses, env)
 }
 
 ///|
@@ -518,9 +519,9 @@ fn parse_transformer(expr : Datum, name : String, env : Env) -> MacroTransformer
     raise @core.EvalError("invalid syntax transformer")
   }
   match parts[0] {
-    Datum::Symbol("syntax-rules") => MacroTransformer::Rules(parse_syntax_rules(expr))
+    Datum::Symbol("syntax-rules") => MacroTransformer::Rules(parse_syntax_rules(expr, env))
     Datum::Symbol("identifier-syntax") =>
-      MacroTransformer::Rules(parse_identifier_syntax(expr, name))
+      MacroTransformer::Rules(parse_identifier_syntax(expr, name, env))
     Datum::Symbol("make-variable-transformer") => {
       if parts.length() != 2 {
         raise @core.EvalError("invalid syntax transformer")
@@ -528,7 +529,7 @@ fn parse_transformer(expr : Datum, name : String, env : Env) -> MacroTransformer
       parse_transformer(parts[1], name, env)
     }
     Datum::Symbol("lambda") if is_syntax_case_transformer_expr(expr) =>
-      MacroTransformer::Rules(parse_syntax_case_transformer(expr))
+      MacroTransformer::Rules(parse_syntax_case_transformer(expr, env))
     _ => {
       let value = eval_transformer_expr(expr, env)
       if !is_procedure_value(value) {
@@ -741,8 +742,13 @@ fn value_to_syntax_datum(value : Value) -> Datum raise EvalError {
   }
 }
 
+priv struct MacroExpansion {
+  datum : Datum
+  captures : Map[String, Value]
+}
+
 ///|
-fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise EvalError {
+fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpansion raise EvalError {
   let mut i = 0
   while i < rules.rules.length() {
     let rule = rules.rules[i]
@@ -761,7 +767,14 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> Datum rai
             }
             None => ()
           }
-          let renames = build_rename_map(rule.template, bindings, rules.literals, rules.ellipsis, env)
+          let (renames, captures) = build_rename_map(
+            rule.template,
+            bindings,
+            rules.literals,
+            rules.ellipsis,
+            rules.def_env,
+            env,
+          )
           let expanded = match rules.kind {
             SyntaxRulesKind::SyntaxRules =>
               expand_template(rule.template, bindings, renames, rules.ellipsis, env)
@@ -778,7 +791,7 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> Datum rai
               value_to_syntax_datum(value)
             }
           }
-          return expanded
+          return MacroExpansion::{ datum: expanded, captures }
         }
       }
     }
@@ -788,7 +801,7 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> Datum rai
 }
 
 ///|
-fn expand_macro_proc(proc : Value, call : Datum, env : Env) -> Datum raise EvalError {
+fn expand_macro_proc(proc : Value, call : Datum, env : Env) -> MacroExpansion raise EvalError {
   if !is_procedure_value(proc) {
     raise @core.EvalError("type error: procedure expected")
   }
@@ -798,11 +811,15 @@ fn expand_macro_proc(proc : Value, call : Datum, env : Env) -> Datum raise EvalE
   let stx = Value::SyntaxObject(SyntaxObject::{ datum: call, context: next_syntax_context() })
   let call_expr = list_from_array([Datum::Symbol(temp_name), Datum::Value(stx)])
   let value = eval_expr_transformer(call_expr, fenv)
-  value_to_syntax_datum(value)
+  MacroExpansion::{ datum: value_to_syntax_datum(value), captures: {} }
 }
 
 ///|
-fn expand_macro(transformer : MacroTransformer, call : Datum, env : Env) -> Datum raise EvalError {
+fn expand_macro(
+  transformer : MacroTransformer,
+  call : Datum,
+  env : Env,
+) -> MacroExpansion raise EvalError {
   match transformer {
     MacroTransformer::Rules(rules) => expand_macro_rules(rules, call, env)
     MacroTransformer::Procedure(proc) => expand_macro_proc(proc, call, env)
@@ -1296,17 +1313,28 @@ fn should_rename(
   }
 }
 
+fn captured_value(def_env : Env, name : String) -> Value? {
+  match env_lookup_optional(def_env, name) {
+    Some(Value::Macro(_)) => None
+    Some(Value::SyntaxKeyword(_)) => None
+    Some(value) => Some(value)
+    None => None
+  }
+}
+
 ///|
 fn build_rename_map(
   template : Datum,
   bindings : Map[String, BindingVal],
   literals : Array[String],
   ellipsis : String,
+  def_env : Env,
   env : Env,
-) -> Map[String, String] {
+) -> (Map[String, String], Map[String, Value]) {
   let renames : Map[String, String] = {}
-  collect_renames(template, bindings, literals, ellipsis, env, renames)
-  renames
+  let captures : Map[String, Value] = {}
+  collect_renames(template, bindings, literals, ellipsis, def_env, env, renames, captures)
+  (renames, captures)
 }
 
 ///|
@@ -1315,13 +1343,20 @@ fn collect_renames(
   bindings : Map[String, BindingVal],
   literals : Array[String],
   ellipsis : String,
+  def_env : Env,
   env : Env,
   renames : Map[String, String],
+  captures : Map[String, Value],
 ) -> Unit {
   match template {
     Datum::Symbol(name) => {
       if should_rename(name, bindings, literals, ellipsis, env) && !renames.contains(name) {
-        renames[name] = gensym(name)
+        let renamed = gensym(name)
+        renames[name] = renamed
+        match captured_value(def_env, name) {
+          Some(value) => captures[renamed] = value
+          None => ()
+        }
       }
     }
     Datum::Pair(_, _) => {
@@ -1329,15 +1364,15 @@ fn collect_renames(
         Some(items) => {
           if !is_quote_form(items) {
             for item in items {
-              collect_renames(item, bindings, literals, ellipsis, env, renames)
+              collect_renames(item, bindings, literals, ellipsis, def_env, env, renames, captures)
             }
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => {
-              collect_renames(a.val, bindings, literals, ellipsis, env, renames)
-              collect_renames(b.val, bindings, literals, ellipsis, env, renames)
+              collect_renames(a.val, bindings, literals, ellipsis, def_env, env, renames, captures)
+              collect_renames(b.val, bindings, literals, ellipsis, def_env, env, renames, captures)
             }
             _ => ()
           }
@@ -1346,7 +1381,7 @@ fn collect_renames(
     }
     Datum::Vector(items) => {
       for item in items {
-        collect_renames(item, bindings, literals, ellipsis, env, renames)
+        collect_renames(item, bindings, literals, ellipsis, def_env, env, renames, captures)
       }
     }
     _ => ()

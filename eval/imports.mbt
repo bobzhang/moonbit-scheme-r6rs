@@ -79,6 +79,7 @@ using @runtime {
   env_extend,
   env_get_macro,
   env_lookup,
+  env_lookup_optional,
   env_new,
   env_set,
   gcd,

@@ -80,6 +80,23 @@ pub fn env_lookup(env : Env, name : String) -> Value raise EvalError {
 }
 
 ///|
+pub fn env_lookup_optional(env : Env, name : String) -> Value? {
+  let mut i = env.length() - 1
+  while i >= 0 {
+    let frame = env[i]
+    match frame.get(name) {
+      Some(v) => return Some(v)
+      None => ()
+    }
+    if i == 0 {
+      break
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
 pub fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError {
   let mut i = env.length() - 1
   while i >= 0 {

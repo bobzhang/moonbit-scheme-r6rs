@@ -497,6 +497,7 @@ pub(all) struct SyntaxRules {
   rules : Array[SyntaxRule]
   ellipsis : String
   kind : SyntaxRulesKind
+  def_env : Env
 }
 
 ///|

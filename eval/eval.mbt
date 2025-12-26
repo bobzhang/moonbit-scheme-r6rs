@@ -1184,6 +1184,27 @@ fn strip_syntax_datum(datum : Datum) -> Datum {
   }
 }
 
+fn captures_is_empty(captures : Map[String, Value]) -> Bool {
+  for _ in captures.keys() {
+    return false
+  }
+  true
+}
+
+fn env_with_captures(env : Env, captures : Map[String, Value]) -> Env {
+  if captures_is_empty(captures) {
+    return env
+  }
+  let next_env = env_extend(env)
+  for name in captures.keys() {
+    match captures.get(name) {
+      Some(value) => env_define(next_env, name, value)
+      None => ()
+    }
+  }
+  next_env
+}
+
 ///|
 fn eval_expr_impl(
   expr : Datum,
@@ -1237,8 +1258,9 @@ fn eval_expr_impl(
           Datum::Symbol(name) => {
             match env_get_macro(current_env, name) {
               Some(transformer) => {
-                let expanded = expand_macro(transformer, Datum::Symbol(name), current_env)
-                state = MachineState::Eval(expanded, current_env, kont, handlers)
+                let expansion = expand_macro(transformer, Datum::Symbol(name), current_env)
+                let next_env = env_with_captures(current_env, expansion.captures)
+                state = MachineState::Eval(expansion.datum, next_env, kont, handlers)
               }
               None => {
                 let value = env_lookup(current_env, name)
@@ -1511,12 +1533,12 @@ fn eval_expr_impl(
             let input = expect_single(value)
             let literals_expr = rest[0]
             let clauses = rest.sub(start=1).to_array()
-            let rules = parse_syntax_case_rules(literals_expr, clauses)
+            let rules = parse_syntax_case_rules(literals_expr, clauses, env)
             let call = value_to_syntax_datum(input)
-            let expanded = expand_macro(MacroTransformer::Rules(rules), call, env)
-            let result = match expanded {
+            let expansion = expand_macro(MacroTransformer::Rules(rules), call, env)
+            let result = match expansion.datum {
               Datum::Value(Value::SyntaxObject(obj)) => Value::SyntaxObject(obj)
-              _ => Value::Datum(expanded)
+              _ => Value::Datum(expansion.datum)
             }
             state = MachineState::Apply(result, next, handlers)
           }
@@ -2631,12 +2653,13 @@ fn eval_set_state(
       let name = parse_symbol(args[0])
       match env_get_macro(env, name) {
         Some(transformer) => {
-          let expanded = expand_macro(
+          let expansion = expand_macro(
             transformer,
             list_from_array([Datum::Symbol("set!"), Datum::Symbol(name), args[1]]),
             env,
           )
-          MachineState::Eval(expanded, env, kont, handlers)
+          let next_env = env_with_captures(env, expansion.captures)
+          MachineState::Eval(expansion.datum, next_env, kont, handlers)
         }
         None => MachineState::Eval(args[1], env, Kont::Set(name, env, kont), handlers)
       }
@@ -2873,7 +2896,13 @@ fn eval_letrec_syntax_state(
       }
       let name = parse_symbol(parts[0])
       let placeholder = MacroTransformer::Rules(
-        SyntaxRules::{ literals: [], rules: [], ellipsis: "...", kind: SyntaxRulesKind::SyntaxRules },
+        SyntaxRules::{
+          literals: [],
+          rules: [],
+          ellipsis: "...",
+          kind: SyntaxRulesKind::SyntaxRules,
+          def_env: new_env,
+        },
       )
       env_define(new_env, name, Value::Macro(placeholder))
       i = i + 1
@@ -4897,8 +4926,9 @@ fn eval_pair(
       Some(name) => {
         match env_get_macro(env, name) {
           Some(transformer) => {
-            let expanded = expand_macro(transformer, expr_unwrapped, env)
-            MachineState::Eval(expanded, env, kont, handlers)
+            let expansion = expand_macro(transformer, expr_unwrapped, env)
+            let next_env = env_with_captures(env, expansion.captures)
+            MachineState::Eval(expansion.datum, next_env, kont, handlers)
           }
           None => MachineState::Eval(head, env, Kont::AppFun(args, env, kont), handlers)
         }

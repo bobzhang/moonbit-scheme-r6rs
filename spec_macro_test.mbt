@@ -107,6 +107,24 @@ test "r6rs macro: chained expansions" {
 }
 
 ///|
+test "r6rs macro: definition environment bindings" {
+  let program = (
+    (
+      #|(library (def-env)
+      #|  (export m)
+      #|  (import)
+      #|  (define (helper x) (+ x 10))
+      #|  (define-syntax m
+      #|    (syntax-rules ()
+      #|      ((_ x) (helper x)))))
+      #|(import (def-env))
+      #|(m 2)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="12")
+}
+
+///|
 test "r6rs macro: procedural transformer expression" {
   let program = (
     (
