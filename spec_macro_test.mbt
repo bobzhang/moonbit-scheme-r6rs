@@ -47,3 +47,16 @@ test "r6rs macro: syntax-rules literals" {
   )
   inspect(value_to_string(eval_program(program2)), content="2")
 }
+
+///|
+test "r6rs macro: quote strips syntax objects" {
+  let program = (
+    (
+      #|(define-syntax literal-pair
+      #|  (syntax-rules ()
+      #|    ((literal-pair) '(a b))))
+      #|(literal-pair)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(a b)")
+}

@@ -1773,7 +1773,7 @@ fn eval_expr_transformer(expr : Datum, env : Env) -> Value raise EvalError {
 ///|
 fn eval_quote(args : Array[Datum]) -> Value raise EvalError {
   match args.length() {
-    1 => Value::Datum(args[0])
+    1 => Value::Datum(strip_syntax_datum(args[0]))
     n => raise arity_mismatch(1, n)
   }
 }
@@ -1789,7 +1789,7 @@ fn eval_syntax(args : Array[Datum]) -> Value raise EvalError {
 ///|
 fn eval_quasiquote(args : Array[Datum], env : Env) -> Value raise EvalError {
   match args.length() {
-    1 => Value::Datum(quasiquote_expand(args[0], env, 1))
+    1 => Value::Datum(strip_syntax_datum(quasiquote_expand(args[0], env, 1)))
     n => raise arity_mismatch(1, n)
   }
 }
