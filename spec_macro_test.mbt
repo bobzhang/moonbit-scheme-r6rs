@@ -60,3 +60,19 @@ test "r6rs macro: quote strips syntax objects" {
   )
   inspect(value_to_string(eval_program(program)), content="(a b)")
 }
+
+///|
+test "r6rs macro: hygiene with internal bindings" {
+  let program = (
+    (
+      #|(define-syntax or2
+      #|  (syntax-rules ()
+      #|    ((or2 a b)
+      #|      (let ((t a))
+      #|        (if t t b)))))
+      #|(let ((t 1))
+      #|  (or2 #f t))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="1")
+}
