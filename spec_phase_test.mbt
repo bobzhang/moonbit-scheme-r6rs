@@ -116,3 +116,19 @@ test "import for meta 2 behaves like expand" {
     _ => fail("expected EvalError for meta-only value")
   }
 }
+
+///|
+test "import for run expand includes macros and values" {
+  let program = (
+    (
+      #|(library (phase-both)
+      #|  (export val m)
+      #|  (import)
+      #|  (define val 7)
+      #|  (define-syntax m (syntax-rules () ((_ ) 42))))
+      #|(import (for (phase-both) run expand))
+      #|(list val (m))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(7 42)")
+}

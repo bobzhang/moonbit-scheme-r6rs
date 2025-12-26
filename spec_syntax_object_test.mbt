@@ -77,3 +77,17 @@ test "r6rs syntax: predicates and identifier equality" {
     content="#f",
   )
 }
+
+///|
+test "r6rs syntax: datum->syntax context identity" {
+  let program = (
+    (
+      #|(let ((a (syntax a))
+      #|      (b (syntax b)))
+      #|  (list (free-identifier=? (datum->syntax a 'x) (datum->syntax a 'x))
+      #|        (free-identifier=? (datum->syntax a 'x) (datum->syntax b 'x))
+      #|        (bound-identifier=? (datum->syntax a 'x) (datum->syntax b 'x))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(#t #f #f)")
+}

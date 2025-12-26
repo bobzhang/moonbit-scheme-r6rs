@@ -143,3 +143,35 @@ test "r6rs syntax-case: wildcard with ellipsis" {
   )
   inspect(value_to_string(eval_program(program)), content="(1 2 3)")
 }
+
+///|
+test "r6rs syntax-case: datum->syntax use-site capture" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax make-x
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_ id) (datum->syntax #'id 'x)))))
+      #|  (let ((x 10))
+      #|    (make-x y)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="10")
+}
+
+///|
+test "r6rs syntax-case: hygienic internal binding" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax or2
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_ a b) #'(let ((t a)) (if t t b))))))
+      #|  (let ((t 1))
+      #|    (or2 #f t)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="1")
+}

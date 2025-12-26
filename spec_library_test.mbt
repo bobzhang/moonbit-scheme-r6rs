@@ -200,6 +200,37 @@ test "r6rs libraries: base syntax keyword import" {
 }
 
 ///|
+test "r6rs libraries: macro import sets" {
+  let prefix_prog = (
+    (
+      #|(library (macro-prefix)
+      #|  (export m)
+      #|  (import)
+      #|  (define-syntax m
+      #|    (syntax-rules ()
+      #|      ((_ x) (list x 'ok)))))
+      #|(import (prefix (macro-prefix) pre-))
+      #|(pre-m 1)
+    )
+  )
+  inspect(value_to_string(eval_program(prefix_prog)), content="(1 ok)")
+
+  let rename_prog = (
+    (
+      #|(library (macro-rename)
+      #|  (export m)
+      #|  (import)
+      #|  (define-syntax m
+      #|    (syntax-rules ()
+      #|      ((_ x) (list x 'ok)))))
+      #|(import (rename (macro-rename) (m mm)))
+      #|(mm 2)
+    )
+  )
+  inspect(value_to_string(eval_program(rename_prog)), content="(2 ok)")
+}
+
+///|
 test "r6rs libraries: base excludes syntax-case" {
   let bad = try? eval_program(
     (
