@@ -29,3 +29,21 @@ test "r6rs syntax-case: fender clauses" {
   )
   inspect(value_to_string(eval_program(program)), content="(#t #f)")
 }
+
+///|
+test "r6rs syntax-case: with-syntax bindings" {
+  let program = (
+    (
+      #|(begin
+      #|  (import (rnrs syntax-case))
+      #|  (define-syntax add1
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_ n)
+      #|         (with-syntax ((m (+ n 1)))
+      #|           m)))))
+      #|  (add1 4))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="5")
+}

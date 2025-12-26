@@ -19,6 +19,7 @@ fn is_core_identifier(name : String) -> Bool {
     "export",
     "begin-for-syntax",
     "syntax-case",
+    "with-syntax",
     "syntax",
     "syntax?",
     "identifier-syntax",
@@ -669,6 +670,14 @@ fn fender_allows(expr : Datum, bindings : Map[String, BindingVal], env : Env) ->
 }
 
 ///|
+fn value_to_syntax_datum(value : Value) -> Datum raise EvalError {
+  match value {
+    Value::SyntaxObject(obj) => obj.datum
+    _ => value_as_datum(value)
+  }
+}
+
+///|
 fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise EvalError {
   let mut i = 0
   while i < rules.rules.length() {
@@ -689,7 +698,7 @@ fn expand_macro(rules : SyntaxRules, call : Datum, env : Env) -> Datum raise Eva
             None => ()
           }
           let renames = build_rename_map(rule.template, bindings, rules.literals, rules.ellipsis, env)
-          return expand_template(rule.template, bindings, renames, rules.ellipsis)
+          return expand_template(rule.template, bindings, renames, rules.ellipsis, env)
         }
       }
     }
@@ -1204,14 +1213,66 @@ fn collect_template_symbols(template : Datum, symbols : Map[String, Bool]) -> Un
 }
 
 ///|
+fn expand_with_syntax(
+  items : Array[Datum],
+  bindings : Map[String, BindingVal],
+  renames : Map[String, String],
+  ellipsis : String,
+  indices : Array[Int],
+  env : Env,
+) -> Datum raise EvalError {
+  if items.length() < 3 {
+    raise @core.EvalError("invalid with-syntax")
+  }
+  let binding_specs = datum_list_to_array(items[1])
+  let expanded = bindings_clone(bindings)
+  let fenv = env_extend(env)
+  for name in bindings.keys() {
+    match bindings.get(name) {
+      Some(value) => env_define(fenv, name, Value::Datum(binding_to_datum(value)))
+      None => ()
+    }
+  }
+  for spec in binding_specs {
+    let parts = datum_list_to_array(spec)
+    if parts.length() != 2 {
+      raise @core.EvalError("invalid with-syntax")
+    }
+    let pattern = parts[0]
+    let expr = parts[1]
+    let value = eval_expr(expr, fenv)
+    let datum = value_to_syntax_datum(value)
+    let local_bindings : Map[String, BindingVal] = {}
+    if !match_pattern(pattern, datum, [], ellipsis, local_bindings) {
+      raise @core.EvalError("invalid with-syntax")
+    }
+    if !merge_bindings(expanded, local_bindings) {
+      raise @core.EvalError("invalid with-syntax")
+    }
+  }
+  if items.length() == 3 {
+    expand_template_indexed(items[2], expanded, renames, ellipsis, indices, env)
+  } else {
+    let forms : Array[Datum] = [Datum::Symbol("begin")]
+    let mut i = 2
+    while i < items.length() {
+      forms.push(expand_template_indexed(items[i], expanded, renames, ellipsis, indices, env))
+      i = i + 1
+    }
+    list_from_array(forms)
+  }
+}
+
+///|
 fn expand_template(
   template : Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
-) -> Datum {
+  env : Env,
+) -> Datum raise EvalError {
   let indices : Array[Int] = []
-  expand_template_indexed(template, bindings, renames, ellipsis, indices)
+  expand_template_indexed(template, bindings, renames, ellipsis, indices, env)
 }
 
 ///|
@@ -1221,7 +1282,8 @@ fn expand_template_indexed(
   renames : Map[String, String],
   ellipsis : String,
   indices : Array[Int],
-) -> Datum {
+  env : Env,
+) -> Datum raise EvalError {
   match template {
     Datum::Symbol(name) => expand_symbol(name, bindings, renames, indices)
     Datum::Pair(_, _) => {
@@ -1229,22 +1291,24 @@ fn expand_template_indexed(
         Some(items) => {
           if is_quote_form(items) {
             template
+          } else if items.length() >= 3 && datum_is_symbol(items[0], "with-syntax") {
+            expand_with_syntax(items, bindings, renames, ellipsis, indices, env)
           } else {
-            expand_template_list(items, bindings, renames, ellipsis, indices)
+            expand_template_list(items, bindings, renames, ellipsis, indices, env)
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => pair_new(
-              expand_template_indexed(a.val, bindings, renames, ellipsis, indices),
-              expand_template_indexed(b.val, bindings, renames, ellipsis, indices),
+              expand_template_indexed(a.val, bindings, renames, ellipsis, indices, env),
+              expand_template_indexed(b.val, bindings, renames, ellipsis, indices, env),
             )
             _ => template
           }
         }
       }
     }
-    Datum::Vector(items) => expand_template_vector(items, bindings, renames, ellipsis, indices)
+    Datum::Vector(items) => expand_template_vector(items, bindings, renames, ellipsis, indices, env)
     _ => template
   }
 }
@@ -1279,7 +1343,8 @@ fn expand_template_list(
   renames : Map[String, String],
   ellipsis : String,
   indices : Array[Int],
-) -> Datum {
+  env : Env,
+) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
@@ -1294,13 +1359,13 @@ fn expand_template_list(
         }
         next_indices.push(j)
         expanded.push(
-          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices),
+          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices, env),
         )
         j = j + 1
       }
       i = i + 2
     } else {
-      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices))
+      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices, env))
       i = i + 1
     }
   }
@@ -1314,7 +1379,8 @@ fn expand_template_vector(
   renames : Map[String, String],
   ellipsis : String,
   indices : Array[Int],
-) -> Datum {
+  env : Env,
+) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
@@ -1329,13 +1395,13 @@ fn expand_template_vector(
         }
         next_indices.push(j)
         expanded.push(
-          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices),
+          expand_template_indexed(repeat_template, bindings, renames, ellipsis, next_indices, env),
         )
         j = j + 1
       }
       i = i + 2
     } else {
-      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices))
+      expanded.push(expand_template_indexed(items[i], bindings, renames, ellipsis, indices, env))
       i = i + 1
     }
   }

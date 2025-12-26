@@ -57,7 +57,7 @@ test "r6rs libraries: syntax-case syntactic keyword exports" {
     (
       #|(begin
       #|  (import (only (rnrs syntax-case)
-      #|                syntax-case syntax quasisyntax unsyntax unsyntax-splicing))
+      #|                syntax-case with-syntax syntax quasisyntax unsyntax unsyntax-splicing))
       #|  #t)
     )
   )

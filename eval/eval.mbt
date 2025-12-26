@@ -924,7 +924,7 @@ fn stdlib_source() -> String {
     "      ((_ test body ...) (if (not test) (begin body ...) (begin)))))",
     ")",
     "(library (rnrs syntax-case (6))",
-    "  (export syntax-case syntax quasisyntax unsyntax unsyntax-splicing ... _",
+    "  (export syntax-case with-syntax syntax quasisyntax unsyntax unsyntax-splicing ... _",
     "          make-variable-transformer generate-temporaries",
     "          syntax->datum datum->syntax free-identifier=? bound-identifier=?",
     "          identifier? syntax? syntax-violation)",
@@ -4078,6 +4078,7 @@ fn syntax_case_keywords() -> Array[String] {
   [
     "...",
     "_",
+    "with-syntax",
     "syntax",
     "quasisyntax",
     "unsyntax",
