@@ -366,6 +366,11 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::ByteVectorFill, Primitive::ByteVectorFill)
     | (Primitive::ByteVectorToU8List, Primitive::ByteVectorToU8List)
     | (Primitive::U8ListToByteVector, Primitive::U8ListToByteVector)
+    | (Primitive::NativeEndianness, Primitive::NativeEndianness)
+    | (Primitive::ByteVectorUintRef, Primitive::ByteVectorUintRef)
+    | (Primitive::ByteVectorSintRef, Primitive::ByteVectorSintRef)
+    | (Primitive::ByteVectorUintSet, Primitive::ByteVectorUintSet)
+    | (Primitive::ByteVectorSintSet, Primitive::ByteVectorSintSet)
     | (Primitive::Display, Primitive::Display)
     | (Primitive::Write, Primitive::Write)
     | (Primitive::Newline, Primitive::Newline)
@@ -2255,6 +2260,130 @@ fn value_as_byte(value : Value) -> Int raise EvalError {
     }
     _ => raise @core.EvalError("type error: byte expected")
   }
+}
+
+priv enum Endian {
+  Big
+  Little
+}
+
+fn native_endianness_mode() -> Endian {
+  Endian::Little
+}
+
+fn native_endianness_value() -> Value {
+  Value::Datum(Datum::Symbol("little"))
+}
+
+fn endianness_from_value(value : Value) -> Endian raise EvalError {
+  let name = value_as_symbol(value)
+  match name {
+    "big" => Endian::Big
+    "little" => Endian::Little
+    "native" => native_endianness_mode()
+    _ => raise @core.EvalError("type error: endianness expected")
+  }
+}
+
+fn bytevector_size_from_value(value : Value) -> Int raise EvalError {
+  let size = value_as_nonnegative_int(value)
+  if size <= 0 || size > 8 {
+    raise @core.EvalError("size out of range")
+  }
+  size
+}
+
+fn check_bytevector_range(start : Int, size : Int, len : Int) -> Unit raise EvalError {
+  if start < 0 || start + size > len {
+    raise @core.EvalError("index out of range")
+  }
+}
+
+fn bytevector_uint_ref(items : Array[Int], start : Int, size : Int, endian : Endian) -> @bigint.BigInt {
+  let base = bigint_from_int(256)
+  let mut result = bigint_from_int(0)
+  match endian {
+    Endian::Big => {
+      let mut i = 0
+      while i < size {
+        result = result * base + bigint_from_int(items[start + i])
+        i = i + 1
+      }
+    }
+    Endian::Little => {
+      let mut factor = bigint_from_int(1)
+      let mut i = 0
+      while i < size {
+        result = result + bigint_from_int(items[start + i]) * factor
+        factor = factor * base
+        i = i + 1
+      }
+    }
+  }
+  result
+}
+
+fn bytevector_uint_set(
+  items : Array[Int],
+  start : Int,
+  size : Int,
+  endian : Endian,
+  value : @bigint.BigInt,
+) -> Unit raise EvalError {
+  let limit = bigint_pow2(size * 8)
+  if value.compare_int(0) < 0 || value >= limit {
+    raise @core.EvalError("integer out of range")
+  }
+  let base = bigint_from_int(256)
+  let bytes : Array[Int] = []
+  let mut v = value
+  let mut i = 0
+  while i < size {
+    let byte = v % base
+    let byte_int = match bigint_to_int_option(byte) {
+      Some(n) => n
+      None => raise @core.EvalError("integer out of range")
+    }
+    bytes.push(byte_int)
+    v = v / base
+    i = i + 1
+  }
+  match endian {
+    Endian::Big => {
+      let mut j = 0
+      while j < size {
+        items[start + j] = bytes[size - 1 - j]
+        j = j + 1
+      }
+    }
+    Endian::Little => {
+      let mut j = 0
+      while j < size {
+        items[start + j] = bytes[j]
+        j = j + 1
+      }
+    }
+  }
+}
+
+fn bytevector_sint_ref(items : Array[Int], start : Int, size : Int, endian : Endian) -> @bigint.BigInt {
+  let unsigned = bytevector_uint_ref(items, start, size, endian)
+  let sign_bit = bigint_pow2(size * 8 - 1)
+  if unsigned >= sign_bit {
+    unsigned - bigint_pow2(size * 8)
+  } else {
+    unsigned
+  }
+}
+
+fn bytevector_sint_to_uint(value : @bigint.BigInt, size : Int) -> @bigint.BigInt raise EvalError {
+  let sign_bit = bigint_pow2(size * 8 - 1)
+  let limit = bigint_pow2(size * 8)
+  let min = -sign_bit
+  if value < min || value >= sign_bit {
+    raise @core.EvalError("integer out of range")
+  }
+  if value.compare_int(0) < 0 { value + limit } else { value }
 }
 
 ///|
@@ -6999,6 +7128,71 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
           Value::Datum(Datum::ByteVector(bytes))
         }
         n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::NativeEndianness => {
+      match args.length() {
+        0 => native_endianness_value()
+        n => raise arity_mismatch(0, n)
+      }
+    }
+    Primitive::ByteVectorUintRef => {
+      match args.length() {
+        4 => {
+          let items = value_as_bytevector(args[0])
+          let start = value_as_int_index(args[1])
+          let endian = endianness_from_value(args[2])
+          let size = bytevector_size_from_value(args[3])
+          check_bytevector_range(start, size, items.length())
+          let value = bytevector_uint_ref(items, start, size, endian)
+          Value::Datum(bigint_to_integer_datum(value))
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::ByteVectorSintRef => {
+      match args.length() {
+        4 => {
+          let items = value_as_bytevector(args[0])
+          let start = value_as_int_index(args[1])
+          let endian = endianness_from_value(args[2])
+          let size = bytevector_size_from_value(args[3])
+          check_bytevector_range(start, size, items.length())
+          let value = bytevector_sint_ref(items, start, size, endian)
+          Value::Datum(bigint_to_integer_datum(value))
+        }
+        n => raise arity_mismatch(4, n)
+      }
+    }
+    Primitive::ByteVectorUintSet => {
+      match args.length() {
+        5 => {
+          let items = value_as_bytevector(args[0])
+          let start = value_as_int_index(args[1])
+          let endian = endianness_from_value(args[2])
+          let size = bytevector_size_from_value(args[3])
+          check_bytevector_range(start, size, items.length())
+          let value = datum_to_bigint(value_as_exact_integer(args[4]))
+          bytevector_uint_set(items, start, size, endian, value)
+          Value::Void
+        }
+        n => raise arity_mismatch(5, n)
+      }
+    }
+    Primitive::ByteVectorSintSet => {
+      match args.length() {
+        5 => {
+          let items = value_as_bytevector(args[0])
+          let start = value_as_int_index(args[1])
+          let endian = endianness_from_value(args[2])
+          let size = bytevector_size_from_value(args[3])
+          check_bytevector_range(start, size, items.length())
+          let value = datum_to_bigint(value_as_exact_integer(args[4]))
+          let unsigned = bytevector_sint_to_uint(value, size)
+          bytevector_uint_set(items, start, size, endian, unsigned)
+          Value::Void
+        }
+        n => raise arity_mismatch(5, n)
       }
     }
     Primitive::Display => {

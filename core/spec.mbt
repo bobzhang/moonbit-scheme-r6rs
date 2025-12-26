@@ -54,6 +54,8 @@
 ///   bytevector make-bytevector bytevector? bytevector-length bytevector-u8-ref
 ///   bytevector-u8-set! bytevector-copy bytevector-copy! bytevector-fill!
 ///   bytevector->u8-list u8-list->bytevector
+///   endianness native-endianness bytevector-uint-ref bytevector-sint-ref
+///   bytevector-uint-set! bytevector-sint-set!
 ///   display write newline open-output-string get-output-string current-output-port
 ///   with-exception-handler raise raise-continuable
 ///   values call-with-values make-parameter dynamic-wind parameterize
@@ -445,6 +447,11 @@ pub(all) enum Primitive {
   ByteVectorFill
   ByteVectorToU8List
   U8ListToByteVector
+  NativeEndianness
+  ByteVectorUintRef
+  ByteVectorSintRef
+  ByteVectorUintSet
+  ByteVectorSintSet
   Display
   Write
   Newline
