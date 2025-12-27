@@ -135,4 +135,9 @@ using @runtime {
   value_to_datum_element,
   value_to_string,
 }
-using @parser {parse_program, parse_number_token, parse_number_token_with_radix}
+using @parser {
+  parse_program,
+  parse_program_with_fold_case,
+  parse_number_token,
+  parse_number_token_with_radix,
+}

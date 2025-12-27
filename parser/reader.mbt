@@ -1207,7 +1207,13 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
 
 ///|
 pub fn parse_program(src : String) -> Array[Datum] raise ParseError {
+  parse_program_with_fold_case(src, false)
+}
+
+///|
+pub fn parse_program_with_fold_case(src : String, fold_case : Bool) -> Array[Datum] raise ParseError {
   let r = make_reader(src)
+  r.fold_case = fold_case
   let exprs : Array[Datum] = []
   while true {
     skip_ws_and_comments(r)

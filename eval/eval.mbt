@@ -808,6 +808,67 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 }
 
 ///|
+let include_registry : Ref[Map[String, String]] = Ref::new({})
+
+///|
+pub fn register_include_source(path : String, content : String) -> Unit {
+  include_registry.val[path] = content
+}
+
+///|
+fn include_path_from_arg(arg : Datum) -> String raise EvalError {
+  match datum_unlabel(arg) {
+    Datum::String(path) => path.val
+    _ => raise @core.EvalError("type error: string expected")
+  }
+}
+
+///|
+fn include_read_text(path : String) -> String raise EvalError {
+  match include_registry.val.get(path) {
+    Some(content) => content
+    None => raise @core.EvalError("include: unknown file: \{path}")
+  }
+}
+
+///|
+fn include_parse_file(path : String, fold_case : Bool) -> Array[Datum] raise EvalError {
+  let content = include_read_text(path)
+  if fold_case {
+    parse_program_with_fold_case(content, true) catch {
+      _ => raise @core.EvalError("include: parse error: \{path}")
+    }
+  } else {
+    parse_program(content) catch { _ => raise @core.EvalError("include: parse error: \{path}") }
+  }
+}
+
+///|
+fn include_forms(args : Array[Datum], fold_case : Bool) -> Array[Datum] raise EvalError {
+  let forms : Array[Datum] = []
+  for arg in args {
+    let path = include_path_from_arg(arg)
+    let parsed = include_parse_file(path, fold_case)
+    for form in parsed {
+      forms.push(form)
+    }
+  }
+  forms
+}
+
+///|
+fn eval_include_state(
+  args : Array[Datum],
+  env : Env,
+  kont : Kont,
+  handlers : Array[Value],
+  fold_case : Bool,
+) -> MachineState raise EvalError {
+  let forms = include_forms(args, fold_case)
+  eval_sequence_state(forms, env, kont, handlers)
+}
+
+///|
 fn stdlib_source() -> String {
   let lines : Array[String] = [
     "(define (fold-left f acc lst)",
@@ -4951,6 +5012,10 @@ fn eval_pair(
       Some("define-syntax") => MachineState::Apply(eval_define_syntax(args, env), kont, handlers)
       Some("library") => eval_library_state(args, env, kont, handlers)
       Some("import") => eval_import_state(args, env, kont, handlers)
+      Some("include") => eval_include_state(args, env, kont, handlers, false)
+      Some("include-ci") => eval_include_state(args, env, kont, handlers, true)
+      Some("include-library-declarations") =>
+        eval_include_state(args, env, kont, handlers, false)
       Some("define-record-type") => eval_define_record_type_state(args, env, kont, handlers)
       Some("define-condition-type") => eval_define_condition_type_state(args, env, kont, handlers)
       Some("define-enumeration") => eval_define_enumeration_state(args, env, kont, handlers)

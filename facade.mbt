@@ -19,6 +19,11 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 }
 
 ///|
+pub fn register_include_source(path : String, content : String) -> Unit {
+  @eval.register_include_source(path, content)
+}
+
+///|
 pub fn value_to_string(value : Value) -> String {
   @runtime.value_to_string(value)
 }
