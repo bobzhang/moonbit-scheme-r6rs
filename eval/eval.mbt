@@ -1881,7 +1881,11 @@ fn eval_syntax(args : Array[Datum], env : Env) -> Value raise EvalError {
       let scope = next_syntax_context()
       let scopes = [scope]
       let binding_id = match datum_unlabel(args[0]) {
-        Datum::Symbol(name) => env_binding_id_optional(env, name)
+        Datum::Symbol(name) =>
+          match env_lookup_optional(env, name) {
+            Some(Value::SyntaxObject(obj)) => obj.binding_id
+            _ => env_binding_id_optional(env, name)
+          }
         Datum::Value(Value::SyntaxObject(obj)) => obj.binding_id
         _ => None
       }
@@ -1911,7 +1915,11 @@ fn eval_quasisyntax(args : Array[Datum], env : Env) -> Value raise EvalError {
           let scope = next_syntax_context()
           let scopes = [scope]
           let binding_id = match datum_unlabel(expanded) {
-            Datum::Symbol(name) => env_binding_id_optional(env, name)
+            Datum::Symbol(name) =>
+              match env_lookup_optional(env, name) {
+                Some(Value::SyntaxObject(obj)) => obj.binding_id
+                _ => env_binding_id_optional(env, name)
+              }
             _ => None
           }
           let datum = syntax_wrap_root(expanded, scopes)

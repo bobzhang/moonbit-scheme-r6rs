@@ -756,50 +756,80 @@ fn scopes_contains(scopes : Array[Int], scope : Int) -> Bool {
   false
 }
 
-fn collect_proc_captures(
-  datum : Datum,
+fn rename_proc_symbol(
+  name : String,
   def_env : Env,
-  call_ctx : Int,
-) -> Map[String, Value] {
-  let captures : Map[String, Value] = {}
-  collect_proc_captures_into(datum, def_env, call_ctx, captures)
-  captures
+  renames : Map[String, String],
+  captures : Map[String, Value],
+) -> Datum {
+  match renames.get(name) {
+    Some(rename) => Datum::Symbol(rename)
+    None => {
+      match captured_value(def_env, name) {
+        Some(value) => {
+          let renamed = gensym(name)
+          renames[name] = renamed
+          captures[renamed] = value
+          Datum::Symbol(renamed)
+        }
+        None => Datum::Symbol(name)
+      }
+    }
+  }
 }
 
-fn collect_proc_captures_into(
+fn rename_proc_datum(
   datum : Datum,
   def_env : Env,
   call_ctx : Int,
+  renames : Map[String, String],
   captures : Map[String, Value],
-) -> Unit {
+) -> Datum {
   match datum {
-    Datum::Symbol(name) =>
-      if !captures.contains(name) {
-        match captured_value(def_env, name) {
-          Some(value) => captures[name] = value
-          None => ()
-        }
-      }
-    Datum::Pair(a, b) => {
-      collect_proc_captures_into(a.val, def_env, call_ctx, captures)
-      collect_proc_captures_into(b.val, def_env, call_ctx, captures)
-    }
+    Datum::Symbol(name) => rename_proc_symbol(name, def_env, renames, captures)
+    Datum::Pair(a, b) =>
+      pair_new(
+        rename_proc_datum(a.val, def_env, call_ctx, renames, captures),
+        rename_proc_datum(b.val, def_env, call_ctx, renames, captures),
+      )
     Datum::Vector(items) => {
+      let renamed : Array[Datum] = []
       for item in items {
-        collect_proc_captures_into(item, def_env, call_ctx, captures)
+        renamed.push(rename_proc_datum(item, def_env, call_ctx, renames, captures))
       }
+      Datum::Vector(renamed)
     }
-    Datum::Label(_, cell) => collect_proc_captures_into(cell.val, def_env, call_ctx, captures)
-    Datum::Complex(real, imag) => {
-      collect_proc_captures_into(real.val, def_env, call_ctx, captures)
-      collect_proc_captures_into(imag.val, def_env, call_ctx, captures)
-    }
+    Datum::Label(tag, value) =>
+      Datum::Label(tag, Ref::new(rename_proc_datum(value.val, def_env, call_ctx, renames, captures)))
+    Datum::Complex(real, imag) =>
+      Datum::Complex(
+        Ref::new(rename_proc_datum(real.val, def_env, call_ctx, renames, captures)),
+        Ref::new(rename_proc_datum(imag.val, def_env, call_ctx, renames, captures)),
+      )
     Datum::Value(Value::SyntaxObject(obj)) =>
-      if !scopes_contains(obj.scopes, call_ctx) {
-        collect_proc_captures_into(obj.datum, def_env, call_ctx, captures)
+      if scopes_contains(obj.scopes, call_ctx) {
+        datum
+      } else {
+        let renamed_inner = rename_proc_datum(obj.datum, def_env, call_ctx, renames, captures)
+        Datum::Value(
+          Value::SyntaxObject(
+            SyntaxObject::{ datum: renamed_inner, scopes: obj.scopes, binding_id: obj.binding_id },
+          ),
+        )
       }
-    _ => ()
+    _ => datum
   }
+}
+
+fn rename_proc_expansion(
+  datum : Datum,
+  def_env : Env,
+  call_ctx : Int,
+) -> MacroExpansion {
+  let renames : Map[String, String] = {}
+  let captures : Map[String, Value] = {}
+  let renamed = rename_proc_datum(datum, def_env, call_ctx, renames, captures)
+  MacroExpansion::{ datum: renamed, captures }
 }
 
 ///|
@@ -897,8 +927,7 @@ fn expand_macro_proc(
   let call_expr = list_from_array([Datum::Symbol(temp_name), Datum::Value(stx)])
   let value = eval_expr_transformer(call_expr, fenv)
   let datum = value_to_syntax_datum(value)
-  let captures = collect_proc_captures(datum, def_env, call_ctx)
-  MacroExpansion::{ datum, captures }
+  rename_proc_expansion(datum, def_env, call_ctx)
 }
 
 ///|
