@@ -50,6 +50,7 @@
 ///   string-fill! string->list list->string
 ///   string-map string-for-each
 ///   string-upcase string-downcase string-foldcase
+///   string-normalize-nfc string-normalize-nfd string-normalize-nfkc string-normalize-nfkd
 ///   string-hash string-ci-hash symbol-hash equal-hash
 ///   vector make-vector vector? vector-length vector-ref vector-set!
 ///   vector-copy vector-copy! vector-fill! vector-map vector-for-each
@@ -434,6 +435,10 @@ pub(all) enum Primitive {
   StringUpcase
   StringDowncase
   StringFoldcase
+  StringNormalizeNfc
+  StringNormalizeNfd
+  StringNormalizeNfkc
+  StringNormalizeNfkd
   Vector
   MakeVector
   VectorP

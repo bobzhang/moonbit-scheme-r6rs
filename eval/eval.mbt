@@ -390,6 +390,10 @@ fn init_env() -> Env {
   env_define(env, "string-upcase", Value::Primitive(Primitive::StringUpcase))
   env_define(env, "string-downcase", Value::Primitive(Primitive::StringDowncase))
   env_define(env, "string-foldcase", Value::Primitive(Primitive::StringFoldcase))
+  env_define(env, "string-normalize-nfc", Value::Primitive(Primitive::StringNormalizeNfc))
+  env_define(env, "string-normalize-nfd", Value::Primitive(Primitive::StringNormalizeNfd))
+  env_define(env, "string-normalize-nfkc", Value::Primitive(Primitive::StringNormalizeNfkc))
+  env_define(env, "string-normalize-nfkd", Value::Primitive(Primitive::StringNormalizeNfkd))
   env_define(env, "vector", Value::Primitive(Primitive::Vector))
   env_define(env, "make-vector", Value::Primitive(Primitive::MakeVector))
   env_define(env, "vector?", Value::Primitive(Primitive::VectorP))
@@ -1159,7 +1163,9 @@ fn stdlib_source() -> String {
     "  (export char-alphabetic? char-numeric? char-whitespace?",
     "          char-upper-case? char-lower-case? char-upcase char-downcase",
     "          char-foldcase char-general-category",
-    "          string-upcase string-downcase string-foldcase)",
+    "          string-upcase string-downcase string-foldcase",
+    "          string-normalize-nfc string-normalize-nfd",
+    "          string-normalize-nfkc string-normalize-nfkd)",
     "  (import)",
     ")",
     "(library (rnrs exceptions (6))",

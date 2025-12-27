@@ -348,6 +348,10 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::StringUpcase, Primitive::StringUpcase)
     | (Primitive::StringDowncase, Primitive::StringDowncase)
     | (Primitive::StringFoldcase, Primitive::StringFoldcase)
+    | (Primitive::StringNormalizeNfc, Primitive::StringNormalizeNfc)
+    | (Primitive::StringNormalizeNfd, Primitive::StringNormalizeNfd)
+    | (Primitive::StringNormalizeNfkc, Primitive::StringNormalizeNfkc)
+    | (Primitive::StringNormalizeNfkd, Primitive::StringNormalizeNfkd)
     | (Primitive::Vector, Primitive::Vector)
     | (Primitive::MakeVector, Primitive::MakeVector)
     | (Primitive::VectorP, Primitive::VectorP)
@@ -6995,6 +6999,42 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let s = value_as_string(args[0])
           Value::Datum(Datum::String(Ref::new(unicode_string_foldcase(s))))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringNormalizeNfc => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfc(s))))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringNormalizeNfd => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfd(s))))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringNormalizeNfkc => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfkc(s))))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringNormalizeNfkd => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfkd(s))))
         }
         n => raise arity_mismatch(1, n)
       }

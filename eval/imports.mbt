@@ -54,6 +54,10 @@ using @core {
   unicode_char_upcase,
   unicode_string_downcase,
   unicode_string_foldcase,
+  unicode_string_normalize_nfc,
+  unicode_string_normalize_nfd,
+  unicode_string_normalize_nfkc,
+  unicode_string_normalize_nfkd,
   unicode_string_upcase,
 }
 using @runtime {
