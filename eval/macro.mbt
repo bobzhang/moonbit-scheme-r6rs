@@ -535,7 +535,7 @@ fn parse_transformer(expr : Datum, name : String, env : Env) -> MacroTransformer
       if !is_procedure_value(value) {
         raise @core.EvalError("type error: procedure expected")
       }
-      MacroTransformer::Procedure(value)
+      MacroTransformer::Procedure(value, env)
     }
   }
 }
@@ -747,6 +747,52 @@ priv struct MacroExpansion {
   captures : Map[String, Value]
 }
 
+fn collect_proc_captures(
+  datum : Datum,
+  def_env : Env,
+  call_ctx : Int,
+) -> Map[String, Value] {
+  let captures : Map[String, Value] = {}
+  collect_proc_captures_into(datum, def_env, call_ctx, captures)
+  captures
+}
+
+fn collect_proc_captures_into(
+  datum : Datum,
+  def_env : Env,
+  call_ctx : Int,
+  captures : Map[String, Value],
+) -> Unit {
+  match datum {
+    Datum::Symbol(name) =>
+      if !captures.contains(name) {
+        match captured_value(def_env, name) {
+          Some(value) => captures[name] = value
+          None => ()
+        }
+      }
+    Datum::Pair(a, b) => {
+      collect_proc_captures_into(a.val, def_env, call_ctx, captures)
+      collect_proc_captures_into(b.val, def_env, call_ctx, captures)
+    }
+    Datum::Vector(items) => {
+      for item in items {
+        collect_proc_captures_into(item, def_env, call_ctx, captures)
+      }
+    }
+    Datum::Label(_, cell) => collect_proc_captures_into(cell.val, def_env, call_ctx, captures)
+    Datum::Complex(real, imag) => {
+      collect_proc_captures_into(real.val, def_env, call_ctx, captures)
+      collect_proc_captures_into(imag.val, def_env, call_ctx, captures)
+    }
+    Datum::Value(Value::SyntaxObject(obj)) =>
+      if obj.context != call_ctx {
+        collect_proc_captures_into(obj.datum, def_env, call_ctx, captures)
+      }
+    _ => ()
+  }
+}
+
 ///|
 fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpansion raise EvalError {
   let mut i = 0
@@ -801,17 +847,25 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpa
 }
 
 ///|
-fn expand_macro_proc(proc : Value, call : Datum, env : Env) -> MacroExpansion raise EvalError {
+fn expand_macro_proc(
+  proc : Value,
+  def_env : Env,
+  call : Datum,
+  env : Env,
+) -> MacroExpansion raise EvalError {
   if !is_procedure_value(proc) {
     raise @core.EvalError("type error: procedure expected")
   }
   let temp_name = gensym("macro_proc")
   let fenv = env_extend(env)
   env_define(fenv, temp_name, proc)
-  let stx = Value::SyntaxObject(SyntaxObject::{ datum: call, context: next_syntax_context() })
+  let call_ctx = next_syntax_context()
+  let stx = Value::SyntaxObject(SyntaxObject::{ datum: call, context: call_ctx })
   let call_expr = list_from_array([Datum::Symbol(temp_name), Datum::Value(stx)])
   let value = eval_expr_transformer(call_expr, fenv)
-  MacroExpansion::{ datum: value_to_syntax_datum(value), captures: {} }
+  let datum = value_to_syntax_datum(value)
+  let captures = collect_proc_captures(datum, def_env, call_ctx)
+  MacroExpansion::{ datum, captures }
 }
 
 ///|
@@ -822,7 +876,7 @@ fn expand_macro(
 ) -> MacroExpansion raise EvalError {
   match transformer {
     MacroTransformer::Rules(rules) => expand_macro_rules(rules, call, env)
-    MacroTransformer::Procedure(proc) => expand_macro_proc(proc, call, env)
+    MacroTransformer::Procedure(proc, def_env) => expand_macro_proc(proc, def_env, call, env)
   }
 }
 

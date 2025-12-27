@@ -503,7 +503,7 @@ pub(all) struct SyntaxRules {
 ///|
 pub(all) enum MacroTransformer {
   Rules(SyntaxRules)
-  Procedure(Value)
+  Procedure(Value, Env)
 }
 
 ///|

@@ -125,6 +125,39 @@ test "r6rs macro: definition environment bindings" {
 }
 
 ///|
+test "r6rs macro: procedural definition environment" {
+  let program = (
+    (
+      #|(library (proc-env)
+      #|  (export m)
+      #|  (import)
+      #|  (define (helper x) (+ x 10))
+      #|  (define-syntax m
+      #|    (lambda (stx)
+      #|      (datum->syntax #f '(helper 3)))))
+      #|(import (proc-env))
+      #|(let ((helper (lambda (x) (+ x 100))))
+      #|  (m))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="13")
+}
+
+///|
+test "r6rs macro: procedural use-site identifiers" {
+  let program = (
+    (
+      #|(define-syntax get-x
+      #|  (lambda (stx)
+      #|    (datum->syntax stx 'x)))
+      #|(let ((x 7))
+      #|  (get-x))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="7")
+}
+
+///|
 test "r6rs macro: procedural transformer expression" {
   let program = (
     (
