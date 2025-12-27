@@ -19,7 +19,7 @@
 /// - builtins: + - * / = < > <= >= cons car cdr list null? pair? symbol?
 ///   identifier? syntax? free-identifier=? bound-identifier=?
 ///   symbol? symbol=? symbol->string string->symbol syntax syntax->datum datum->syntax
-///   boolean? boolean=? number? integer? rational? real? complex? exact? inexact?
+///   boolean? boolean=? number? integer? exact-integer? rational? real? complex? exact? inexact?
 ///   zero? positive? negative? odd? even? finite? infinite? nan?
 ///   exact->inexact inexact->exact number->string string->number
 ///   make-rectangular make-polar real-part imag-part magnitude angle
@@ -133,6 +133,7 @@ pub(all) enum Primitive {
   BooleanEq
   NumberP
   IntegerP
+  ExactIntegerP
   RationalP
   RealP
   ComplexP

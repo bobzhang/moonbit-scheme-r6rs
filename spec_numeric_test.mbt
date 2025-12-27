@@ -131,6 +131,38 @@ test "r6rs numeric: predicates and exactness" {
   inspect(
     value_to_string(eval_program(
       (
+        #|(exact-integer? 3)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(exact-integer? 3.0)
+      )
+    )),
+    content="#f",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(integer? 3.0)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(integer? 3.5)
+      )
+    )),
+    content="#f",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
         #|(integer? 1/2)
       )
     )),
@@ -143,6 +175,30 @@ test "r6rs numeric: predicates and exactness" {
       )
     )),
     content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rational? 0.5)
+      )
+    )),
+    content="#t",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rational? +inf.0)
+      )
+    )),
+    content="#f",
+  )
+  inspect(
+    value_to_string(eval_program(
+      (
+        #|(rational? +nan.0)
+      )
+    )),
+    content="#f",
   )
   inspect(
     value_to_string(eval_program(

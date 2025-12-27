@@ -52,6 +52,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::BooleanEq, Primitive::BooleanEq)
     | (Primitive::NumberP, Primitive::NumberP)
     | (Primitive::IntegerP, Primitive::IntegerP)
+    | (Primitive::ExactIntegerP, Primitive::ExactIntegerP)
     | (Primitive::RationalP, Primitive::RationalP)
     | (Primitive::RealP, Primitive::RealP)
     | (Primitive::ComplexP, Primitive::ComplexP)
@@ -653,6 +654,39 @@ fn datum_is_inexact(value : Datum) -> Bool {
 fn datum_is_big_exact(value : Datum) -> Bool {
   match datum_unlabel(value) {
     Datum::BigInt(_) | Datum::BigRat(_, _) => true
+    _ => false
+  }
+}
+
+///|
+fn datum_is_exact_integer(value : Datum) -> Bool {
+  match datum_unlabel(value) {
+    Datum::Int(_) | Datum::BigInt(_) => true
+    Datum::Complex(real, imag) =>
+      datum_is_zero(imag.val) && !datum_is_inexact(imag.val) && datum_is_exact_integer(real.val)
+    _ => false
+  }
+}
+
+///|
+fn datum_is_integer_valued(value : Datum) -> Bool {
+  match datum_unlabel(value) {
+    Datum::Int(_) | Datum::BigInt(_) => true
+    Datum::Float(f) => float_is_finite(f) && float_to_int_exact(f) is Some(_)
+    Datum::Complex(real, imag) => datum_is_zero(imag.val) && datum_is_integer_valued(real.val)
+    _ => false
+  }
+}
+
+///|
+fn datum_is_rational_valued(value : Datum) -> Bool {
+  match datum_unlabel(value) {
+    Datum::Int(_)
+    | Datum::BigInt(_)
+    | Datum::Rat(_, _)
+    | Datum::BigRat(_, _) => true
+    Datum::Float(f) => float_is_finite(f)
+    Datum::Complex(real, imag) => datum_is_zero(imag.val) && datum_is_rational_valued(real.val)
     _ => false
   }
 }
@@ -5408,16 +5442,18 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       match args.length() {
         1 => {
           match args[0] {
-            Value::Datum(Datum::Int(_)) | Value::Datum(Datum::BigInt(_)) => bool_value(true)
-            Value::Datum(Datum::Complex(real, imag)) =>
-              if datum_is_zero(imag.val) {
-                match real.val {
-                  Datum::Int(_) | Datum::BigInt(_) => bool_value(true)
-                  _ => bool_value(false)
-                }
-              } else {
-                bool_value(false)
-              }
+            Value::Datum(datum) => bool_value(datum_is_integer_valued(datum))
+            _ => bool_value(false)
+          }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::ExactIntegerP => {
+      match args.length() {
+        1 => {
+          match args[0] {
+            Value::Datum(datum) => bool_value(datum_is_exact_integer(datum))
             _ => bool_value(false)
           }
         }
@@ -5428,22 +5464,7 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
       match args.length() {
         1 => {
           match args[0] {
-            Value::Datum(Datum::Int(_))
-            | Value::Datum(Datum::BigInt(_))
-            | Value::Datum(Datum::Rat(_, _))
-            | Value::Datum(Datum::BigRat(_, _)) => bool_value(true)
-            Value::Datum(Datum::Complex(real, imag)) =>
-              if datum_is_zero(imag.val) {
-                match real.val {
-                  Datum::Int(_)
-                  | Datum::BigInt(_)
-                  | Datum::Rat(_, _)
-                  | Datum::BigRat(_, _) => bool_value(true)
-                  _ => bool_value(false)
-                }
-              } else {
-                bool_value(false)
-              }
+            Value::Datum(datum) => bool_value(datum_is_rational_valued(datum))
             _ => bool_value(false)
           }
         }

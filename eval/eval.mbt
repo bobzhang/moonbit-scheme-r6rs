@@ -52,6 +52,7 @@ fn init_env() -> Env {
   env_define(env, "boolean=?", Value::Primitive(Primitive::BooleanEq))
   env_define(env, "number?", Value::Primitive(Primitive::NumberP))
   env_define(env, "integer?", Value::Primitive(Primitive::IntegerP))
+  env_define(env, "exact-integer?", Value::Primitive(Primitive::ExactIntegerP))
   env_define(env, "rational?", Value::Primitive(Primitive::RationalP))
   env_define(env, "real?", Value::Primitive(Primitive::RealP))
   env_define(env, "complex?", Value::Primitive(Primitive::ComplexP))
