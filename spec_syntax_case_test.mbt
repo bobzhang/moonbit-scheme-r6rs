@@ -15,6 +15,23 @@ test "r6rs syntax-case: basic pattern" {
 }
 
 ///|
+test "r6rs syntax-case: literals respect bindings" {
+  let program = (
+    (
+      #|(begin
+      #|  (define x 'top)
+      #|  (define-syntax pick
+      #|    (lambda (stx)
+      #|      (syntax-case stx (x)
+      #|        ((_ x) #'(quote literal))
+      #|        ((_ y) #'(quote other)))))
+      #|  (list (pick x) (let ((x 'local)) (pick x))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(literal other)")
+}
+
+///|
 test "r6rs syntax-case: fender clauses" {
   let program = (
     (

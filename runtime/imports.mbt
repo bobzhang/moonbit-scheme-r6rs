@@ -7,6 +7,7 @@ using @core {
   type EnumSet,
   type EnumSetProc,
   type EnumSetProcKind,
+  type Binding,
   type Env,
   type EvalError,
   type Hashtable,

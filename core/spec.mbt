@@ -472,7 +472,12 @@ pub(all) enum Primitive {
 /// Lexical environment (stack of frames) captured by closures.
 /// The implementation treats this as an internal detail.
 ///|
-pub type Env = Array[Map[String, Value]]
+pub(all) struct Binding {
+  id : Int
+  value : Value
+}
+
+pub type Env = Array[Map[String, Binding]]
 
 ///|
 /// A syntax-rules transformer.

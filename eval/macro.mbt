@@ -816,7 +816,16 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpa
       (Datum::Symbol(_), Datum::Pair(_, _)) => ()
       (Datum::Pair(_, _), Datum::Symbol(_)) => ()
       _ => {
-        if match_pattern(rule.pattern, call, rules.literals, rules.ellipsis, bindings, call_scope) {
+        if match_pattern(
+          rule.pattern,
+          call,
+          rules.literals,
+          rules.ellipsis,
+          bindings,
+          call_scope,
+          rules.def_env,
+          env,
+        ) {
           match rule.fender {
             Some(fender) => {
               if !fender_allows(fender, bindings, env) {
@@ -991,6 +1000,8 @@ fn match_pattern(
   ellipsis : String,
   bindings : Map[String, BindingVal],
   scope : Int?,
+  def_env : Env,
+  use_env : Env,
 ) -> Bool {
   let pat = datum_unlabel(datum_unwrap_syntax(pattern))
   let inp = datum_unlabel(datum_unwrap_syntax(input))
@@ -1000,10 +1011,7 @@ fn match_pattern(
       if name == "_" {
         true
       } else if is_literal(literals, name) {
-        match inp {
-          Datum::Symbol(other) => other == name
-          _ => false
-        }
+        literal_matches(name, input, def_env, use_env)
       } else {
         bind_var(name, wrap_pattern_datum(input, scope), bindings)
       }
@@ -1067,7 +1075,7 @@ fn match_pattern(
     Datum::Vector(items) => {
       match inp {
         Datum::Vector(other) =>
-          match_pattern_list(items, other, literals, ellipsis, bindings, scope)
+          match_pattern_list(items, other, literals, ellipsis, bindings, scope, def_env, use_env)
         _ => false
       }
     }
@@ -1093,12 +1101,12 @@ fn match_pattern(
     Datum::Pair(pa, pb) => {
       match (datum_list_to_array_opt(pat), datum_list_to_array_opt(inp)) {
         (Some(pats), Some(inputs)) =>
-          match_pattern_list(pats, inputs, literals, ellipsis, bindings, scope)
+          match_pattern_list(pats, inputs, literals, ellipsis, bindings, scope, def_env, use_env)
         _ => {
           match inp {
             Datum::Pair(ia, ib) =>
-              if match_pattern(pa.val, ia.val, literals, ellipsis, bindings, scope) {
-                match_pattern(pb.val, ib.val, literals, ellipsis, bindings, scope)
+              if match_pattern(pa.val, ia.val, literals, ellipsis, bindings, scope, def_env, use_env) {
+                match_pattern(pb.val, ib.val, literals, ellipsis, bindings, scope, def_env, use_env)
               } else {
                 false
               }
@@ -1118,8 +1126,10 @@ fn match_pattern_list(
   ellipsis : String,
   bindings : Map[String, BindingVal],
   scope : Int?,
+  def_env : Env,
+  use_env : Env,
 ) -> Bool {
-  match_pattern_list_from(pats, inputs, 0, 0, literals, ellipsis, bindings, scope)
+  match_pattern_list_from(pats, inputs, 0, 0, literals, ellipsis, bindings, scope, def_env, use_env)
 }
 
 ///|
@@ -1131,6 +1141,8 @@ fn collect_repeat_bindings(
   literals : Array[String],
   ellipsis : String,
   scope : Int?,
+  def_env : Env,
+  use_env : Env,
 )
  -> Map[String, BindingVal]? {
   let result : Map[String, BindingVal] = {}
@@ -1146,7 +1158,16 @@ fn collect_repeat_bindings(
   let mut i = 0
   while i < count {
     let iter_bindings : Map[String, BindingVal] = {}
-    if !match_pattern(repeat_pat, inputs[start + i], literals, ellipsis, iter_bindings, scope) {
+    if !match_pattern(
+      repeat_pat,
+      inputs[start + i],
+      literals,
+      ellipsis,
+      iter_bindings,
+      scope,
+      def_env,
+      use_env,
+    ) {
       return None
     }
     for name in iter_bindings.keys() {
@@ -1185,6 +1206,8 @@ fn match_pattern_list_from(
   ellipsis : String,
   bindings : Map[String, BindingVal],
   scope : Int?,
+  def_env : Env,
+  use_env : Env,
 ) -> Bool {
   if pat_idx >= pats.length() {
     return inp_idx == inputs.length()
@@ -1202,6 +1225,8 @@ fn match_pattern_list_from(
         literals,
         ellipsis,
         scope,
+        def_env,
+        use_env,
       ) {
         Some(repeat_bindings) =>
           if merge_bindings(base, repeat_bindings) {
@@ -1214,6 +1239,8 @@ fn match_pattern_list_from(
               ellipsis,
               base,
               scope,
+              def_env,
+              use_env,
             ) {
               bindings_overwrite(bindings, base)
               return true
@@ -1228,7 +1255,16 @@ fn match_pattern_list_from(
     if inp_idx >= inputs.length() {
       return false
     }
-    if !match_pattern(pats[pat_idx], inputs[inp_idx], literals, ellipsis, bindings, scope) {
+    if !match_pattern(
+      pats[pat_idx],
+      inputs[inp_idx],
+      literals,
+      ellipsis,
+      bindings,
+      scope,
+      def_env,
+      use_env,
+    ) {
       return false
     }
     match_pattern_list_from(
@@ -1240,6 +1276,8 @@ fn match_pattern_list_from(
       ellipsis,
       bindings,
       scope,
+      def_env,
+      use_env,
     )
   }
 }
@@ -1329,6 +1367,24 @@ fn datum_unwrap_syntax(value : Datum) -> Datum {
 fn datum_is_symbol(value : Datum, name : String) -> Bool {
   match datum_unlabel(datum_unwrap_syntax(value)) {
     Datum::Symbol(sym) => sym == name
+    _ => false
+  }
+}
+
+fn literal_matches(name : String, input : Datum, def_env : Env, use_env : Env) -> Bool {
+  match datum_unlabel(datum_unwrap_syntax(input)) {
+    Datum::Symbol(other) => {
+      if other != name {
+        return false
+      }
+      let def_id = env_binding_id_optional(def_env, name)
+      let use_id = env_binding_id_optional(use_env, name)
+      match (def_id, use_id) {
+        (Some(left), Some(right)) => left == right
+        (None, None) => true
+        _ => false
+      }
+    }
     _ => false
   }
 }
@@ -1563,7 +1619,7 @@ fn expand_with_syntax(
     let value = eval_expr(expr, fenv)
     let datum = value_to_syntax_datum(value)
     let local_bindings : Map[String, BindingVal] = {}
-    if !match_pattern(pattern, datum, [], ellipsis, local_bindings, None) {
+    if !match_pattern(pattern, datum, [], ellipsis, local_bindings, None, env, env) {
       raise @core.EvalError("invalid with-syntax")
     }
     if !merge_bindings(expanded, local_bindings) {

@@ -18,10 +18,11 @@ pub fn env_clone(env : Env) -> Env {
   let mut i = 0
   while i < env.length() {
     let frame = env[i]
-    let new_frame : Map[String, Value] = {}
+    let new_frame : Map[String, Binding] = {}
     for key in frame.keys() {
       match frame.get(key) {
-        Some(value) => new_frame[key] = value
+        Some(binding) =>
+          new_frame[key] = Binding::{ id: binding.id, value: binding.value }
         None => ()
       }
     }
@@ -32,12 +33,12 @@ pub fn env_clone(env : Env) -> Env {
 }
 
 ///|
-fn env_get(env : Env, name : String) -> Value? {
+fn env_get(env : Env, name : String) -> Binding? {
   let mut i = env.length() - 1
   while true {
     let frame = env[i]
     match frame.get(name) {
-      Some(v) => return Some(v)
+      Some(binding) => return Some(binding)
       None => ()
     }
     if i == 0 {
@@ -51,7 +52,11 @@ fn env_get(env : Env, name : String) -> Value? {
 ///|
 pub fn env_get_macro(env : Env, name : String) -> MacroTransformer? {
   match env_get(env, name) {
-    Some(Value::Macro(transformer)) => Some(transformer)
+    Some(binding) =>
+      match binding.value {
+        Value::Macro(transformer) => Some(transformer)
+        _ => None
+      }
     _ => None
   }
 }
@@ -59,7 +64,55 @@ pub fn env_get_macro(env : Env, name : String) -> MacroTransformer? {
 ///|
 pub fn env_define(env : Env, name : String, value : Value) -> Unit {
   let idx = env.length() - 1
-  env[idx][name] = value
+  env[idx][name] = Binding::{ id: next_binding_id(), value }
+}
+
+///|
+pub fn env_define_binding(env : Env, name : String, binding : Binding) -> Unit {
+  let idx = env.length() - 1
+  env[idx][name] = binding
+}
+
+///|
+pub fn env_lookup_binding(env : Env, name : String) -> Binding raise EvalError {
+  let mut i = env.length() - 1
+  while i >= 0 {
+    let frame = env[i]
+    match frame.get(name) {
+      Some(binding) => return binding
+      None => ()
+    }
+    if i == 0 {
+      break
+    }
+    i = i - 1
+  }
+  raise @core.EvalError("unbound variable: \{name}")
+}
+
+///|
+pub fn env_lookup_binding_optional(env : Env, name : String) -> Binding? {
+  let mut i = env.length() - 1
+  while i >= 0 {
+    let frame = env[i]
+    match frame.get(name) {
+      Some(binding) => return Some(binding)
+      None => ()
+    }
+    if i == 0 {
+      break
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
+pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
+  match env_lookup_binding_optional(env, name) {
+    Some(binding) => Some(binding.id)
+    None => None
+  }
 }
 
 ///|
@@ -68,7 +121,7 @@ pub fn env_lookup(env : Env, name : String) -> Value raise EvalError {
   while i >= 0 {
     let frame = env[i]
     match frame.get(name) {
-      Some(v) => return v
+      Some(binding) => return binding.value
       None => ()
     }
     if i == 0 {
@@ -85,7 +138,7 @@ pub fn env_lookup_optional(env : Env, name : String) -> Value? {
   while i >= 0 {
     let frame = env[i]
     match frame.get(name) {
-      Some(v) => return Some(v)
+      Some(binding) => return Some(binding.value)
       None => ()
     }
     if i == 0 {
@@ -102,7 +155,8 @@ pub fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError 
   while i >= 0 {
     let frame = env[i]
     if frame.contains(name) {
-      frame[name] = value
+      let binding = frame[name]
+      frame[name] = Binding::{ id: binding.id, value }
       return
     }
     if i == 0 {

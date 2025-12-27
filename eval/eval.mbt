@@ -447,14 +447,14 @@ fn init_env() -> Env {
 }
 
 ///|
-fn env_export_map(env : Env) -> Map[String, Value] {
-  let exports : Map[String, Value] = {}
+fn env_export_map(env : Env) -> Map[String, Binding] {
+  let exports : Map[String, Binding] = {}
   let mut i = 0
   while i < env.length() {
     let frame = env[i]
     for key in frame.keys() {
       match frame.get(key) {
-        Some(value) => exports[key] = value
+        Some(binding) => exports[key] = binding
         None => ()
       }
     }
@@ -467,14 +467,16 @@ fn env_export_map(env : Env) -> Map[String, Value] {
 fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
   let exports = env_export_map(env)
   for name in base_syntax_keywords() {
-    exports[name] = Value::SyntaxKeyword(name)
+    exports[name] = Binding::{ id: next_binding_id(), value: Value::SyntaxKeyword(name) }
   }
   register_library_entry("rnrs.base", Some([6]), exports)
-  let eval_exports : Map[String, Value] = {}
-  eval_exports["eval"] = Value::Primitive(Primitive::Eval)
-  eval_exports["environment"] = Value::Primitive(Primitive::Environment)
+  let eval_exports : Map[String, Binding] = {}
+  eval_exports["eval"] =
+    Binding::{ id: next_binding_id(), value: Value::Primitive(Primitive::Eval) }
+  eval_exports["environment"] =
+    Binding::{ id: next_binding_id(), value: Value::Primitive(Primitive::Environment) }
   register_library_entry("rnrs.eval", Some([6]), eval_exports)
-  let condition_exports : Map[String, Value] = {}
+  let condition_exports : Map[String, Binding] = {}
   let condition_names : Array[String] = [
     "condition",
     "condition?",
@@ -528,11 +530,12 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     "undefined-violation?",
   ]
   for name in condition_names {
-    condition_exports[name] = env_lookup(env, name)
+    condition_exports[name] = env_lookup_binding(env, name)
   }
-  condition_exports["define-condition-type"] = Value::SyntaxKeyword("define-condition-type")
+  condition_exports["define-condition-type"] =
+    Binding::{ id: next_binding_id(), value: Value::SyntaxKeyword("define-condition-type") }
   register_library_entry("rnrs.conditions", Some([6]), condition_exports)
-  let flonum_exports : Map[String, Value] = {}
+  let flonum_exports : Map[String, Binding] = {}
   let flonum_names : Array[String] = [
     "flonum?",
     "real->flonum",
@@ -588,7 +591,7 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     "no-nans-violation?",
   ]
   for name in flonum_names {
-    flonum_exports[name] = env_lookup(env, name)
+    flonum_exports[name] = env_lookup_binding(env, name)
   }
   register_library_entry("rnrs.arithmetic.flonums", Some([6]), flonum_exports)
 }
@@ -2511,7 +2514,11 @@ fn eval_begin_for_syntax_state(
   let frame = syntax_env[syntax_env.length() - 1]
   for key in frame.keys() {
     match frame.get(key) {
-      Some(Value::Macro(rules)) => env_define(env, key, Value::Macro(rules))
+      Some(binding) =>
+        match binding.value {
+          Value::Macro(rules) => env_define(env, key, Value::Macro(rules))
+          _ => ()
+        }
       _ => ()
     }
   }
@@ -3900,7 +3907,7 @@ fn library_full_name(base : String, version : Array[Int]?) -> String {
 fn register_library_entry(
   base : String,
   version : Array[Int]?,
-  exports : Map[String, Value],
+  exports : Map[String, Binding],
 ) -> Unit {
   let name = library_full_name(base, version)
   register_library(name, exports)
@@ -4174,7 +4181,7 @@ fn select_library_for_ref(reference : LibraryRef) -> LibraryVersionInfo? {
 }
 
 ///|
-fn library_exports_from_ref(reference : LibraryRef) -> Map[String, Value] raise EvalError {
+fn library_exports_from_ref(reference : LibraryRef) -> Map[String, Binding] raise EvalError {
   match select_library_for_ref(reference) {
     Some(entry) => library_exports(entry.name)
     None => raise @core.EvalError("unknown library: \{reference.base}")
@@ -4351,13 +4358,13 @@ fn parse_import_clause(expr : Datum) -> Array[Datum] raise EvalError {
 }
 
 ///|
-fn library_exports(name : String) -> Map[String, Value] raise EvalError {
+fn library_exports(name : String) -> Map[String, Binding] raise EvalError {
   match lookup_library(name) {
     Some(lib) => {
-      let exports : Map[String, Value] = {}
+      let exports : Map[String, Binding] = {}
       for key in lib.exports.keys() {
         match lib.exports.get(key) {
-          Some(value) => exports[key] = value
+          Some(binding) => exports[key] = binding
           None => ()
         }
       }
@@ -4369,13 +4376,13 @@ fn library_exports(name : String) -> Map[String, Value] raise EvalError {
 
 ///|
 fn import_set_only(
-  exports : Map[String, Value],
+  exports : Map[String, Binding],
   names : Array[String],
-) -> Map[String, Value] raise EvalError {
-  let result : Map[String, Value] = {}
+) -> Map[String, Binding] raise EvalError {
+  let result : Map[String, Binding] = {}
   for name in names {
     match exports.get(name) {
-      Some(value) => result[name] = value
+      Some(binding) => result[name] = binding
       None => raise @core.EvalError("unknown import: \{name}")
     }
   }
@@ -4384,9 +4391,9 @@ fn import_set_only(
 
 ///|
 fn import_set_except(
-  exports : Map[String, Value],
+  exports : Map[String, Binding],
   names : Array[String],
-) -> Map[String, Value] raise EvalError {
+) -> Map[String, Binding] raise EvalError {
   let excluded : Map[String, Bool] = {}
   for name in names {
     if !exports.contains(name) {
@@ -4394,11 +4401,11 @@ fn import_set_except(
     }
     excluded[name] = true
   }
-  let result : Map[String, Value] = {}
+  let result : Map[String, Binding] = {}
   for key in exports.keys() {
     if !excluded.contains(key) {
       match exports.get(key) {
-        Some(value) => result[key] = value
+        Some(binding) => result[key] = binding
         None => ()
       }
     }
@@ -4408,9 +4415,9 @@ fn import_set_except(
 
 ///|
 fn import_set_rename(
-  exports : Map[String, Value],
+  exports : Map[String, Binding],
   renames : Array[(String, String)],
-) -> Map[String, Value] raise EvalError {
+) -> Map[String, Binding] raise EvalError {
   let rename_map : Map[String, String] = {}
   for rename in renames {
     let (old_name, new_name) = rename
@@ -4422,7 +4429,7 @@ fn import_set_rename(
     }
     rename_map[old_name] = new_name
   }
-  let result : Map[String, Value] = {}
+  let result : Map[String, Binding] = {}
   for key in exports.keys() {
     let target = match rename_map.get(key) {
       Some(name) => name
@@ -4432,7 +4439,7 @@ fn import_set_rename(
       raise @core.EvalError("invalid import set")
     }
     match exports.get(key) {
-      Some(value) => result[target] = value
+      Some(binding) => result[target] = binding
       None => ()
     }
   }
@@ -4440,11 +4447,11 @@ fn import_set_rename(
 }
 
 ///|
-fn import_set_prefix(exports : Map[String, Value], prefix : String) -> Map[String, Value] {
-  let result : Map[String, Value] = {}
+fn import_set_prefix(exports : Map[String, Binding], prefix : String) -> Map[String, Binding] {
+  let result : Map[String, Binding] = {}
   for key in exports.keys() {
     match exports.get(key) {
-      Some(value) => result["\{prefix}\{key}"] = value
+      Some(binding) => result["\{prefix}\{key}"] = binding
       None => ()
     }
   }
@@ -4515,26 +4522,29 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
 
 ///|
 fn filter_exports_by_phase(
-  exports : Map[String, Value],
+  exports : Map[String, Binding],
   phases : ImportPhases,
-) -> Map[String, Value] {
+) -> Map[String, Binding] {
   if phases.run && phases.expand {
     return exports
   }
-  let result : Map[String, Value] = {}
+  let result : Map[String, Binding] = {}
   for key in exports.keys() {
     match exports.get(key) {
-      Some(Value::Macro(_)) =>
-        if phases.expand {
-          result[key] = exports[key]
-        }
-      Some(Value::SyntaxKeyword(_)) =>
-        if phases.expand {
-          result[key] = exports[key]
-        }
-      Some(_) =>
-        if phases.run {
-          result[key] = exports[key]
+      Some(binding) =>
+        match binding.value {
+          Value::Macro(_) =>
+            if phases.expand {
+              result[key] = exports[key]
+            }
+          Value::SyntaxKeyword(_) =>
+            if phases.expand {
+              result[key] = exports[key]
+            }
+          _ =>
+            if phases.run {
+              result[key] = exports[key]
+            }
         }
       None => ()
     }
@@ -4543,7 +4553,7 @@ fn filter_exports_by_phase(
 }
 
 ///|
-fn import_set_exports(expr : Datum) -> Map[String, Value] raise EvalError {
+fn import_set_exports(expr : Datum) -> Map[String, Binding] raise EvalError {
   let items = datum_list_to_array(expr)
   if items.is_empty() {
     raise @core.EvalError("invalid import set")
@@ -4601,7 +4611,7 @@ fn import_set_into_env(expr : Datum, env : Env) -> Unit raise EvalError {
   let exports = import_set_exports(expr)
   for key in exports.keys() {
     match exports.get(key) {
-      Some(value) => env_define(env, key, value)
+      Some(binding) => env_define_binding(env, key, binding)
       None => ()
     }
   }
@@ -4628,13 +4638,14 @@ fn eval_library_state(
   for form in body {
     let _ = eval_expr(form, lib_env)
   }
-  let export_map : Map[String, Value] = {}
+  let export_map : Map[String, Binding] = {}
   for export_spec in exports {
     let (external, internal) = export_spec
     if is_syntax_keyword(internal) {
-      export_map[external] = Value::SyntaxKeyword(external)
+      export_map[external] =
+        Binding::{ id: next_binding_id(), value: Value::SyntaxKeyword(external) }
     } else {
-      export_map[external] = env_lookup(lib_env, internal)
+      export_map[external] = env_lookup_binding(lib_env, internal)
     }
   }
   register_library_entry(name_spec.base, name_spec.version, export_map)

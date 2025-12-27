@@ -5,13 +5,14 @@ pub fn bool_value(value : Bool) -> Value {
 
 ///|
 pub(all) struct Library {
-  exports : Map[String, Value]
+  exports : Map[String, Binding]
 }
 
 ///|
 let port_counter : Ref[Int] = Ref::new(0)
 let gensym_counter : Ref[Int] = Ref::new(0)
 let syntax_context_counter : Ref[Int] = Ref::new(0)
+let binding_counter : Ref[Int] = Ref::new(0)
 let record_type_counter : Ref[Int] = Ref::new(0)
 let record_counter : Ref[Int] = Ref::new(0)
 let record_proc_counter : Ref[Int] = Ref::new(0)
@@ -38,6 +39,13 @@ pub fn gensym(base : String) -> String {
 pub fn next_syntax_context() -> Int {
   let id = syntax_context_counter.val
   syntax_context_counter.val = id + 1
+  id
+}
+
+///|
+pub fn next_binding_id() -> Int {
+  let id = binding_counter.val
+  binding_counter.val = id + 1
   id
 }
 
@@ -403,7 +411,7 @@ pub fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
 }
 
 ///|
-pub fn register_library(name : String, exports : Map[String, Value]) -> Unit {
+pub fn register_library(name : String, exports : Map[String, Binding]) -> Unit {
   library_registry.val[name] = Library::{ exports }
 }
 

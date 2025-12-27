@@ -49,6 +49,21 @@ test "r6rs macro: syntax-rules literals" {
 }
 
 ///|
+test "r6rs macro: literals respect bindings" {
+  let program = (
+    (
+      #|(define x 'top)
+      #|(define-syntax pick
+      #|  (syntax-rules (x)
+      #|    ((_ x) 'literal)
+      #|    ((_ y) 'other)))
+      #|(list (pick x) (let ((x 'local)) (pick x)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(literal other)")
+}
+
+///|
 test "r6rs macro: quote strips syntax objects" {
   let program = (
     (
