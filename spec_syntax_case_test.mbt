@@ -178,6 +178,39 @@ test "r6rs syntax-case: wildcard with ellipsis" {
 }
 
 ///|
+test "r6rs syntax-case: literal ellipsis pattern" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax ellipsis-literal
+      #|    (lambda (stx)
+      #|      (syntax-case stx (...)
+      #|        ((_ x ...) #'(quote literal))
+      #|        ((_ x y) #'(quote pair))
+      #|        ((_ x) #'(quote single)))))
+      #|  (list (ellipsis-literal 1 ...) (ellipsis-literal 1 2)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(literal pair)")
+}
+
+///|
+test "r6rs syntax-case: literal ellipsis template" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax show
+      #|    (lambda (stx)
+      #|      (syntax-case stx (...)
+      #|        ((_ x)
+      #|         #`(quote (#,x ...))))))
+      #|  (show 1))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(1 ...)")
+}
+
+///|
 test "r6rs syntax-case: datum->syntax use-site capture" {
   let program = (
     (
@@ -186,6 +219,24 @@ test "r6rs syntax-case: datum->syntax use-site capture" {
       #|    (lambda (stx)
       #|      (syntax-case stx ()
       #|        ((_ id) (datum->syntax #'id 'x)))))
+      #|  (let ((x 10))
+      #|    (make-x y)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="10")
+}
+
+///|
+test "r6rs syntax-case: datum->syntax pattern variable context" {
+  let program = (
+    (
+      #|(begin
+      #|  (define x 'top)
+      #|  (define-syntax make-x
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_ id)
+      #|         (datum->syntax id 'x)))))
       #|  (let ((x 10))
       #|    (make-x y)))
     )

@@ -838,6 +838,7 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpa
     SyntaxRulesKind::SyntaxRules => Some(next_syntax_context())
     SyntaxRulesKind::SyntaxCase => None
   }
+  let ellipsis_active = !is_literal(rules.literals, rules.ellipsis)
   let mut i = 0
   while i < rules.rules.length() {
     let rule = rules.rules[i]
@@ -879,7 +880,15 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpa
           )
           let expanded = match rules.kind {
             SyntaxRulesKind::SyntaxRules =>
-              expand_template(rule.template, bindings, renames, rules.ellipsis, env, false)
+              expand_template(
+                rule.template,
+                bindings,
+                renames,
+                rules.ellipsis,
+                ellipsis_active,
+                env,
+                false,
+              )
             SyntaxRulesKind::SyntaxCase => {
               let fenv = template_env_with_bindings(rules.def_env, bindings)
               let rewritten = rewrite_template_expr(
@@ -887,6 +896,7 @@ fn expand_macro_rules(rules : SyntaxRules, call : Datum, env : Env) -> MacroExpa
                 bindings,
                 renames,
                 rules.ellipsis,
+                ellipsis_active,
                 rules.def_env,
               )
               let value = eval_expr_transformer(rewritten, fenv)
@@ -1040,6 +1050,7 @@ fn rewrite_template_expr(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   env : Env,
 ) -> Datum raise EvalError {
   match expr {
@@ -1059,7 +1070,16 @@ fn rewrite_template_expr(
             if is_template_form {
               let indices : Array[Int] = []
               let expanded =
-                expand_template_indexed(expr, bindings, renames, ellipsis, indices, env, true)
+                expand_template_indexed(
+                  expr,
+                  bindings,
+                  renames,
+                  ellipsis,
+                  ellipsis_active,
+                  indices,
+                  env,
+                  true,
+                )
               match expanded {
                 Datum::Value(Value::SyntaxObject(obj)) => return Datum::Value(Value::SyntaxObject(obj))
                 _ => {
@@ -1074,15 +1094,17 @@ fn rewrite_template_expr(
           }
           let rewritten : Array[Datum] = []
           for item in items {
-            rewritten.push(rewrite_template_expr(item, bindings, renames, ellipsis, env))
+            rewritten.push(
+              rewrite_template_expr(item, bindings, renames, ellipsis, ellipsis_active, env),
+            )
           }
           list_from_array(rewritten)
         }
         None =>
           match expr {
             Datum::Pair(a, b) => pair_new(
-              rewrite_template_expr(a.val, bindings, renames, ellipsis, env),
-              rewrite_template_expr(b.val, bindings, renames, ellipsis, env),
+              rewrite_template_expr(a.val, bindings, renames, ellipsis, ellipsis_active, env),
+              rewrite_template_expr(b.val, bindings, renames, ellipsis, ellipsis_active, env),
             )
             _ => expr
           }
@@ -1091,7 +1113,9 @@ fn rewrite_template_expr(
     Datum::Vector(items) => {
       let rewritten : Array[Datum] = []
       for item in items {
-        rewritten.push(rewrite_template_expr(item, bindings, renames, ellipsis, env))
+        rewritten.push(
+          rewrite_template_expr(item, bindings, renames, ellipsis, ellipsis_active, env),
+        )
       }
       Datum::Vector(rewritten)
     }
@@ -1236,7 +1260,20 @@ fn match_pattern_list(
   def_env : Env,
   use_env : Env,
 ) -> Bool {
-  match_pattern_list_from(pats, inputs, 0, 0, literals, ellipsis, bindings, scope, def_env, use_env)
+  let ellipsis_active = !is_literal(literals, ellipsis)
+  match_pattern_list_from(
+    pats,
+    inputs,
+    0,
+    0,
+    literals,
+    ellipsis,
+    ellipsis_active,
+    bindings,
+    scope,
+    def_env,
+    use_env,
+  )
 }
 
 ///|
@@ -1311,6 +1348,7 @@ fn match_pattern_list_from(
   inp_idx : Int,
   literals : Array[String],
   ellipsis : String,
+  ellipsis_active : Bool,
   bindings : Map[String, BindingVal],
   scope : Int?,
   def_env : Env,
@@ -1319,7 +1357,7 @@ fn match_pattern_list_from(
   if pat_idx >= pats.length() {
     return inp_idx == inputs.length()
   }
-  if pat_idx + 1 < pats.length() && datum_is_symbol(pats[pat_idx + 1], ellipsis) {
+  if ellipsis_active && pat_idx + 1 < pats.length() && datum_is_symbol(pats[pat_idx + 1], ellipsis) {
     let max_count = inputs.length() - inp_idx
     let mut count = max_count
     while count >= 0 {
@@ -1344,6 +1382,7 @@ fn match_pattern_list_from(
               inp_idx + count,
               literals,
               ellipsis,
+              ellipsis_active,
               base,
               scope,
               def_env,
@@ -1381,6 +1420,7 @@ fn match_pattern_list_from(
       inp_idx + 1,
       literals,
       ellipsis,
+      ellipsis_active,
       bindings,
       scope,
       def_env,
@@ -1706,6 +1746,7 @@ fn expand_with_syntax(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
   template_forms : Bool,
@@ -1734,13 +1775,31 @@ fn expand_with_syntax(
     }
   }
   if items.length() == 3 {
-    expand_template_indexed(items[2], expanded, renames, ellipsis, indices, env, template_forms)
+    expand_template_indexed(
+      items[2],
+      expanded,
+      renames,
+      ellipsis,
+      ellipsis_active,
+      indices,
+      env,
+      template_forms,
+    )
   } else {
     let forms : Array[Datum] = [Datum::Symbol("begin")]
     let mut i = 2
     while i < items.length() {
       forms.push(
-        expand_template_indexed(items[i], expanded, renames, ellipsis, indices, env, template_forms),
+        expand_template_indexed(
+          items[i],
+          expanded,
+          renames,
+          ellipsis,
+          ellipsis_active,
+          indices,
+          env,
+          template_forms,
+        ),
       )
       i = i + 1
     }
@@ -1775,11 +1834,21 @@ fn expand_template(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   env : Env,
   template_forms : Bool,
 ) -> Datum raise EvalError {
   let indices : Array[Int] = []
-  expand_template_indexed(template, bindings, renames, ellipsis, indices, env, template_forms)
+  expand_template_indexed(
+    template,
+    bindings,
+    renames,
+    ellipsis,
+    ellipsis_active,
+    indices,
+    env,
+    template_forms,
+  )
 }
 
 ///|
@@ -1788,6 +1857,7 @@ fn expand_template_indexed(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
   template_forms : Bool,
@@ -1800,24 +1870,77 @@ fn expand_template_indexed(
           if is_quote_form(items) {
             template
           } else if template_forms && items.length() == 2 && datum_is_symbol(items[0], "syntax") {
-            expand_template_indexed(items[1], bindings, renames, ellipsis, indices, env, template_forms)
+            expand_template_indexed(
+              items[1],
+              bindings,
+              renames,
+              ellipsis,
+              ellipsis_active,
+              indices,
+              env,
+              template_forms,
+            )
           } else if template_forms && items.length() == 2 && datum_is_symbol(items[0], "quasisyntax") {
             let fenv = template_env_with_bindings(env, bindings)
             let expanded_template =
-              expand_template_quasisyntax(items[1], bindings, renames, ellipsis, indices, env)
+              expand_template_quasisyntax(
+                items[1],
+                bindings,
+                renames,
+                ellipsis,
+                ellipsis_active,
+                indices,
+                env,
+              )
             let expanded = quasisyntax_expand(expanded_template, fenv, 1)
             rename_datum(expanded, renames)
           } else if template_forms && items.length() >= 3 && datum_is_symbol(items[0], "with-syntax") {
-            expand_with_syntax(items, bindings, renames, ellipsis, indices, env, template_forms)
+            expand_with_syntax(
+              items,
+              bindings,
+              renames,
+              ellipsis,
+              ellipsis_active,
+              indices,
+              env,
+              template_forms,
+            )
           } else {
-            expand_template_list(items, bindings, renames, ellipsis, indices, env, template_forms)
+            expand_template_list(
+              items,
+              bindings,
+              renames,
+              ellipsis,
+              ellipsis_active,
+              indices,
+              env,
+              template_forms,
+            )
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => pair_new(
-              expand_template_indexed(a.val, bindings, renames, ellipsis, indices, env, template_forms),
-              expand_template_indexed(b.val, bindings, renames, ellipsis, indices, env, template_forms),
+              expand_template_indexed(
+                a.val,
+                bindings,
+                renames,
+                ellipsis,
+                ellipsis_active,
+                indices,
+                env,
+                template_forms,
+              ),
+              expand_template_indexed(
+                b.val,
+                bindings,
+                renames,
+                ellipsis,
+                ellipsis_active,
+                indices,
+                env,
+                template_forms,
+              ),
             )
             _ => template
           }
@@ -1825,7 +1948,16 @@ fn expand_template_indexed(
       }
     }
     Datum::Vector(items) =>
-      expand_template_vector(items, bindings, renames, ellipsis, indices, env, template_forms)
+      expand_template_vector(
+        items,
+        bindings,
+        renames,
+        ellipsis,
+        ellipsis_active,
+        indices,
+        env,
+        template_forms,
+      )
     _ => template
   }
 }
@@ -1836,6 +1968,7 @@ fn expand_template_quasisyntax(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
 ) -> Datum raise EvalError {
@@ -1851,14 +1984,38 @@ fn expand_template_quasisyntax(
           } else if items.length() == 2 && datum_is_symbol(items[0], "unsyntax-splicing") {
             template
           } else {
-            expand_template_list_quasisyntax(items, bindings, renames, ellipsis, indices, env)
+            expand_template_list_quasisyntax(
+              items,
+              bindings,
+              renames,
+              ellipsis,
+              ellipsis_active,
+              indices,
+              env,
+            )
           }
         }
         None => {
           match template {
             Datum::Pair(a, b) => pair_new(
-              expand_template_quasisyntax(a.val, bindings, renames, ellipsis, indices, env),
-              expand_template_quasisyntax(b.val, bindings, renames, ellipsis, indices, env),
+              expand_template_quasisyntax(
+                a.val,
+                bindings,
+                renames,
+                ellipsis,
+                ellipsis_active,
+                indices,
+                env,
+              ),
+              expand_template_quasisyntax(
+                b.val,
+                bindings,
+                renames,
+                ellipsis,
+                ellipsis_active,
+                indices,
+                env,
+              ),
             )
             _ => template
           }
@@ -1866,7 +2023,15 @@ fn expand_template_quasisyntax(
       }
     }
     Datum::Vector(items) =>
-      expand_template_vector_quasisyntax(items, bindings, renames, ellipsis, indices, env)
+      expand_template_vector_quasisyntax(
+        items,
+        bindings,
+        renames,
+        ellipsis,
+        ellipsis_active,
+        indices,
+        env,
+      )
     _ => template
   }
 }
@@ -1900,6 +2065,7 @@ fn expand_template_list(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
   template_forms : Bool,
@@ -1907,7 +2073,7 @@ fn expand_template_list(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
-    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+    if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
@@ -1923,6 +2089,7 @@ fn expand_template_list(
             bindings,
             renames,
             ellipsis,
+            ellipsis_active,
             next_indices,
             env,
             template_forms,
@@ -1933,7 +2100,16 @@ fn expand_template_list(
       i = i + 2
     } else {
       expanded.push(
-        expand_template_indexed(items[i], bindings, renames, ellipsis, indices, env, template_forms),
+        expand_template_indexed(
+          items[i],
+          bindings,
+          renames,
+          ellipsis,
+          ellipsis_active,
+          indices,
+          env,
+          template_forms,
+        ),
       )
       i = i + 1
     }
@@ -1947,13 +2123,14 @@ fn expand_template_list_quasisyntax(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
-    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+    if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
@@ -1969,6 +2146,7 @@ fn expand_template_list_quasisyntax(
             bindings,
             renames,
             ellipsis,
+            ellipsis_active,
             next_indices,
             env,
           ),
@@ -1978,7 +2156,15 @@ fn expand_template_list_quasisyntax(
       i = i + 2
     } else {
       expanded.push(
-        expand_template_quasisyntax(items[i], bindings, renames, ellipsis, indices, env),
+        expand_template_quasisyntax(
+          items[i],
+          bindings,
+          renames,
+          ellipsis,
+          ellipsis_active,
+          indices,
+          env,
+        ),
       )
       i = i + 1
     }
@@ -1992,6 +2178,7 @@ fn expand_template_vector(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
   template_forms : Bool,
@@ -1999,7 +2186,7 @@ fn expand_template_vector(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
-    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+    if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
@@ -2015,6 +2202,7 @@ fn expand_template_vector(
             bindings,
             renames,
             ellipsis,
+            ellipsis_active,
             next_indices,
             env,
             template_forms,
@@ -2025,7 +2213,16 @@ fn expand_template_vector(
       i = i + 2
     } else {
       expanded.push(
-        expand_template_indexed(items[i], bindings, renames, ellipsis, indices, env, template_forms),
+        expand_template_indexed(
+          items[i],
+          bindings,
+          renames,
+          ellipsis,
+          ellipsis_active,
+          indices,
+          env,
+          template_forms,
+        ),
       )
       i = i + 1
     }
@@ -2039,13 +2236,14 @@ fn expand_template_vector_quasisyntax(
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
+  ellipsis_active : Bool,
   indices : Array[Int],
   env : Env,
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
-    if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+    if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
@@ -2061,6 +2259,7 @@ fn expand_template_vector_quasisyntax(
             bindings,
             renames,
             ellipsis,
+            ellipsis_active,
             next_indices,
             env,
           ),
@@ -2070,7 +2269,15 @@ fn expand_template_vector_quasisyntax(
       i = i + 2
     } else {
       expanded.push(
-        expand_template_quasisyntax(items[i], bindings, renames, ellipsis, indices, env),
+        expand_template_quasisyntax(
+          items[i],
+          bindings,
+          renames,
+          ellipsis,
+          ellipsis_active,
+          indices,
+          env,
+        ),
       )
       i = i + 1
     }
