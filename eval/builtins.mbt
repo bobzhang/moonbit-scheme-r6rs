@@ -578,7 +578,7 @@ fn number_to_bigrat(value : Datum) -> (@bigint.BigInt, @bigint.BigInt) raise Eva
 ///|
 fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
   if !float_is_finite(value) {
-    raise @core.EvalError("inexact->exact: unsupported")
+    raise @core.EvalError("inexact->exact: non-finite")
   }
   // Decode IEEE-754 f32 into an exact rational.
   let bits = Float::reinterpret_as_uint(value)

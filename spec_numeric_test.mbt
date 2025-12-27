@@ -762,7 +762,7 @@ test "r6rs numeric: conversions and fractions" {
     )
   )
   match bad_inf {
-    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: non-finite\")")
     _ => fail("expected inexact->exact error for +inf.0")
   }
   let bad_nan = try? eval_program(
@@ -771,7 +771,7 @@ test "r6rs numeric: conversions and fractions" {
     )
   )
   match bad_nan {
-    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: non-finite\")")
     _ => fail("expected inexact->exact error for +nan.0")
   }
   inspect(
@@ -1088,7 +1088,7 @@ test "r6rs numeric: complex conversions" {
     )
   )
   match bad_inf {
-    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: non-finite\")")
     _ => fail("expected inexact->exact error for complex +inf.0")
   }
   let bad_nan = try? eval_program(
@@ -1097,7 +1097,7 @@ test "r6rs numeric: complex conversions" {
     )
   )
   match bad_nan {
-    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: non-finite\")")
     _ => fail("expected inexact->exact error for complex +nan.0")
   }
 }
