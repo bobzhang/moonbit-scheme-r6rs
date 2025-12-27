@@ -186,6 +186,27 @@ test "r6rs macro: procedural transformer expression" {
 }
 
 ///|
+test "r6rs macro: procedural identifier equality" {
+  let program = (
+    (
+      #|(let ((x 'outer))
+      #|  (define-syntax check
+      #|    (let ((a (syntax x))
+      #|          (b (let ((x 'inner)) (syntax x))))
+      #|      (lambda (stx)
+      #|        (if (and (free-identifier=? a a)
+      #|                 (bound-identifier=? a a)
+      #|                 (not (free-identifier=? a b))
+      #|                 (not (bound-identifier=? a b)))
+      #|            #'#t
+      #|            #'#f))))
+      #|  (check))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="#t")
+}
+
+///|
 test "r6rs macro: procedural transformer with syntax-case" {
   let program = (
     (

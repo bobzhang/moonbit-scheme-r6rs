@@ -130,3 +130,18 @@ test "r6rs syntax: identifier equality respects lexical bindings" {
   )
   inspect(value_to_string(eval_program(program)), content="(#t #t (#f #f))")
 }
+
+///|
+test "r6rs syntax: datum->syntax respects binding contexts" {
+  let program = (
+    (
+      #|(let ((x 'outer))
+      #|  (define a (syntax x))
+      #|  (define b (let ((x 'inner)) (syntax x)))
+      #|  (list (free-identifier=? (datum->syntax a 'x) (datum->syntax a 'x))
+      #|        (free-identifier=? (datum->syntax a 'x) (datum->syntax b 'x))
+      #|        (bound-identifier=? (datum->syntax a 'x) (datum->syntax b 'x))))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(#t #f #f)")
+}
