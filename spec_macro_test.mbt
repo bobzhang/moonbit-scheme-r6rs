@@ -184,3 +184,21 @@ test "r6rs macro: procedural transformer with syntax-case" {
   )
   inspect(value_to_string(eval_program(program)), content="5")
 }
+
+///|
+test "r6rs macro: syntax-rules preserves syntax forms" {
+  let program = (
+    (
+      #|(define-syntax make-stx
+      #|  (syntax-rules ()
+      #|    ((_ x) (syntax x))
+      #|    ((_ x y) (quasisyntax (list #,x #,y)))))
+      #|(define a (syntax? (make-stx 1)))
+      #|(define b (syntax->datum (make-stx 1)))
+      #|(define c (syntax? (make-stx 1 2)))
+      #|(define d (syntax->datum (make-stx 1 2)))
+      #|(list a b c d)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(#t 1 #t (list 1 2))")
+}
