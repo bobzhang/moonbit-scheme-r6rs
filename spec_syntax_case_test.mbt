@@ -214,6 +214,24 @@ test "r6rs syntax-case: invalid ellipsis in template" {
 }
 
 ///|
+test "r6rs syntax-case: invalid ellipsis depth" {
+  let bad = try? eval_program(
+    (
+      #|(begin
+      #|  (define-syntax bad
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_ (x ...)) #'x))))
+      #|  (bad (1 2)))
+    )
+  )
+  match bad {
+    Err(err) => inspect(err, content="EvalError(\"invalid syntax-case\")")
+    _ => fail("expected syntax-case error for mismatched ellipsis depth")
+  }
+}
+
+///|
 test "r6rs syntax-case: literal ellipsis pattern" {
   let program = (
     (

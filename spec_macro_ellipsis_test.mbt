@@ -154,3 +154,19 @@ test "r6rs macro: invalid ellipsis in template" {
     _ => fail("expected syntax-rules error for invalid template ellipsis")
   }
 }
+
+///|
+test "r6rs macro: invalid ellipsis depth" {
+  let bad = try? eval_program(
+    (
+      #|(define-syntax bad
+      #|  (syntax-rules ()
+      #|    ((_ (x ...)) x)))
+      #|(bad (1 2))
+    )
+  )
+  match bad {
+    Err(err) => inspect(err, content="EvalError(\"invalid syntax-rules\")")
+    _ => fail("expected syntax-rules error for mismatched ellipsis depth")
+  }
+}
