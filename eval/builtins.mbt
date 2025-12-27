@@ -319,6 +319,7 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::CharUpcase, Primitive::CharUpcase)
     | (Primitive::CharDowncase, Primitive::CharDowncase)
     | (Primitive::CharFoldcase, Primitive::CharFoldcase)
+    | (Primitive::CharGeneralCategory, Primitive::CharGeneralCategory)
     | (Primitive::StringEq, Primitive::StringEq)
     | (Primitive::StringLess, Primitive::StringLess)
     | (Primitive::StringGreater, Primitive::StringGreater)
@@ -6697,6 +6698,15 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
         1 => {
           let ch = value_as_char(args[0])
           Value::Datum(Datum::Char(unicode_char_foldcase(ch)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::CharGeneralCategory => {
+      match args.length() {
+        1 => {
+          let ch = value_as_char(args[0])
+          Value::Datum(Datum::Symbol(unicode_char_general_category(ch)))
         }
         n => raise arity_mismatch(1, n)
       }

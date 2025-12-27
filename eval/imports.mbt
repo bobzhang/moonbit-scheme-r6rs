@@ -47,6 +47,7 @@ using @core {
   type WinderKind,
   unicode_char_downcase,
   unicode_char_foldcase,
+  unicode_char_general_category,
   unicode_char_is_alphabetic,
   unicode_char_is_lowercase,
   unicode_char_is_uppercase,

@@ -361,6 +361,7 @@ fn init_env() -> Env {
   env_define(env, "char-upcase", Value::Primitive(Primitive::CharUpcase))
   env_define(env, "char-downcase", Value::Primitive(Primitive::CharDowncase))
   env_define(env, "char-foldcase", Value::Primitive(Primitive::CharFoldcase))
+  env_define(env, "char-general-category", Value::Primitive(Primitive::CharGeneralCategory))
   env_define(env, "string=?", Value::Primitive(Primitive::StringEq))
   env_define(env, "string<?", Value::Primitive(Primitive::StringLess))
   env_define(env, "string>?", Value::Primitive(Primitive::StringGreater))
@@ -1157,7 +1158,8 @@ fn stdlib_source() -> String {
     "(library (rnrs unicode (6))",
     "  (export char-alphabetic? char-numeric? char-whitespace?",
     "          char-upper-case? char-lower-case? char-upcase char-downcase",
-    "          char-foldcase string-upcase string-downcase string-foldcase)",
+    "          char-foldcase char-general-category",
+    "          string-upcase string-downcase string-foldcase)",
     "  (import)",
     ")",
     "(library (rnrs exceptions (6))",

@@ -45,6 +45,54 @@ pub fn unicode_char_is_lowercase(ch : Char) -> Bool {
 }
 
 ///|
+let unicode_general_category_order : Array[String] = [
+  "Lu",
+  "Ll",
+  "Lt",
+  "Lm",
+  "Lo",
+  "Mn",
+  "Mc",
+  "Me",
+  "Nd",
+  "Nl",
+  "No",
+  "Pc",
+  "Pd",
+  "Ps",
+  "Pe",
+  "Pi",
+  "Pf",
+  "Po",
+  "Sm",
+  "Sc",
+  "Sk",
+  "So",
+  "Zs",
+  "Zl",
+  "Zp",
+  "Cc",
+  "Cf",
+  "Cs",
+  "Co",
+  "Cn",
+]
+
+///|
+pub fn unicode_char_general_category(ch : Char) -> String {
+  for category in unicode_general_category_order {
+    match general_category_ranges.get(category) {
+      Some(ranges) =>
+        if char_in_ranges(ch, ranges) {
+          return category
+        }
+      None => ()
+    }
+  }
+  "Cn"
+}
+
+///|
 fn array_char_contains(values : Array[Char], target : Char) -> Bool {
   for item in values {
     if item == target {

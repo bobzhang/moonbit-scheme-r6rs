@@ -43,6 +43,7 @@
 ///   char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=?
 ///   char->integer integer->char char-alphabetic? char-numeric? char-whitespace?
 ///   char-upper-case? char-lower-case? char-upcase char-downcase char-foldcase
+///   char-general-category
 ///   string make-string string? string=? string<? string>? string<=? string>=?
 ///   string-ci=? string-ci<? string-ci>? string-ci<=? string-ci>=?
 ///   string-length string-append string-ref string-set! string-copy string-copy!
@@ -404,6 +405,7 @@ pub(all) enum Primitive {
   CharUpcase
   CharDowncase
   CharFoldcase
+  CharGeneralCategory
   StringEq
   StringLess
   StringGreater
