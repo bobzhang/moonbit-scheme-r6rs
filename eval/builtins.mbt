@@ -46,6 +46,10 @@ fn primitive_eq(left : Primitive, right : Primitive) -> Bool {
     | (Primitive::BoundIdentifierEq, Primitive::BoundIdentifierEq)
     | (Primitive::SymbolToString, Primitive::SymbolToString)
     | (Primitive::StringToSymbol, Primitive::StringToSymbol)
+    | (Primitive::StringHash, Primitive::StringHash)
+    | (Primitive::StringCiHash, Primitive::StringCiHash)
+    | (Primitive::SymbolHash, Primitive::SymbolHash)
+    | (Primitive::EqualHash, Primitive::EqualHash)
     | (Primitive::SyntaxToDatum, Primitive::SyntaxToDatum)
     | (Primitive::DatumToSyntax, Primitive::DatumToSyntax)
     | (Primitive::BooleanP, Primitive::BooleanP)
@@ -2202,6 +2206,25 @@ fn compare_chain_symbol(args : Array[Value]) -> Bool raise EvalError {
     i = i + 1
   }
   true
+}
+
+///|
+fn hash_string_value(s : String) -> Int {
+  let modulus = 2147483647
+  let factor = 65599
+  let mut hash = 0
+  let mut i = 0
+  while i < s.length() {
+    match s.get_char(i) {
+      Some(ch) => {
+        let next = (hash * factor + ch.to_int()) % modulus
+        hash = if next < 0 { next + modulus } else { next }
+      }
+      None => return hash
+    }
+    i = i + 1
+  }
+  hash
 }
 
 ///|
@@ -5368,6 +5391,43 @@ fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalErr
             Value::Datum(Datum::String(name)) => Value::Datum(Datum::Symbol(name.val))
             _ => raise @core.EvalError("type error: string expected")
           }
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringHash => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          Value::Datum(Datum::Int(hash_string_value(s)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::StringCiHash => {
+      match args.length() {
+        1 => {
+          let s = value_as_string(args[0])
+          let folded = unicode_string_foldcase(s)
+          Value::Datum(Datum::Int(hash_string_value(folded)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::SymbolHash => {
+      match args.length() {
+        1 => {
+          let name = value_as_symbol(args[0])
+          Value::Datum(Datum::Int(hash_string_value(name)))
+        }
+        n => raise arity_mismatch(1, n)
+      }
+    }
+    Primitive::EqualHash => {
+      match args.length() {
+        1 => {
+          let repr = value_to_string(args[0])
+          Value::Datum(Datum::Int(hash_string_value(repr)))
         }
         n => raise arity_mismatch(1, n)
       }

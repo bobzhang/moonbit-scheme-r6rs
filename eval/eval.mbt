@@ -36,6 +36,10 @@ fn init_env() -> Env {
   env_define(env, "bound-identifier=?", Value::Primitive(Primitive::BoundIdentifierEq))
   env_define(env, "symbol->string", Value::Primitive(Primitive::SymbolToString))
   env_define(env, "string->symbol", Value::Primitive(Primitive::StringToSymbol))
+  env_define(env, "string-hash", Value::Primitive(Primitive::StringHash))
+  env_define(env, "string-ci-hash", Value::Primitive(Primitive::StringCiHash))
+  env_define(env, "symbol-hash", Value::Primitive(Primitive::SymbolHash))
+  env_define(env, "equal-hash", Value::Primitive(Primitive::EqualHash))
   env_define(env, "syntax->datum", Value::Primitive(Primitive::SyntaxToDatum))
   env_define(env, "datum->syntax", Value::Primitive(Primitive::DatumToSyntax))
   env_define(
@@ -1139,7 +1143,8 @@ fn stdlib_source() -> String {
     "          hashtable-size hashtable-ref hashtable-set! hashtable-delete!",
     "          hashtable-contains? hashtable-update! hashtable-copy hashtable-clear!",
     "          hashtable-keys hashtable-entries hashtable-equivalence-function",
-    "          hashtable-hash-function hashtable-mutable?)",
+    "          hashtable-hash-function hashtable-mutable?",
+    "          equal-hash string-hash string-ci-hash symbol-hash)",
     "  (import)",
     ")",
     "(library (rnrs enums (6))",

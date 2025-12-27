@@ -49,6 +49,7 @@
 ///   string-fill! string->list list->string
 ///   string-map string-for-each
 ///   string-upcase string-downcase string-foldcase
+///   string-hash string-ci-hash symbol-hash equal-hash
 ///   vector make-vector vector? vector-length vector-ref vector-set!
 ///   vector-copy vector-copy! vector-fill! vector-map vector-for-each
 ///   vector->list list->vector
@@ -129,6 +130,10 @@ pub(all) enum Primitive {
   BoundIdentifierEq
   SymbolToString
   StringToSymbol
+  StringHash
+  StringCiHash
+  SymbolHash
+  EqualHash
   SyntaxToDatum
   DatumToSyntax
   BooleanP
