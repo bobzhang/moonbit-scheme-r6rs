@@ -41,6 +41,34 @@ test "r6rs macro: ellipsis with list patterns" {
 }
 
 ///|
+test "r6rs macro: literal ellipsis pattern (syntax-rules)" {
+  let program = (
+    (
+      #|(define-syntax ellipsis-lit
+      #|  (syntax-rules (...)
+      #|    ((_ x ...) 'literal)
+      #|    ((_ x y) 'pair)
+      #|    ((_ x) 'single)))
+      #|(list (ellipsis-lit 1 ...) (ellipsis-lit 1 2) (ellipsis-lit 1))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(literal pair single)")
+}
+
+///|
+test "r6rs macro: literal ellipsis template (syntax-rules)" {
+  let program = (
+    (
+      #|(define-syntax show
+      #|  (syntax-rules (...)
+      #|    ((_ x) (syntax->datum (syntax (x ...))))))
+      #|(show 1)
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(1 ...)")
+}
+
+///|
 test "r6rs macro: custom ellipsis identifier" {
   let program = (
     (
@@ -93,4 +121,36 @@ test "r6rs macro: ellipsis enforces repeated bindings" {
     )
   )
   inspect(value_to_string(eval_program(program)), content="(same diff)")
+}
+
+///|
+test "r6rs macro: invalid ellipsis in pattern" {
+  let bad = try? eval_program(
+    (
+      #|(define-syntax bad
+      #|  (syntax-rules ()
+      #|    ((_ x ... ...) 'ok)))
+      #|(bad 1 2)
+    )
+  )
+  match bad {
+    Err(err) => inspect(err, content="EvalError(\"invalid syntax-rules\")")
+    _ => fail("expected syntax-rules error for invalid ellipsis")
+  }
+}
+
+///|
+test "r6rs macro: invalid ellipsis in template" {
+  let bad = try? eval_program(
+    (
+      #|(define-syntax bad
+      #|  (syntax-rules ()
+      #|    ((_ x) (list ...))))
+      #|(bad 1)
+    )
+  )
+  match bad {
+    Err(err) => inspect(err, content="EvalError(\"invalid syntax-rules\")")
+    _ => fail("expected syntax-rules error for invalid template ellipsis")
+  }
 }

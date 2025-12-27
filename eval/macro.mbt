@@ -365,6 +365,7 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
     _ => ()
   }
   let literals = parse_literal_list(parts[literal_idx])
+  let ellipsis_active = !is_literal(literals, ellipsis)
   let rules : Array[SyntaxRule] = []
   let mut i = literal_idx + 1
   while i < parts.length() {
@@ -372,6 +373,7 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
     if rule_parts.length() != 2 {
       raise @core.EvalError("invalid syntax-rules")
     }
+    validate_pattern(rule_parts[0], literals, ellipsis, ellipsis_active, "invalid syntax-rules")
     rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
     i = i + 1
   }
@@ -427,13 +429,16 @@ fn parse_syntax_case_rules(
   env : Env,
 ) -> SyntaxRules raise EvalError {
   let literals = parse_literal_list(literals_expr)
+  let ellipsis_active = !is_literal(literals, "...")
   let rules : Array[SyntaxRule] = []
   let mut i = 0
   while i < clauses.length() {
     let rule_parts = datum_list_to_array(clauses[i])
     if rule_parts.length() == 2 {
+      validate_pattern(rule_parts[0], literals, "...", ellipsis_active, "invalid syntax-case")
       rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
     } else if rule_parts.length() == 3 {
+      validate_pattern(rule_parts[0], literals, "...", ellipsis_active, "invalid syntax-case")
       rules.push({
         pattern: rule_parts[0],
         template: rule_parts[2],
@@ -573,6 +578,66 @@ fn is_literal(literals : Array[String], name : String) -> Bool {
   false
 }
 
+fn validate_pattern(
+  pattern : Datum,
+  literals : Array[String],
+  ellipsis : String,
+  ellipsis_active : Bool,
+  error_message : String,
+) -> Unit raise EvalError {
+  let pat = datum_unlabel(datum_unwrap_syntax(pattern))
+  match pat {
+    Datum::Symbol(name) => {
+      if ellipsis_active && name == ellipsis {
+        raise @core.EvalError(error_message)
+      }
+    }
+    Datum::Pair(_, _) => {
+      match datum_list_to_array_opt(pat) {
+        Some(items) =>
+          validate_pattern_list(items, literals, ellipsis, ellipsis_active, error_message)
+        None => {
+          match pat {
+            Datum::Pair(a, b) => {
+              validate_pattern(a.val, literals, ellipsis, ellipsis_active, error_message)
+              validate_pattern(b.val, literals, ellipsis, ellipsis_active, error_message)
+            }
+            _ => ()
+          }
+        }
+      }
+    }
+    Datum::Vector(items) => {
+      validate_pattern_list(items, literals, ellipsis, ellipsis_active, error_message)
+    }
+    Datum::Label(_, value) =>
+      validate_pattern(value.val, literals, ellipsis, ellipsis_active, error_message)
+    _ => ()
+  }
+}
+
+fn validate_pattern_list(
+  items : Array[Datum],
+  literals : Array[String],
+  ellipsis : String,
+  ellipsis_active : Bool,
+  error_message : String,
+) -> Unit raise EvalError {
+  let mut i = 0
+  while i < items.length() {
+    if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
+      raise @core.EvalError(error_message)
+    }
+    if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+      validate_pattern(items[i], literals, ellipsis, ellipsis_active, error_message)
+      i = i + 2
+    } else {
+      validate_pattern(items[i], literals, ellipsis, ellipsis_active, error_message)
+      i = i + 1
+    }
+  }
+}
+
 ///|
 priv enum BindingVal {
   Leaf(Datum)
@@ -689,6 +754,25 @@ fn binding_len_at(value : BindingVal, indices : Array[Int], depth : Int) -> Int 
         }
       } else {
         values.length()
+      }
+    }
+  }
+}
+
+fn binding_has_repeat_at(value : BindingVal, indices : Array[Int], depth : Int) -> Bool {
+  match value {
+    BindingVal::Leaf(_) => false
+    BindingVal::Seq(values) => {
+      if depth < indices.length() {
+        if values.is_empty() {
+          false
+        } else {
+          let idx = indices[depth]
+          let actual = if idx < values.length() { idx } else { values.length() - 1 }
+          binding_has_repeat_at(values[actual], indices, depth + 1)
+        }
+      } else {
+        true
       }
     }
   }
@@ -1863,7 +1947,12 @@ fn expand_template_indexed(
   template_forms : Bool,
 ) -> Datum raise EvalError {
   match template {
-    Datum::Symbol(name) => expand_symbol(name, bindings, renames, indices)
+    Datum::Symbol(name) => {
+      if ellipsis_active && name == ellipsis {
+        raise @core.EvalError("invalid syntax-rules")
+      }
+      expand_symbol(name, bindings, renames, indices)
+    }
     Datum::Pair(_, _) => {
       match datum_list_to_array_opt(template) {
         Some(items) => {
@@ -1973,7 +2062,12 @@ fn expand_template_quasisyntax(
   env : Env,
 ) -> Datum raise EvalError {
   match template {
-    Datum::Symbol(name) => expand_symbol(name, bindings, renames, indices)
+    Datum::Symbol(name) => {
+      if ellipsis_active && name == ellipsis {
+        raise @core.EvalError("invalid syntax-rules")
+      }
+      expand_symbol(name, bindings, renames, indices)
+    }
     Datum::Pair(_, _) => {
       match datum_list_to_array_opt(template) {
         Some(items) => {
@@ -2073,8 +2167,14 @@ fn expand_template_list(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
+    if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
+      raise @core.EvalError("invalid syntax-rules")
+    }
     if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
+      if !template_has_repeat_binding(repeat_template, bindings, ellipsis, indices) {
+        raise @core.EvalError("invalid syntax-rules")
+      }
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
       while j < count {
@@ -2130,8 +2230,14 @@ fn expand_template_list_quasisyntax(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
+    if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
+      raise @core.EvalError("invalid syntax-rules")
+    }
     if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
+      if !template_has_repeat_binding(repeat_template, bindings, ellipsis, indices) {
+        raise @core.EvalError("invalid syntax-rules")
+      }
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
       while j < count {
@@ -2186,8 +2292,14 @@ fn expand_template_vector(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
+    if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
+      raise @core.EvalError("invalid syntax-rules")
+    }
     if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
+      if !template_has_repeat_binding(repeat_template, bindings, ellipsis, indices) {
+        raise @core.EvalError("invalid syntax-rules")
+      }
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
       while j < count {
@@ -2243,8 +2355,14 @@ fn expand_template_vector_quasisyntax(
   let expanded : Array[Datum] = []
   let mut i = 0
   while i < items.length() {
+    if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
+      raise @core.EvalError("invalid syntax-rules")
+    }
     if ellipsis_active && i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
       let repeat_template = items[i]
+      if !template_has_repeat_binding(repeat_template, bindings, ellipsis, indices) {
+        raise @core.EvalError("invalid syntax-rules")
+      }
       let count = max_binding_len(repeat_template, bindings, indices)
       let mut j = 0
       while j < count {
@@ -2333,5 +2451,62 @@ fn max_binding_len(template : Datum, bindings : Map[String, BindingVal], indices
       max_len
     }
     _ => 0
+  }
+}
+
+fn template_has_repeat_binding(
+  template : Datum,
+  bindings : Map[String, BindingVal],
+  ellipsis : String,
+  indices : Array[Int],
+) -> Bool {
+  match template {
+    Datum::Symbol(name) => {
+      if name == ellipsis {
+        false
+      } else {
+        match bindings.get(name) {
+          Some(value) => binding_has_repeat_at(value, indices, 0)
+          None => false
+        }
+      }
+    }
+    Datum::Pair(_, _) => {
+      match datum_list_to_array_opt(template) {
+        Some(items) => {
+          if is_quote_form(items) {
+            false
+          } else {
+            let mut found = false
+            for item in items {
+              if template_has_repeat_binding(item, bindings, ellipsis, indices) {
+                found = true
+                break
+              }
+            }
+            found
+          }
+        }
+        None => {
+          match template {
+            Datum::Pair(a, b) =>
+              template_has_repeat_binding(a.val, bindings, ellipsis, indices) ||
+              template_has_repeat_binding(b.val, bindings, ellipsis, indices)
+            _ => false
+          }
+        }
+      }
+    }
+    Datum::Vector(items) => {
+      let mut found = false
+      for item in items {
+        if template_has_repeat_binding(item, bindings, ellipsis, indices) {
+          found = true
+          break
+        }
+      }
+      found
+    }
+    _ => false
   }
 }
