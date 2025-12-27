@@ -849,6 +849,21 @@ fn scopes_contains(scopes : Array[Int], scope : Int) -> Bool {
   false
 }
 
+fn scopes_equal_macro(left : Array[Int], right : Array[Int]) -> Bool {
+  if left.length() != right.length() {
+    false
+  } else {
+    let mut i = 0
+    while i < left.length() {
+      if left[i] != right[i] {
+        return false
+      }
+      i = i + 1
+    }
+    true
+  }
+}
+
 fn rename_proc_symbol(
   name : String,
   def_env : Env,
@@ -1648,20 +1663,40 @@ fn datum_is_symbol(value : Datum, name : String) -> Bool {
 }
 
 fn literal_matches(name : String, input : Datum, def_env : Env, use_env : Env) -> Bool {
-  match datum_unlabel(datum_unwrap_syntax(input)) {
-    Datum::Symbol(other) => {
-      if other != name {
-        return false
-      }
-      let def_id = env_binding_id_optional(def_env, name)
-      let use_id = env_binding_id_optional(use_env, name)
-      match (def_id, use_id) {
-        (Some(left), Some(right)) => left == right
-        (None, None) => true
+  let unlabel = datum_unlabel(input)
+  match unlabel {
+    Datum::Value(Value::SyntaxObject(obj)) => {
+      match datum_unlabel(obj.datum) {
+        Datum::Symbol(other) => {
+          if other != name {
+            return false
+          }
+          let def_id = env_binding_id_optional(def_env, name)
+          match (def_id, obj.binding_id) {
+            (Some(left), Some(right)) => left == right
+            (None, None) => scopes_equal_macro(obj.scopes, [])
+            _ => false
+          }
+        }
         _ => false
       }
     }
-    _ => false
+    _ =>
+      match datum_unlabel(datum_unwrap_syntax(unlabel)) {
+        Datum::Symbol(other) => {
+          if other != name {
+            return false
+          }
+          let def_id = env_binding_id_optional(def_env, name)
+          let use_id = env_binding_id_optional(use_env, name)
+          match (def_id, use_id) {
+            (Some(left), Some(right)) => left == right
+            (None, None) => true
+            _ => false
+          }
+        }
+        _ => false
+      }
   }
 }
 

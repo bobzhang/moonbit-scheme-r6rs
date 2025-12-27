@@ -32,6 +32,24 @@ test "r6rs syntax-case: literals respect bindings" {
 }
 
 ///|
+test "r6rs syntax-case: literal uses input binding id" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax check
+      #|    (lambda (stx)
+      #|      (let ((outer-x #'x))
+      #|        (let ((x 'shadow))
+      #|          (syntax-case outer-x (x)
+      #|            ((x) #'#t)
+      #|            (_ #'#f))))))
+      #|  (check))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="#f")
+}
+
+///|
 test "r6rs syntax-case: fender clauses" {
   let program = (
     (
