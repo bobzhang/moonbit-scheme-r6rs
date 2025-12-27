@@ -700,6 +700,24 @@ test "r6rs numeric: conversions and fractions" {
     )),
     content="13421773/134217728",
   )
+  let bad_inf = try? eval_program(
+    (
+      #|(inexact->exact +inf.0)
+    )
+  )
+  match bad_inf {
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    _ => fail("expected inexact->exact error for +inf.0")
+  }
+  let bad_nan = try? eval_program(
+    (
+      #|(inexact->exact +nan.0)
+    )
+  )
+  match bad_nan {
+    Err(err) => inspect(err, content="EvalError(\"inexact->exact: unsupported\")")
+    _ => fail("expected inexact->exact error for +nan.0")
+  }
   inspect(
     value_to_string(eval_program(
       (
