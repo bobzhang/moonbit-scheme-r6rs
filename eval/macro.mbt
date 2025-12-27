@@ -1284,7 +1284,11 @@ fn match_pattern(
     Datum::Label(_, _) => false
     Datum::Symbol(name) => {
       if name == "_" {
-        true
+        if is_literal(literals, name) {
+          literal_matches(name, input, def_env, use_env)
+        } else {
+          true
+        }
       } else if is_literal(literals, name) {
         literal_matches(name, input, def_env, use_env)
       } else {

@@ -50,6 +50,22 @@ test "r6rs syntax-case: literal uses input binding id" {
 }
 
 ///|
+test "r6rs syntax-case: literal underscore" {
+  let program = (
+    (
+      #|(begin
+      #|  (define-syntax check
+      #|    (lambda (stx)
+      #|      (syntax-case stx (_)
+      #|        ((check _) #'(quote ok))
+      #|        ((check x) #'(quote bad)))))
+      #|  (list (check _) (check x)))
+    )
+  )
+  inspect(value_to_string(eval_program(program)), content="(ok bad)")
+}
+
+///|
 test "r6rs syntax-case: fender clauses" {
   let program = (
     (
