@@ -19,16 +19,26 @@ const UNICODE_Nl : String =
   $|\u{16ee}\u{16f0}\u{2160}\u{2182}\u{2185}\u{2188}\u{3007}\u{3007}\u{3021}\u{3029}\u{3038}\u{303a}\u{a6e6}\u{a6ef}\u{10140}\u{10174}\u{10341}\u{10341}\u{1034a}\u{1034a}\u{103d1}\u{103d5}\u{12400}\u{1246e}
 
 ///|
-let unicode_ranges_L : Array[Char] = UNICODE_L.iter().collect()
+let unicode_ranges_L : ReadOnlyArray[Char] = ReadOnlyArray::from_iter(
+  UNICODE_L.iter(),
+)
 
 ///|
-let unicode_ranges_LU : Array[Char] = UNICODE_Lu.iter().collect()
+let unicode_ranges_LU : ReadOnlyArray[Char] = ReadOnlyArray::from_iter(
+  UNICODE_Lu.iter(),
+)
 
 ///|
-let unicode_ranges_LL : Array[Char] = UNICODE_Ll.iter().collect()
+let unicode_ranges_LL : ReadOnlyArray[Char] = ReadOnlyArray::from_iter(
+  UNICODE_Ll.iter(),
+)
 
 ///|
-let unicode_ranges_LT : Array[Char] = UNICODE_Lt.iter().collect()
+let unicode_ranges_LT : ReadOnlyArray[Char] = ReadOnlyArray::from_iter(
+  UNICODE_Lt.iter(),
+)
 
 ///|
-let unicode_ranges_NL : Array[Char] = UNICODE_Nl.iter().collect()
+let unicode_ranges_NL : ReadOnlyArray[Char] = ReadOnlyArray::from_iter(
+  UNICODE_Nl.iter(),
+)

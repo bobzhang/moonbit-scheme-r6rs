@@ -1,5 +1,5 @@
 ///|
-fn char_in_ranges(ch : Char, ranges : Array[Char]) -> Bool {
+fn char_in_ranges(ch : Char, ranges : ReadOnlyArray[Char]) -> Bool {
   let mut left = 0
   let mut right = ranges.length() / 2 - 1
   while left <= right {
@@ -48,7 +48,7 @@ pub fn unicode_char_is_lowercase(ch : Char) -> Bool {
 }
 
 ///|
-let unicode_general_category_order : Array[String] = [
+let unicode_general_category_order : ReadOnlyArray[String] = [
   "Lu", "Ll", "Lt", "Lm", "Lo", "Mn", "Mc", "Me", "Nd", "Nl", "No", "Pc", "Pd", "Ps",
   "Pe", "Pi", "Pf", "Po", "Sm", "Sc", "Sk", "So", "Zs", "Zl", "Zp", "Cc", "Cf", "Cs",
   "Co", "Cn",

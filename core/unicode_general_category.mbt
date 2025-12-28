@@ -13,45 +13,45 @@
 // limitations under the License.
 
 ///|
-pub let general_category_ranges : Map[String, Array[Char]] = {
-  "LC": LC.iter().collect(),
-  "L": L.iter().collect(),
-  "M": M.iter().collect(),
-  "N": N.iter().collect(),
-  "P": P.iter().collect(),
-  "S": S.iter().collect(),
-  "Z": Z.iter().collect(),
-  "C": C.iter().collect(),
-  "Cn": Cn.iter().collect(),
-  "Cc": Cc.iter().collect(),
-  "Zs": Zs.iter().collect(),
-  "Po": Po.iter().collect(),
-  "Sc": Sc.iter().collect(),
-  "Ps": Ps.iter().collect(),
-  "Pe": Pe.iter().collect(),
-  "Sm": Sm.iter().collect(),
-  "Pd": Pd.iter().collect(),
-  "Nd": Nd.iter().collect(),
-  "Lu": Lu.iter().collect(),
-  "Sk": Sk.iter().collect(),
-  "Pc": Pc.iter().collect(),
-  "Ll": Ll.iter().collect(),
-  "So": So.iter().collect(),
-  "Lo": Lo.iter().collect(),
-  "Pi": Pi.iter().collect(),
-  "Cf": Cf.iter().collect(),
-  "No": No.iter().collect(),
-  "Pf": Pf.iter().collect(),
-  "Lt": Lt.iter().collect(),
-  "Lm": Lm.iter().collect(),
-  "Mn": Mn.iter().collect(),
-  "Me": Me.iter().collect(),
-  "Mc": Mc.iter().collect(),
-  "Nl": Nl.iter().collect(),
-  "Zl": Zl.iter().collect(),
-  "Zp": Zp.iter().collect(),
+pub let general_category_ranges : Map[String, ReadOnlyArray[Char]] = {
+  "LC": ReadOnlyArray::from_iter(LC.iter()),
+  "L": ReadOnlyArray::from_iter(L.iter()),
+  "M": ReadOnlyArray::from_iter(M.iter()),
+  "N": ReadOnlyArray::from_iter(N.iter()),
+  "P": ReadOnlyArray::from_iter(P.iter()),
+  "S": ReadOnlyArray::from_iter(S.iter()),
+  "Z": ReadOnlyArray::from_iter(Z.iter()),
+  "C": ReadOnlyArray::from_iter(C.iter()),
+  "Cn": ReadOnlyArray::from_iter(Cn.iter()),
+  "Cc": ReadOnlyArray::from_iter(Cc.iter()),
+  "Zs": ReadOnlyArray::from_iter(Zs.iter()),
+  "Po": ReadOnlyArray::from_iter(Po.iter()),
+  "Sc": ReadOnlyArray::from_iter(Sc.iter()),
+  "Ps": ReadOnlyArray::from_iter(Ps.iter()),
+  "Pe": ReadOnlyArray::from_iter(Pe.iter()),
+  "Sm": ReadOnlyArray::from_iter(Sm.iter()),
+  "Pd": ReadOnlyArray::from_iter(Pd.iter()),
+  "Nd": ReadOnlyArray::from_iter(Nd.iter()),
+  "Lu": ReadOnlyArray::from_iter(Lu.iter()),
+  "Sk": ReadOnlyArray::from_iter(Sk.iter()),
+  "Pc": ReadOnlyArray::from_iter(Pc.iter()),
+  "Ll": ReadOnlyArray::from_iter(Ll.iter()),
+  "So": ReadOnlyArray::from_iter(So.iter()),
+  "Lo": ReadOnlyArray::from_iter(Lo.iter()),
+  "Pi": ReadOnlyArray::from_iter(Pi.iter()),
+  "Cf": ReadOnlyArray::from_iter(Cf.iter()),
+  "No": ReadOnlyArray::from_iter(No.iter()),
+  "Pf": ReadOnlyArray::from_iter(Pf.iter()),
+  "Lt": ReadOnlyArray::from_iter(Lt.iter()),
+  "Lm": ReadOnlyArray::from_iter(Lm.iter()),
+  "Mn": ReadOnlyArray::from_iter(Mn.iter()),
+  "Me": ReadOnlyArray::from_iter(Me.iter()),
+  "Mc": ReadOnlyArray::from_iter(Mc.iter()),
+  "Nl": ReadOnlyArray::from_iter(Nl.iter()),
+  "Zl": ReadOnlyArray::from_iter(Zl.iter()),
+  "Zp": ReadOnlyArray::from_iter(Zp.iter()),
   "Cs": cs,
-  "Co": Co.iter().collect(),
+  "Co": ReadOnlyArray::from_iter(Co.iter()),
 }
 
 ///|
@@ -199,7 +199,9 @@ const Zp : String =
   $|\u{2029}\u{2029}
 
 ///|
-let cs : Array[Char] = [(0xd800).unsafe_to_char(), (0xdfff).unsafe_to_char()]
+let cs : ReadOnlyArray[Char] = ReadOnlyArray::from_array(
+  [(0xd800).unsafe_to_char(), (0xdfff).unsafe_to_char()][:],
+)
 
 ///|
 const Co : String =

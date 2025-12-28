@@ -6,7 +6,7 @@ import(
 )
 
 // Values
-pub let general_category_ranges : Map[String, Array[Char]]
+pub let general_category_ranges : Map[String, ReadOnlyArray[Char]]
 
 pub fn unicode_char_downcase(Char) -> Char
 

@@ -26,30 +26,35 @@ const HANGUL_N_COUNT : Int = HANGUL_V_COUNT * HANGUL_T_COUNT
 const HANGUL_S_COUNT : Int = HANGUL_L_COUNT * HANGUL_N_COUNT
 
 ///|
-fn data_chars(data : String) -> Array[Char] {
+fn data_chars(data : String) -> ReadOnlyArray[Char] {
   let out : Array[Char] = []
   for ch in data {
     if ch != '\n' && ch != '\r' {
       out.push(ch)
     }
   }
-  out
+  ReadOnlyArray::from_array(out[:])
 }
 
 ///|
-let canon_decomp_data : Array[Char] = data_chars(DECOMP_CANON_DATA)
+let canon_decomp_data : ReadOnlyArray[Char] = data_chars(DECOMP_CANON_DATA)
 
 ///|
-let compat_decomp_data : Array[Char] = data_chars(DECOMP_COMPAT_DATA)
+let compat_decomp_data : ReadOnlyArray[Char] = data_chars(DECOMP_COMPAT_DATA)
 
 ///|
-let combining_class_data : Array[Char] = data_chars(COMBINING_CLASS_DATA)
+let combining_class_data : ReadOnlyArray[Char] = data_chars(
+  COMBINING_CLASS_DATA,
+)
 
 ///|
-let composition_data : Array[Char] = data_chars(COMPOSITION_DATA)
+let composition_data : ReadOnlyArray[Char] = data_chars(COMPOSITION_DATA)
 
 ///|
-fn build_decomp_map(data : Array[Char], count : Int) -> Map[Char, Array[Char]] {
+fn build_decomp_map(
+  data : ReadOnlyArray[Char],
+  count : Int,
+) -> Map[Char, Array[Char]] {
   let map = Map::new(capacity=count)
   let mut i = 0
   while i < data.length() {
@@ -69,7 +74,10 @@ fn build_decomp_map(data : Array[Char], count : Int) -> Map[Char, Array[Char]] {
 }
 
 ///|
-fn build_combining_class_map(data : Array[Char], count : Int) -> Map[Char, Int] {
+fn build_combining_class_map(
+  data : ReadOnlyArray[Char],
+  count : Int,
+) -> Map[Char, Int] {
   let map = Map::new(capacity=count)
   let mut i = 0
   while i < data.length() {
@@ -82,7 +90,10 @@ fn build_combining_class_map(data : Array[Char], count : Int) -> Map[Char, Int] 
 }
 
 ///|
-fn build_composition_map(data : Array[Char], count : Int) -> Map[UInt, Char] {
+fn build_composition_map(
+  data : ReadOnlyArray[Char],
+  count : Int,
+) -> Map[UInt, Char] {
   let map = Map::new(capacity=count)
   let mut i = 0
   while i + 2 < data.length() {
