@@ -18,9 +18,7 @@ pub fn env_extend(env : Env) -> Env {
 /// Deep-clone environment frames and bindings.
 pub fn env_clone(env : Env) -> Env {
   let new_env : Env = []
-  let mut i = 0
-  while i < env.length() {
-    let frame = env[i]
+  for frame in env {
     let new_frame : Map[String, Binding] = {}
     for key in frame.keys() {
       match frame.get(key) {
@@ -30,26 +28,25 @@ pub fn env_clone(env : Env) -> Env {
       }
     }
     new_env.push(new_frame)
-    i = i + 1
   }
   new_env
 }
 
 ///|
 fn env_get(env : Env, name : String) -> Binding? {
-  let mut i = env.length() - 1
-  while true {
+  if env.is_empty() {
+    return None
+  }
+  let result : Binding? = for i = env.length() - 1; i >= 0; i = i - 1 {
     let frame = env[i]
     match frame.get(name) {
-      Some(binding) => return Some(binding)
+      Some(binding) => break Some(binding)
       None => ()
     }
-    if i == 0 {
-      break
-    }
-    i = i - 1
+  } else {
+    None
   }
-  None
+  result
 }
 
 ///|
@@ -82,43 +79,22 @@ pub fn env_define_binding(env : Env, name : String, binding : Binding) -> Unit {
 ///|
 /// Look up a binding by name or raise if it is unbound.
 pub fn env_lookup_binding(env : Env, name : String) -> Binding raise EvalError {
-  let mut i = env.length() - 1
-  while i >= 0 {
-    let frame = env[i]
-    match frame.get(name) {
-      Some(binding) => return binding
-      None => ()
-    }
-    if i == 0 {
-      break
-    }
-    i = i - 1
+  match env_get(env, name) {
+    Some(binding) => binding
+    None => raise @core.EvalError("unbound variable: \{name}")
   }
-  raise @core.EvalError("unbound variable: \{name}")
 }
 
 ///|
 /// Look up a binding by name, returning None if missing.
 pub fn env_lookup_binding_optional(env : Env, name : String) -> Binding? {
-  let mut i = env.length() - 1
-  while i >= 0 {
-    let frame = env[i]
-    match frame.get(name) {
-      Some(binding) => return Some(binding)
-      None => ()
-    }
-    if i == 0 {
-      break
-    }
-    i = i - 1
-  }
-  None
+  env_get(env, name)
 }
 
 ///|
 /// Look up a binding id by name, returning None if missing.
 pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
-  match env_lookup_binding_optional(env, name) {
+  match env_get(env, name) {
     Some(binding) => Some(binding.id)
     None => None
   }
@@ -127,54 +103,35 @@ pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
 ///|
 /// Look up a binding value or raise if it is unbound.
 pub fn env_lookup(env : Env, name : String) -> Value raise EvalError {
-  let mut i = env.length() - 1
-  while i >= 0 {
-    let frame = env[i]
-    match frame.get(name) {
-      Some(binding) => return binding.value
-      None => ()
-    }
-    if i == 0 {
-      break
-    }
-    i = i - 1
-  }
-  raise @core.EvalError("unbound variable: \{name}")
+  env_lookup_binding(env, name).value
 }
 
 ///|
 /// Look up a binding value, returning None if missing.
 pub fn env_lookup_optional(env : Env, name : String) -> Value? {
-  let mut i = env.length() - 1
-  while i >= 0 {
-    let frame = env[i]
-    match frame.get(name) {
-      Some(binding) => return Some(binding.value)
-      None => ()
-    }
-    if i == 0 {
-      break
-    }
-    i = i - 1
+  match env_get(env, name) {
+    Some(binding) => Some(binding.value)
+    None => None
   }
-  None
 }
 
 ///|
 /// Update an existing binding or raise if it is unbound.
 pub fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError {
-  let mut i = env.length() - 1
-  while i >= 0 {
+  if env.is_empty() {
+    raise @core.EvalError("unbound variable: \{name}")
+  }
+  let updated = for i = env.length() - 1; i >= 0; i = i - 1 {
     let frame = env[i]
     if frame.contains(name) {
       let binding = frame[name]
       frame[name] = Binding::{ id: binding.id, value }
-      return
+      break true
     }
-    if i == 0 {
-      break
-    }
-    i = i - 1
+  } else {
+    false
   }
-  raise @core.EvalError("unbound variable: \{name}")
+  if !updated {
+    raise @core.EvalError("unbound variable: \{name}")
+  }
 }

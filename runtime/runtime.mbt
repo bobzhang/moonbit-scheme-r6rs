@@ -280,19 +280,20 @@ pub fn make_enum_set_proc(kind : EnumSetProcKind) -> EnumSetProc {
 ///|
 /// Create a membership bitmap with all values set to true.
 pub fn enum_set_members_all_true(universe : Array[String]) -> Array[Bool] {
-  let members : Array[Bool] = []
-  for _ in universe {
-    members.push(true)
-  }
-  members
+  enum_set_members_fill(universe, true)
 }
 
 ///|
 /// Create a membership bitmap with all values set to false.
 pub fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
+  enum_set_members_fill(universe, false)
+}
+
+///|
+fn enum_set_members_fill(universe : Array[String], value : Bool) -> Array[Bool] {
   let members : Array[Bool] = []
   for _ in universe {
-    members.push(false)
+    members.push(value)
   }
   members
 }
