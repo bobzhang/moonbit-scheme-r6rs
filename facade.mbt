@@ -18,6 +18,14 @@ pub using @parser {
 
 ///|
 /// Evaluate a full Scheme program and return the final value.
+///
+/// # Example
+/// ```mbt check
+/// test "facade eval" {
+///   let value = eval_program("(+ 1 2)")
+///   inspect(value_to_string(value), content="3")
+/// }
+/// ```
 pub fn eval_program(src : String) -> Value raise {
   @eval.eval_program(src)
 }
@@ -30,6 +38,15 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
 
 ///|
 /// Register an in-memory source for (include ...) by path.
+///
+/// # Example
+/// ```mbt check
+/// test "facade include" {
+///   register_include_source("mem.scm", "(+ 1 2)")
+///   let value = eval_program("(include \"mem.scm\")")
+///   inspect(value_to_string(value), content="3")
+/// }
+/// ```
 pub fn register_include_source(path : String, content : String) -> Unit {
   @eval.register_include_source(path, content)
 }

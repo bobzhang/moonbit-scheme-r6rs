@@ -103,6 +103,9 @@ moon check
 - Keep examples self-contained so they do not rely on shared state between tests.
 - Prefer minimal inputs (short strings, small data) to keep doctests fast.
 
+## Facade-level docs
+- Add small examples on re-exported APIs so module users see usage without diving into subpackages.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

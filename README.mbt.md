@@ -26,6 +26,12 @@ let text = @dii/scheme-r6rs.value_to_string(value)
 test "eval program" {
   let value = eval_program("(+ 1 2)")
   inspect(value_to_string(value), content="3")
+  let forms = parse_program("(+ 1 2)")
+  inspect(forms.length(), content="1")
+  match parse_number_token("10") {
+    Some(@core.Datum::Int(10)) => ()
+    _ => fail("expected int")
+  }
 }
 ```
 
