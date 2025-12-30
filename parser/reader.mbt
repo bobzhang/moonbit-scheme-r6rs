@@ -10,11 +10,7 @@ using @lexer {
 
 ///|
 fn string_to_chars(value : String) -> Array[Char] {
-  let chars : Array[Char] = []
-  for ch in value {
-    chars.push(ch)
-  }
-  chars
+  value.to_array()
 }
 
 ///|
@@ -78,14 +74,11 @@ fn int_abs(value : Int) -> Int {
 
 ///|
 fn gcd(a : Int, b : Int) -> Int {
-  let mut x = int_abs(a)
-  let mut y = int_abs(b)
-  while y != 0 {
-    let temp = x % y
-    x = y
-    y = temp
+  for x = int_abs(a), y = int_abs(b); y != 0; {
+    continue y, x % y
+  } else {
+    x
   }
-  x
 }
 
 ///|
@@ -95,12 +88,7 @@ fn normalize_rat(num : Int, den : Int) -> Datum? {
   } else if num == 0 {
     Some(Datum::Int(0))
   } else {
-    let mut n = num
-    let mut d = den
-    if d < 0 {
-      n = -n
-      d = -d
-    }
+    let (n, d) = if den < 0 { (-num, -den) } else { (num, den) }
     let g = gcd(n, d)
     let nn = n / g
     let dd = d / g
@@ -144,14 +132,11 @@ fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
 
 ///|
 fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
-  let mut x = bigint_abs(a)
-  let mut y = bigint_abs(b)
-  while !bigint_is_zero(y) {
-    let temp = x % y
-    x = y
-    y = temp
+  for x = bigint_abs(a), y = bigint_abs(b); !bigint_is_zero(y); {
+    continue y, x % y
+  } else {
+    x
   }
-  x
 }
 
 ///|
@@ -161,11 +146,10 @@ fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
   } else if bigint_is_zero(num) {
     Some(Datum::Int(0))
   } else {
-    let mut n = num
-    let mut d = den
-    if d.compare_int(0) < 0 {
-      n = -n
-      d = -d
+    let (n, d) = if den.compare_int(0) < 0 {
+      (-num, -den)
+    } else {
+      (num, den)
     }
     let g = bigint_gcd(n, d)
     let nn = n / g

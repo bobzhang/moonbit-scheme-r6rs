@@ -309,3 +309,18 @@ let token =
     ..skip_ws_and_comments()
     .read_token()
 ```
+
+## Functional gcd loops
+- Replace mutable swap loops with functional `for` state to avoid `mut` counters.
+- Apply the same pattern for BigInt gcd to keep numeric helpers consistent.
+
+Example:
+```mbt
+fn gcd(a : Int, b : Int) -> Int {
+  for x = int_abs(a), y = int_abs(b); y != 0; {
+    continue y, x % y
+  } else {
+    x
+  }
+}
+```

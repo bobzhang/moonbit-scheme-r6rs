@@ -23,6 +23,10 @@ test "parse basics" {
     Some(_) => ()
     None => fail("expected number")
   }
+  match parse_number_token("3/4") {
+    Some(@core.Datum::Rat(3, 4)) => ()
+    _ => fail("expected 3/4")
+  }
   match parse_number_token_with_radix("ff", 16) {
     Some(@core.Datum::Int(255)) => ()
     _ => fail("expected 255")
