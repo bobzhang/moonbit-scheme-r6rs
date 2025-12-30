@@ -130,21 +130,13 @@ fn complex_to_string_state(
 
 ///|
 fn vector_to_string_state(items : Array[Datum], state : PrinterState) -> String {
-  let parts : Array[String] = []
-  for item in items {
-    parts.push(datum_to_string_state(item, state))
-  }
-  let joined = parts.join(" ")
+  let joined = items.map((item) => datum_to_string_state(item, state)).join(" ")
   "#(\{joined})"
 }
 
 ///|
 fn bytevector_to_string(items : Array[Int]) -> String {
-  let parts : Array[String] = []
-  for item in items {
-    parts.push(item.to_string())
-  }
-  let joined = parts.join(" ")
+  let joined = items.map((item) => item.to_string()).join(" ")
   "#vu8(\{joined})"
 }
 
@@ -152,13 +144,11 @@ fn bytevector_to_string(items : Array[Int]) -> String {
 fn datum_list_to_string_state(list : Datum, state : PrinterState) -> String {
   let parts : Array[String] = []
   let mut cur = list
-  let mut result = ""
   while true {
     match cur {
       Datum::Nil => {
         let joined = parts.join(" ")
-        result = "(\{joined})"
-        break
+        return "(\{joined})"
       }
       Datum::Pair(a, b) => {
         parts.push(datum_to_string_state(a.val, state))
@@ -167,12 +157,12 @@ fn datum_list_to_string_state(list : Datum, state : PrinterState) -> String {
       _ => {
         let prefix = parts.join(" ")
         let tail = datum_to_string_state(cur, state)
-        result = "(\{prefix} . \{tail})"
-        break
+        return "(\{prefix} . \{tail})"
       }
     }
+  } else {
+    ""
   }
-  result
 }
 
 ///|

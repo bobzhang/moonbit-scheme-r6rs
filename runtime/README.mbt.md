@@ -43,4 +43,12 @@ test "value to string" {
   let value = @core.Value::Datum(@core.Datum::Int(5))
   inspect(value_to_string(value), content="5")
 }
+
+///|
+test "normalize rat" {
+  match normalize_rat(4, 6) {
+    Some(@core.Datum::Rat(2, 3)) => ()
+    _ => fail("expected reduced ratio")
+  }
+}
 ```

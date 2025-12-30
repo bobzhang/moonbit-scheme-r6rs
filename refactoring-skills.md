@@ -241,3 +241,49 @@ fn compare_chain_char(args : Array[Value], mode : CompareMode, case_insensitive 
   }
 }
 ```
+
+## Counter wrappers for OO-style ids
+- Wrap repeated `Ref[Int]` counters in a small struct with a `next()` method to keep call sites uniform.
+- Keep the wrapper private to avoid API churn while still enabling method-style calls.
+
+Example:
+```mbt
+priv struct Counter {
+  cell : Ref[Int]
+}
+
+fn Counter::new() -> Counter {
+  { cell: Ref::new(0) }
+}
+
+fn Counter::next(self : Counter) -> Int {
+  let id = self.cell.val
+  self.cell.val = id + 1
+  id
+}
+
+let port_counter = Counter::new()
+
+fn next_port_id() -> Int {
+  port_counter.next()
+}
+```
+
+## Array helpers for less mut
+- Use `Array::map` to build arrays without manual `push`.
+- Use `Array::copy` and `Array::contains` instead of manual clone/contains loops.
+
+Example:
+```mbt
+let fields = values.map((value) => Ref::new(value))
+
+fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
+  if scopes.contains(scope) {
+    scopes.copy()
+  } else {
+    let next = scopes.copy()
+    next.push(scope)
+    next
+  }
+}
+```

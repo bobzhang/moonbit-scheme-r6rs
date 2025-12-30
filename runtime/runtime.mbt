@@ -10,46 +10,63 @@ pub(all) struct Library {
 }
 
 ///|
-let port_counter : Ref[Int] = Ref::new(0)
+priv struct Counter {
+  cell : Ref[Int]
+}
 
 ///|
-let gensym_counter : Ref[Int] = Ref::new(0)
+fn Counter::new() -> Counter {
+  { cell: Ref::new(0) }
+}
 
 ///|
-let syntax_context_counter : Ref[Int] = Ref::new(0)
+fn Counter::next(self : Counter) -> Int {
+  let id = self.cell.val
+  self.cell.val = id + 1
+  id
+}
 
 ///|
-let binding_counter : Ref[Int] = Ref::new(0)
+let port_counter : Counter = Counter::new()
 
 ///|
-let record_type_counter : Ref[Int] = Ref::new(0)
+let gensym_counter : Counter = Counter::new()
 
 ///|
-let record_counter : Ref[Int] = Ref::new(0)
+let syntax_context_counter : Counter = Counter::new()
 
 ///|
-let record_proc_counter : Ref[Int] = Ref::new(0)
+let binding_counter : Counter = Counter::new()
 
 ///|
-let record_type_desc_counter : Ref[Int] = Ref::new(0)
+let record_type_counter : Counter = Counter::new()
 
 ///|
-let record_ctor_desc_counter : Ref[Int] = Ref::new(0)
+let record_counter : Counter = Counter::new()
 
 ///|
-let condition_counter : Ref[Int] = Ref::new(0)
+let record_proc_counter : Counter = Counter::new()
 
 ///|
-let condition_proc_counter : Ref[Int] = Ref::new(0)
+let record_type_desc_counter : Counter = Counter::new()
 
 ///|
-let hashtable_counter : Ref[Int] = Ref::new(0)
+let record_ctor_desc_counter : Counter = Counter::new()
 
 ///|
-let enum_set_counter : Ref[Int] = Ref::new(0)
+let condition_counter : Counter = Counter::new()
 
 ///|
-let enum_set_proc_counter : Ref[Int] = Ref::new(0)
+let condition_proc_counter : Counter = Counter::new()
+
+///|
+let hashtable_counter : Counter = Counter::new()
+
+///|
+let enum_set_counter : Counter = Counter::new()
+
+///|
+let enum_set_proc_counter : Counter = Counter::new()
 
 ///|
 let library_registry : Ref[Map[String, Library]] = Ref::new({})
@@ -65,85 +82,78 @@ let record_type_uid_registry : Ref[Map[String, RecordTypeDescriptor]] = Ref::new
 let record_type_id_registry : Ref[Map[Int, RecordTypeDescriptor]] = Ref::new({})
 
 ///|
-fn next_counter_id(counter : Ref[Int]) -> Int {
-  let id = counter.val
-  counter.val = id + 1
-  id
-}
-
-///|
 /// Generate a fresh symbol name with a gensym suffix.
 pub fn gensym(base : String) -> String {
-  let idx = next_counter_id(gensym_counter)
+  let idx = gensym_counter.next()
   "\{base}__gs\{idx}"
 }
 
 ///|
 /// Allocate a new syntax context id.
 pub fn next_syntax_context() -> Int {
-  next_counter_id(syntax_context_counter)
+  syntax_context_counter.next()
 }
 
 ///|
 /// Allocate a new binding id.
 pub fn next_binding_id() -> Int {
-  next_counter_id(binding_counter)
+  binding_counter.next()
 }
 
 ///|
 fn next_port_id() -> Int {
-  next_counter_id(port_counter)
+  port_counter.next()
 }
 
 ///|
 fn next_record_type_id() -> Int {
-  next_counter_id(record_type_counter)
+  record_type_counter.next()
 }
 
 ///|
 fn next_record_id() -> Int {
-  next_counter_id(record_counter)
+  record_counter.next()
 }
 
 ///|
 fn next_record_proc_id() -> Int {
-  next_counter_id(record_proc_counter)
+  record_proc_counter.next()
 }
 
 ///|
 fn next_record_type_desc_id() -> Int {
-  next_counter_id(record_type_desc_counter)
+  record_type_desc_counter.next()
 }
 
 ///|
 fn next_record_ctor_desc_id() -> Int {
-  next_counter_id(record_ctor_desc_counter)
+  record_ctor_desc_counter.next()
 }
 
 ///|
 fn next_condition_id() -> Int {
-  next_counter_id(condition_counter)
+  condition_counter.next()
 }
 
 ///|
 fn next_condition_proc_id() -> Int {
-  next_counter_id(condition_proc_counter)
+  condition_proc_counter.next()
 }
 
 ///|
 /// Allocate a new hashtable id.
 pub fn next_hashtable_id() -> Int {
-  next_counter_id(hashtable_counter)
+  hashtable_counter.next()
 }
 
 ///|
 fn next_enum_set_id() -> Int {
-  next_counter_id(enum_set_counter)
+  enum_set_counter.next()
 }
 
 ///|
 fn next_enum_set_proc_id() -> Int {
-  next_counter_id(enum_set_proc_counter)
+  enum_set_proc_counter.next()
 }
 
 ///|
@@ -213,10 +223,7 @@ pub fn make_record_instance(
   record_type : RecordType,
   values : Array[Value],
 ) -> Record {
-  let fields : Array[Ref[Value]] = []
-  for value in values {
-    fields.push(Ref::new(value))
-  }
+  let fields = values.map((value) => Ref::new(value))
   Record::{ id: next_record_id(), record_type, fields }
 }
 
@@ -271,11 +278,7 @@ pub fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
 
 ///|
 fn enum_set_members_fill(universe : Array[String], value : Bool) -> Array[Bool] {
-  let members : Array[Bool] = []
-  for _ in universe {
-    members.push(value)
-  }
-  members
+  universe.map((_name) => value)
 }
 
 ///|
@@ -448,14 +451,11 @@ pub fn record_type_matches(
   if existing.fields.length() != fields.length() {
     return false
   }
-  let mut idx = 0
-  while idx < fields.length() {
-    let expected = fields[idx]
-    let actual = existing.fields[idx]
+  for i, expected in fields {
+    let actual = existing.fields[i]
     if expected.name != actual.name || expected.mutable != actual.mutable {
       return false
     }
-    idx = idx + 1
   }
   true
 }
@@ -661,31 +661,40 @@ pub fn int_abs(value : Int) -> Int {
 
 ///|
 /// Compute the greatest common divisor.
+///
+/// # Example
+/// ```mbt check
+/// test "gcd" {
+///   inspect(gcd(48, 18), content="6")
+/// }
+/// ```
 pub fn gcd(a : Int, b : Int) -> Int {
-  let mut x = int_abs(a)
-  let mut y = int_abs(b)
-  while y != 0 {
-    let temp = x % y
-    x = y
-    y = temp
+  for x = int_abs(a), y = int_abs(b); y != 0; {
+    continue y, x % y
+  } else {
+    x
   }
-  x
 }
 
 ///|
 /// Normalize an Int rational into a Datum.
+///
+/// # Example
+/// ```mbt check
+/// test "normalize rat" {
+///   match normalize_rat(2, 4) {
+///     Some(@core.Datum::Rat(1, 2)) => ()
+///     _ => fail("expected reduced ratio")
+///   }
+/// }
+/// ```
 pub fn normalize_rat(num : Int, den : Int) -> Datum? {
   if den == 0 {
     None
   } else if num == 0 {
     Some(Datum::Int(0))
   } else {
-    let mut n = num
-    let mut d = den
-    if d < 0 {
-      n = -n
-      d = -d
-    }
+    let (n, d) = if den < 0 { (-num, -den) } else { (num, den) }
     let g = gcd(n, d)
     let nn = n / g
     let dd = d / g
@@ -734,14 +743,11 @@ pub fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
 ///|
 /// Compute the greatest common divisor for BigInt.
 pub fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
-  let mut x = bigint_abs(a)
-  let mut y = bigint_abs(b)
-  while !bigint_is_zero(y) {
-    let temp = x % y
-    x = y
-    y = temp
+  for x = bigint_abs(a), y = bigint_abs(b); !bigint_is_zero(y); {
+    continue y, x % y
+  } else {
+    x
   }
-  x
 }
 
 ///|
@@ -752,11 +758,10 @@ pub fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
   } else if bigint_is_zero(num) {
     Some(Datum::Int(0))
   } else {
-    let mut n = num
-    let mut d = den
-    if d.compare_int(0) < 0 {
-      n = -n
-      d = -d
+    let (n, d) = if den.compare_int(0) < 0 {
+      (-num, -den)
+    } else {
+      (num, den)
     }
     let g = bigint_gcd(n, d)
     let nn = n / g
@@ -785,14 +790,7 @@ pub fn datum_unlabel(value : Datum) -> Datum {
   while true {
     match cur {
       Datum::Label(id, cell) => {
-        let mut dup = false
-        for item in seen {
-          if item == id {
-            dup = true
-            break
-          }
-        }
-        if dup {
+        if seen.contains(id) {
           return cur
         }
         seen.push(id)
@@ -801,7 +799,9 @@ pub fn datum_unlabel(value : Datum) -> Datum {
       _ => return cur
     }
   }
-  cur
+  else {
+    cur
+  }
 }
 
 ///|
@@ -895,31 +895,15 @@ pub fn symbol_name(expr : Datum) -> String? {
 }
 
 ///|
-fn scopes_contains(scopes : Array[Int], scope : Int) -> Bool {
-  for item in scopes {
-    if item == scope {
-      return true
-    }
-  }
-  false
-}
-
-///|
-fn scopes_clone(scopes : Array[Int]) -> Array[Int] {
-  let next : Array[Int] = []
-  for item in scopes {
-    next.push(item)
-  }
-  next
-}
-
 ///|
 fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
-  let next = scopes_clone(scopes)
-  if !scopes_contains(scopes, scope) {
+  if scopes.contains(scope) {
+    scopes.copy()
+  } else {
+    let next = scopes.copy()
     next.push(scope)
+    next
   }
-  next
 }
 
 ///|
@@ -929,13 +913,8 @@ pub fn strip_syntax_datum(datum : Datum) -> Datum {
     Datum::Value(Value::SyntaxObject(obj)) => strip_syntax_datum(obj.datum)
     Datum::Pair(a, b) =>
       pair_new(strip_syntax_datum(a.val), strip_syntax_datum(b.val))
-    Datum::Vector(items) => {
-      let stripped : Array[Datum] = []
-      for item in items {
-        stripped.push(strip_syntax_datum(item))
-      }
-      Datum::Vector(stripped)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(items.map((item) => strip_syntax_datum(item)))
     Datum::Complex(real, imag) =>
       Datum::Complex(
         Ref::new(strip_syntax_datum(real.val)),
@@ -962,13 +941,8 @@ pub fn syntax_wrap_datum(datum : Datum, scopes : Array[Int]) -> Datum {
         syntax_wrap_datum(a.val, scopes),
         syntax_wrap_datum(b.val, scopes),
       )
-    Datum::Vector(items) => {
-      let wrapped : Array[Datum] = []
-      for item in items {
-        wrapped.push(syntax_wrap_datum(item, scopes))
-      }
-      Datum::Vector(wrapped)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(items.map((item) => syntax_wrap_datum(item, scopes)))
     Datum::Complex(real, imag) =>
       Datum::Complex(
         Ref::new(syntax_wrap_datum(real.val, scopes)),
@@ -1017,13 +991,8 @@ pub fn syntax_add_scope(datum : Datum, scope : Int) -> Datum {
     }
     Datum::Pair(a, b) =>
       pair_new(syntax_add_scope(a.val, scope), syntax_add_scope(b.val, scope))
-    Datum::Vector(items) => {
-      let wrapped : Array[Datum] = []
-      for item in items {
-        wrapped.push(syntax_add_scope(item, scope))
-      }
-      Datum::Vector(wrapped)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(items.map((item) => syntax_add_scope(item, scope)))
     Datum::Complex(real, imag) =>
       Datum::Complex(
         Ref::new(syntax_add_scope(real.val, scope)),
