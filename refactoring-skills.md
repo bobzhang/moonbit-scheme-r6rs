@@ -324,3 +324,22 @@ fn gcd(a : Int, b : Int) -> Int {
   }
 }
 ```
+
+## Facade docs for re-exports
+- Re-exported symbols do not inherit docstrings, so add wrapper examples or README tests.
+- Keep facade examples short and focused on public entrypoints.
+
+Example:
+```mbt
+///|
+/// # Example
+/// ```mbt check
+/// test "facade eval" {
+///   let value = eval_program("(+ 1 2)")
+///   inspect(value_to_string(value), content="3")
+/// }
+/// ```
+pub fn eval_program(src : String) -> Value raise {
+  @eval.eval_program(src)
+}
+```

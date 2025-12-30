@@ -28,9 +28,15 @@ test "eval program" {
   inspect(value_to_string(value), content="3")
   let forms = parse_program("(+ 1 2)")
   inspect(forms.length(), content="1")
+  let values = eval_program_all("(define x 1) (+ x 2)")
+  inspect(values.length(), content="2")
   match parse_number_token("10") {
     Some(@core.Datum::Int(10)) => ()
     _ => fail("expected int")
+  }
+  match parse_number_token_with_radix("ff", 16) {
+    Some(@core.Datum::Int(255)) => ()
+    _ => fail("expected 255")
   }
 }
 ```

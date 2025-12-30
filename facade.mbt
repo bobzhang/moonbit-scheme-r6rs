@@ -32,6 +32,14 @@ pub fn eval_program(src : String) -> Value raise {
 
 ///|
 /// Evaluate a full Scheme program and return all top-level results.
+///
+/// # Example
+/// ```mbt check
+/// test "facade eval all" {
+///   let values = eval_program_all("(define x 1) (+ x 2)")
+///   inspect(values.length(), content="2")
+/// }
+/// ```
 pub fn eval_program_all(src : String) -> Array[Value] raise {
   @eval.eval_program_all(src)
 }
@@ -53,6 +61,14 @@ pub fn register_include_source(path : String, content : String) -> Unit {
 
 ///|
 /// Render a runtime value using Scheme write/display rules.
+///
+/// # Example
+/// ```mbt check
+/// test "facade value to string" {
+///   let value = eval_program("(+ 1 2)")
+///   inspect(value_to_string(value), content="3")
+/// }
+/// ```
 pub fn value_to_string(value : Value) -> String {
   @runtime.value_to_string(value)
 }
