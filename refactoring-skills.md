@@ -112,6 +112,9 @@ moon check
 ## Error-path doctests
 - Prefer `try ... catch ... noraise` for error-path doctests to avoid lint warnings.
 
+## Match simplification
+- Group enum variants with `|` patterns when they map to the same output to reduce duplication.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

@@ -189,26 +189,25 @@ pub fn value_to_string(value : Value) -> String {
   match value {
     Value::Void => "#<void>"
     Value::Datum(d) => datum_to_string(d)
-    Value::Primitive(_) => "#<procedure>"
-    Value::Closure(_) => "#<procedure>"
-    Value::CaseClosure(_) => "#<procedure>"
+    Value::Primitive(_) |
+    Value::Closure(_) |
+    Value::CaseClosure(_) |
+    Value::GuardHandler(_) |
+    Value::Parameter(_) |
+    Value::Continuation(_) |
+    Value::RecordProc(_) |
+    Value::ConditionProc(_) |
+    Value::EnumSetProc(_) => "#<procedure>"
     Value::Values(_) => "#<values>"
-    Value::GuardHandler(_) => "#<procedure>"
-    Value::Parameter(_) => "#<procedure>"
     Value::Promise(_) => "#<promise>"
     Value::EvalEnv(_) => "#<environment>"
-    Value::Continuation(_) => "#<procedure>"
     Value::Port(_) => "#<port>"
     Value::Record(_) => "#<record>"
-    Value::RecordProc(_) => "#<procedure>"
-    Value::ConditionProc(_) => "#<procedure>"
     Value::Hashtable(_) => "#<hashtable>"
     Value::EnumSet(_) => "#<enum-set>"
-    Value::EnumSetProc(_) => "#<procedure>"
     Value::RecordTypeDescriptor(_) => "#<record-type-descriptor>"
     Value::RecordConstructorDescriptor(_) => "#<record-constructor-descriptor>"
-    Value::SyntaxObject(_) => "#<syntax>"
+    Value::SyntaxObject(_) | Value::Macro(_) => "#<syntax>"
     Value::SyntaxKeyword(_) => "#<syntax-keyword>"
-    Value::Macro(_) => "#<syntax>"
   }
 }
