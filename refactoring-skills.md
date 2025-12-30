@@ -115,6 +115,9 @@ moon check
 ## Match simplification
 - Group enum variants with `|` patterns when they map to the same output to reduce duplication.
 
+## Indexing helpers
+- Extract tiny helpers (like "last frame") to avoid repeated index math and keep mutations localized.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

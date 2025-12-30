@@ -45,6 +45,11 @@ pub fn env_clone(env : Env) -> Env {
 }
 
 ///|
+fn env_last_frame(env : Env) -> Map[String, Binding] {
+  env[env.length() - 1]
+}
+
+///|
 fn env_get(env : Env, name : String) -> Binding? {
   if env.is_empty() {
     return None
@@ -77,15 +82,15 @@ pub fn env_get_macro(env : Env, name : String) -> MacroTransformer? {
 ///|
 /// Define a new binding in the current frame.
 pub fn env_define(env : Env, name : String, value : Value) -> Unit {
-  let idx = env.length() - 1
-  env[idx][name] = Binding::{ id: next_binding_id(), value }
+  let frame = env_last_frame(env)
+  frame[name] = Binding::{ id: next_binding_id(), value }
 }
 
 ///|
 /// Define an existing binding in the current frame.
 pub fn env_define_binding(env : Env, name : String, binding : Binding) -> Unit {
-  let idx = env.length() - 1
-  env[idx][name] = binding
+  let frame = env_last_frame(env)
+  frame[name] = binding
 }
 
 ///|
