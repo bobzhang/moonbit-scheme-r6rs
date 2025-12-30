@@ -126,6 +126,7 @@ moon check
 
 ## Functional loops
 - Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
+  - Useful for delimiter scans like `@` or `/` in numeric tokens.
 
 ## Reader consumption
 - Use `Reader::next()` (with `ignore(...)` if needed) to advance instead of direct `pos` mutation.

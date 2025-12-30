@@ -680,15 +680,13 @@ fn parse_complex_token(
 ) -> Datum? {
   let chars = string_to_chars(tok)
   let mut at = -1
-  let mut idx = 0
-  while idx < chars.length() {
-    if chars[idx] == '@' {
+  for i, ch in chars {
+    if ch == '@' {
       if at != -1 {
         return None
       }
-      at = idx
+      at = i
     }
-    idx = idx + 1
   }
   if at != -1 {
     if at == 0 || at == chars.length() - 1 {
@@ -734,10 +732,7 @@ fn parse_complex_token(
     }
     return Some(make_complex_datum(Datum::Int(0), imag))
   }
-  let core_chars : Array[Char] = []
-  for ch in core {
-    core_chars.push(ch)
-  }
+  let core_chars = string_to_chars(core)
   let mut split = -1
   if core_chars.length() > 1 {
     let mut i = core_chars.length() - 1
