@@ -39,16 +39,23 @@ fn compare_ok(mode : CompareMode, cmp : Int) -> Bool {
 }
 
 ///|
+fn string_to_chars(value : String) -> Array[Char] {
+  let chars : Array[Char] = []
+  for ch in value {
+    chars.push(ch)
+  }
+  chars
+}
+
+///|
 fn scopes_equal(left : Array[Int], right : Array[Int]) -> Bool {
   if left.length() != right.length() {
     false
   } else {
-    let mut i = 0
-    while i < left.length() {
-      if left[i] != right[i] {
+    for i, value in left {
+      if value != right[i] {
         return false
       }
-      i = i + 1
     }
     true
   }
@@ -56,44 +63,35 @@ fn scopes_equal(left : Array[Int], right : Array[Int]) -> Bool {
 
 ///|
 fn strip_gensym_suffix(name : String) -> String? {
-  let len = name.length()
+  let chars = string_to_chars(name)
+  let len = chars.length()
   if len < 5 {
     return None
   }
   let mut i = len
   while i > 0 {
-    match name.get_char(i - 1) {
-      Some(ch) => if ch >= '0' && ch <= '9' { i = i - 1 } else { break }
-      None => return None
+    let ch = chars[i - 1]
+    if ch >= '0' && ch <= '9' {
+      i = i - 1
+    } else {
+      break
     }
   }
   if i == len || i < 4 {
     return None
   }
-  match
-    (
-      name.get_char(i - 1),
-      name.get_char(i - 2),
-      name.get_char(i - 3),
-      name.get_char(i - 4),
-    ) {
-    (Some('s'), Some('g'), Some('_'), Some('_')) => ()
-    _ => return None
+  if
+    chars[i - 1] != 's' ||
+    chars[i - 2] != 'g' ||
+    chars[i - 3] != '_' ||
+    chars[i - 4] != '_' {
+    return None
   }
   let base_len = i - 4
   if base_len == 0 {
     return None
   }
-  let chars : Array[Char] = []
-  let mut j = 0
-  while j < base_len {
-    match name.get_char(j) {
-      Some(ch) => chars.push(ch)
-      None => return None
-    }
-    j = j + 1
-  }
-  Some(String::from_array(chars))
+  Some(String::from_array(chars.sub(end=base_len).to_array()))
 }
 
 ///|
