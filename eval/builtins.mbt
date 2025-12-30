@@ -2520,7 +2520,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          let folded = unicode_string_foldcase(s)
+          let folded = unicode_string(s).foldcase().into_string()
           Value::Datum(Datum::Int(hash_string_value(folded)))
         }
         n => raise arity_mismatch(1, n)
@@ -3705,7 +3705,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          bool_value(unicode_char_is_alphabetic(ch))
+          bool_value(unicode_char(ch).is_alphabetic())
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3729,7 +3729,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          bool_value(unicode_char_is_uppercase(ch))
+          bool_value(unicode_char(ch).is_uppercase())
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3737,7 +3737,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          bool_value(unicode_char_is_lowercase(ch))
+          bool_value(unicode_char(ch).is_lowercase())
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3745,7 +3745,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          Value::Datum(Datum::Char(unicode_char_upcase(ch)))
+          Value::Datum(Datum::Char(unicode_char(ch).upcase()))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3753,7 +3753,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          Value::Datum(Datum::Char(unicode_char_downcase(ch)))
+          Value::Datum(Datum::Char(unicode_char(ch).downcase()))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3761,7 +3761,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          Value::Datum(Datum::Char(unicode_char_foldcase(ch)))
+          Value::Datum(Datum::Char(unicode_char(ch).foldcase()))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -3769,7 +3769,7 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let ch = value_as_char(args[0])
-          Value::Datum(Datum::Symbol(unicode_char_general_category(ch)))
+          Value::Datum(Datum::Symbol(unicode_char(ch).general_category()))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4037,7 +4037,9 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          Value::Datum(Datum::String(Ref::new(unicode_string_upcase(s))))
+          Value::Datum(Datum::String(Ref::new(
+            unicode_string(s).upcase().into_string(),
+          )))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4045,7 +4047,9 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          Value::Datum(Datum::String(Ref::new(unicode_string_downcase(s))))
+          Value::Datum(Datum::String(Ref::new(
+            unicode_string(s).downcase().into_string(),
+          )))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4053,7 +4057,9 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          Value::Datum(Datum::String(Ref::new(unicode_string_foldcase(s))))
+          Value::Datum(Datum::String(Ref::new(
+            unicode_string(s).foldcase().into_string(),
+          )))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4061,7 +4067,9 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfc(s))))
+          Value::Datum(Datum::String(Ref::new(
+            unicode_string(s).normalize_nfc().into_string(),
+          )))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4069,7 +4077,9 @@ fn apply_primitive(
       match args.length() {
         1 => {
           let s = value_as_string(args[0])
-          Value::Datum(Datum::String(Ref::new(unicode_string_normalize_nfd(s))))
+          Value::Datum(Datum::String(Ref::new(
+            unicode_string(s).normalize_nfd().into_string(),
+          )))
         }
         n => raise arity_mismatch(1, n)
       }
@@ -4078,7 +4088,9 @@ fn apply_primitive(
         1 => {
           let s = value_as_string(args[0])
           Value::Datum(
-            Datum::String(Ref::new(unicode_string_normalize_nfkc(s))),
+            Datum::String(Ref::new(
+              unicode_string(s).normalize_nfkc().into_string(),
+            )),
           )
         }
         n => raise arity_mismatch(1, n)
@@ -4088,7 +4100,9 @@ fn apply_primitive(
         1 => {
           let s = value_as_string(args[0])
           Value::Datum(
-            Datum::String(Ref::new(unicode_string_normalize_nfkd(s))),
+            Datum::String(Ref::new(
+              unicode_string(s).normalize_nfkd().into_string(),
+            )),
           )
         }
         n => raise arity_mismatch(1, n)

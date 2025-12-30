@@ -184,3 +184,33 @@ pub fn next_binding_id() -> Int {
   next_counter_id(binding_counter)
 }
 ```
+
+## Wrapper methods for foreign types
+- Use wrapper types (`UnicodeChar`, `UnicodeString`) when you need chaining on foreign types.
+- Convert free functions to wrapper methods and update call sites to chaining style, then trim old imports.
+- Use `moon ide find-references @core.unicode_string_foldcase` to enumerate call sites before swapping to wrappers.
+- Regenerate public API summaries with `moon info` after API conversions.
+
+Example:
+```mbt
+pub struct UnicodeString {
+  value : String
+}
+
+pub fn unicode_string(s : String) -> UnicodeString {
+  { value: s }
+}
+
+pub fn UnicodeString::foldcase(self : UnicodeString) -> UnicodeString {
+  ...
+}
+
+let folded =
+  unicode_string("e\u{301}").normalize_nfc().foldcase().into_string()
+```
+
+Quick checks:
+```bash
+moon ide find-references @core.unicode_string_foldcase
+moon info
+```

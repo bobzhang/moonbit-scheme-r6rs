@@ -1,5 +1,5 @@
 ///|
-using @core {type Datum, type ParseError, unicode_char_foldcase}
+using @core {type Datum, type ParseError, unicode_char}
 
 ///|
 pub(all) struct Reader {
@@ -269,14 +269,14 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
             let escaped = read_identifier_escape(self)
             chars.push(
               if fold_case {
-                unicode_char_foldcase(escaped)
+                unicode_char(escaped).foldcase()
               } else {
                 escaped
               },
             )
           }
         } else {
-          let next_char = if fold_case { unicode_char_foldcase(ch) } else { ch }
+          let next_char = if fold_case { unicode_char(ch).foldcase() } else { ch }
           chars.push(next_char)
         }
         continue

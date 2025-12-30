@@ -348,11 +348,14 @@ fn normalize_string(s : String, compat : Bool, compose_output : Bool) -> String 
 /// # Example
 /// ```mbt check
 /// test "normalize nfd" {
-///   inspect(unicode_string_normalize_nfd("\u{00e9}"), content="e\u{301}")
+///   inspect(
+///     unicode_string("\u{00e9}").normalize_nfd().into_string(),
+///     content="e\u{301}",
+///   )
 /// }
 /// ```
-pub fn unicode_string_normalize_nfd(s : String) -> String {
-  normalize_string(s, false, false)
+pub fn UnicodeString::normalize_nfd(self : UnicodeString) -> UnicodeString {
+  { value: normalize_string(self.value, false, false) }
 }
 
 ///|
@@ -361,21 +364,44 @@ pub fn unicode_string_normalize_nfd(s : String) -> String {
 /// # Example
 /// ```mbt check
 /// test "normalize nfc" {
-///   inspect(unicode_string_normalize_nfc("e\u{301}"), content="\u{00e9}")
+///   inspect(
+///     unicode_string("e\u{301}").normalize_nfc().into_string(),
+///     content="\u{00e9}",
+///   )
 /// }
 /// ```
-pub fn unicode_string_normalize_nfc(s : String) -> String {
-  normalize_string(s, false, true)
+pub fn UnicodeString::normalize_nfc(self : UnicodeString) -> UnicodeString {
+  { value: normalize_string(self.value, false, true) }
 }
 
 ///|
 /// Normalize a string to Unicode NFKD.
-pub fn unicode_string_normalize_nfkd(s : String) -> String {
-  normalize_string(s, true, false)
+///
+/// # Example
+/// ```mbt check
+/// test "normalize nfkd" {
+///   inspect(
+///     unicode_string("\u{212b}").normalize_nfkd().into_string(),
+///     content="A\u{30a}",
+///   )
+/// }
+/// ```
+pub fn UnicodeString::normalize_nfkd(self : UnicodeString) -> UnicodeString {
+  { value: normalize_string(self.value, true, false) }
 }
 
 ///|
 /// Normalize a string to Unicode NFKC.
-pub fn unicode_string_normalize_nfkc(s : String) -> String {
-  normalize_string(s, true, true)
+///
+/// # Example
+/// ```mbt check
+/// test "normalize nfkc" {
+///   inspect(
+///     unicode_string("\u{212b}").normalize_nfkc().into_string(),
+///     content="\u{00c5}",
+///   )
+/// }
+/// ```
+pub fn UnicodeString::normalize_nfkc(self : UnicodeString) -> UnicodeString {
+  { value: normalize_string(self.value, true, true) }
 }

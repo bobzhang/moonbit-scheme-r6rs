@@ -1888,13 +1888,13 @@ fn compare_chain_char(
   }
   let mut prev = value_as_char(args[0])
   if case_insensitive {
-    prev = unicode_char_foldcase(prev)
+    prev = unicode_char(prev).foldcase()
   }
   let mut i = 1
   while i < args.length() {
     let mut cur = value_as_char(args[i])
     if case_insensitive {
-      cur = unicode_char_foldcase(cur)
+      cur = unicode_char(cur).foldcase()
     }
     let cmp = prev.to_int().compare(cur.to_int())
     if !compare_ok(mode, cmp) {
@@ -1917,13 +1917,13 @@ fn compare_chain_string(
   }
   let mut prev = value_as_string(args[0])
   if case_insensitive {
-    prev = unicode_string_foldcase(prev)
+    prev = unicode_string(prev).foldcase().into_string()
   }
   let mut i = 1
   while i < args.length() {
     let mut cur = value_as_string(args[i])
     if case_insensitive {
-      cur = unicode_string_foldcase(cur)
+      cur = unicode_string(cur).foldcase().into_string()
     }
     let cmp = prev.lexical_compare(cur)
     if !compare_ok(mode, cmp) {

@@ -12,18 +12,28 @@ Core runtime data types and Unicode utilities used across the interpreter.
 
 ```mbt
 ///|
-let folded = @core.unicode_string_foldcase("StraSSE")
+let folded = unicode_string("StraSSE").foldcase().into_string()
 
 ///|
-let nfc = @core.unicode_string_normalize_nfc("e\u{301}")
+let nfc = unicode_string("e\u{301}").normalize_nfc().into_string()
 ```
 
 ```mbt check
 ///|
 test "unicode helpers" {
-  inspect(unicode_char_general_category('A'), content="Lu")
-  inspect(unicode_string_foldcase("ABC"), content="abc")
-  inspect(unicode_string_normalize_nfc("e\u{301}"), content="\u{00e9}")
-  inspect(unicode_string_normalize_nfd("\u{00e9}"), content="e\u{301}")
+  inspect(unicode_char('A').general_category(), content="Lu")
+  inspect(unicode_string("ABC").foldcase().into_string(), content="abc")
+  inspect(
+    unicode_string("e\u{301}").normalize_nfc().into_string(),
+    content="\u{00e9}",
+  )
+  inspect(
+    unicode_string("\u{00e9}").normalize_nfd().into_string(),
+    content="e\u{301}",
+  )
+  inspect(
+    unicode_string("e\u{301}").normalize_nfc().foldcase().into_string(),
+    content="\u{00e9}",
+  )
 }
 ```

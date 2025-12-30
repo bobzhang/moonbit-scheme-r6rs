@@ -45,20 +45,8 @@ using @core {
   type WindAction,
   type Winder,
   type WinderKind,
-  unicode_char_downcase,
-  unicode_char_foldcase,
-  unicode_char_general_category,
-  unicode_char_is_alphabetic,
-  unicode_char_is_lowercase,
-  unicode_char_is_uppercase,
-  unicode_char_upcase,
-  unicode_string_downcase,
-  unicode_string_foldcase,
-  unicode_string_normalize_nfc,
-  unicode_string_normalize_nfd,
-  unicode_string_normalize_nfkc,
-  unicode_string_normalize_nfkd,
-  unicode_string_upcase,
+  unicode_char,
+  unicode_string,
 }
 
 ///|

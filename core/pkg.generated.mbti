@@ -8,33 +8,9 @@ import(
 // Values
 pub let general_category_ranges : Map[String, ReadOnlyArray[Char]]
 
-pub fn unicode_char_downcase(Char) -> Char
+pub fn unicode_char(Char) -> UnicodeChar
 
-pub fn unicode_char_foldcase(Char) -> Char
-
-pub fn unicode_char_general_category(Char) -> String
-
-pub fn unicode_char_is_alphabetic(Char) -> Bool
-
-pub fn unicode_char_is_lowercase(Char) -> Bool
-
-pub fn unicode_char_is_uppercase(Char) -> Bool
-
-pub fn unicode_char_upcase(Char) -> Char
-
-pub fn unicode_string_downcase(String) -> String
-
-pub fn unicode_string_foldcase(String) -> String
-
-pub fn unicode_string_normalize_nfc(String) -> String
-
-pub fn unicode_string_normalize_nfd(String) -> String
-
-pub fn unicode_string_normalize_nfkc(String) -> String
-
-pub fn unicode_string_normalize_nfkd(String) -> String
-
-pub fn unicode_string_upcase(String) -> String
+pub fn unicode_string(String) -> UnicodeString
 
 // Errors
 pub(all) suberror EvalError String
@@ -735,6 +711,29 @@ pub(all) enum SyntaxRulesKind {
   SyntaxRules
   SyntaxCase
 }
+
+pub struct UnicodeChar {
+  value : Char
+}
+pub fn UnicodeChar::downcase(Self) -> Char
+pub fn UnicodeChar::foldcase(Self) -> Char
+pub fn UnicodeChar::general_category(Self) -> String
+pub fn UnicodeChar::is_alphabetic(Self) -> Bool
+pub fn UnicodeChar::is_lowercase(Self) -> Bool
+pub fn UnicodeChar::is_uppercase(Self) -> Bool
+pub fn UnicodeChar::upcase(Self) -> Char
+
+pub struct UnicodeString {
+  value : String
+}
+pub fn UnicodeString::downcase(Self) -> Self
+pub fn UnicodeString::foldcase(Self) -> Self
+pub fn UnicodeString::into_string(Self) -> String
+pub fn UnicodeString::normalize_nfc(Self) -> Self
+pub fn UnicodeString::normalize_nfd(Self) -> Self
+pub fn UnicodeString::normalize_nfkc(Self) -> Self
+pub fn UnicodeString::normalize_nfkd(Self) -> Self
+pub fn UnicodeString::upcase(Self) -> Self
 
 pub(all) enum Value {
   Void

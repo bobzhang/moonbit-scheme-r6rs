@@ -1,20 +1,19 @@
 ///|
 fn char_in_ranges(ch : Char, ranges : ReadOnlyArray[Char]) -> Bool {
-  let mut left = 0
-  let mut right = ranges.length() / 2 - 1
-  while left <= right {
+  for left = 0, right = ranges.length() / 2 - 1; left <= right; {
     let mid = (left + right) / 2
     let start = ranges[mid * 2]
     let end = ranges[mid * 2 + 1]
     if ch < start {
-      right = mid - 1
+      continue left, mid - 1
     } else if ch > end {
-      left = mid + 1
+      continue mid + 1, right
     } else {
       return true
     }
+  } else {
+    false
   }
-  false
 }
 
 ///|
@@ -30,16 +29,62 @@ fn unicode_category_has(ch : Char, category : String) -> Bool {
 }
 
 ///|
+pub struct UnicodeChar {
+  value : Char
+}
+
+///|
+/// Wrap a `Char` to access Unicode helpers with chaining.
+///
+/// # Example
+/// ```mbt check
+/// test "unicode char wrapper" {
+///   inspect(unicode_char('A').is_uppercase(), content="true")
+/// }
+/// ```
+pub fn unicode_char(ch : Char) -> UnicodeChar {
+  { value: ch }
+}
+
+///|
+pub struct UnicodeString {
+  value : String
+}
+
+///|
+/// Wrap a `String` to access Unicode helpers with chaining.
+///
+/// # Example
+/// ```mbt check
+/// test "unicode string wrapper" {
+///   inspect(
+///     unicode_string("e\u{301}").normalize_nfc().foldcase().into_string(),
+///     content="\u{00e9}",
+///   )
+/// }
+/// ```
+pub fn unicode_string(s : String) -> UnicodeString {
+  { value: s }
+}
+
+///|
+/// Unwrap a Unicode string wrapper back into a `String`.
+pub fn UnicodeString::into_string(self : UnicodeString) -> String {
+  self.value
+}
+
+///|
 /// Return true if the character is alphabetic.
 ///
 /// # Example
 /// ```mbt check
 /// test "alphabetic predicate" {
-///   inspect(unicode_char_is_alphabetic('A'), content="true")
-///   inspect(unicode_char_is_alphabetic('1'), content="false")
+///   inspect(unicode_char('A').is_alphabetic(), content="true")
+///   inspect(unicode_char('1').is_alphabetic(), content="false")
 /// }
 /// ```
-pub fn unicode_char_is_alphabetic(ch : Char) -> Bool {
+pub fn UnicodeChar::is_alphabetic(self : UnicodeChar) -> Bool {
+  let ch = self.value
   unicode_category_has(ch, "L") || unicode_category_has(ch, "Nl")
 }
 
@@ -49,12 +94,12 @@ pub fn unicode_char_is_alphabetic(ch : Char) -> Bool {
 /// # Example
 /// ```mbt check
 /// test "uppercase predicate" {
-///   inspect(unicode_char_is_uppercase('A'), content="true")
-///   inspect(unicode_char_is_uppercase('a'), content="false")
+///   inspect(unicode_char('A').is_uppercase(), content="true")
+///   inspect(unicode_char('a').is_uppercase(), content="false")
 /// }
 /// ```
-pub fn unicode_char_is_uppercase(ch : Char) -> Bool {
-  unicode_category_has(ch, "Lu")
+pub fn UnicodeChar::is_uppercase(self : UnicodeChar) -> Bool {
+  unicode_category_has(self.value, "Lu")
 }
 
 ///|
@@ -63,12 +108,12 @@ pub fn unicode_char_is_uppercase(ch : Char) -> Bool {
 /// # Example
 /// ```mbt check
 /// test "lowercase predicate" {
-///   inspect(unicode_char_is_lowercase('a'), content="true")
-///   inspect(unicode_char_is_lowercase('A'), content="false")
+///   inspect(unicode_char('a').is_lowercase(), content="true")
+///   inspect(unicode_char('A').is_lowercase(), content="false")
 /// }
 /// ```
-pub fn unicode_char_is_lowercase(ch : Char) -> Bool {
-  unicode_category_has(ch, "Ll")
+pub fn UnicodeChar::is_lowercase(self : UnicodeChar) -> Bool {
+  unicode_category_has(self.value, "Ll")
 }
 
 ///|
@@ -84,10 +129,11 @@ let unicode_general_category_order : ReadOnlyArray[String] = [
 /// # Example
 /// ```mbt check
 /// test "general category" {
-///   inspect(unicode_char_general_category('A'), content="Lu")
+///   inspect(unicode_char('A').general_category(), content="Lu")
 /// }
 /// ```
-pub fn unicode_char_general_category(ch : Char) -> String {
+pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
+  let ch = self.value
   for category in unicode_general_category_order {
     match general_category_ranges.get(category) {
       Some(ranges) => if char_in_ranges(ch, ranges) { return category }
@@ -145,16 +191,15 @@ fn unicode_min_equivalent(chars : Array[Char], fallback : Char) -> Char {
   if chars.length() == 0 {
     return fallback
   }
-  let mut min = chars[0]
-  let mut i = 1
-  while i < chars.length() {
+  for i = 1, min = chars[0]; i < chars.length(); {
     let ch = chars[i]
     if ch < min {
-      min = ch
+      continue i + 1, ch
     }
-    i = i + 1
+    continue i + 1, min
+  } else {
+    min
   }
-  min
 }
 
 ///|
@@ -163,10 +208,11 @@ fn unicode_min_equivalent(chars : Array[Char], fallback : Char) -> Char {
 /// # Example
 /// ```mbt check
 /// test "char upcase" {
-///   inspect(unicode_char_upcase('a'), content="A")
+///   inspect(unicode_char('a').upcase(), content="A")
 /// }
 /// ```
-pub fn unicode_char_upcase(ch : Char) -> Char {
+pub fn UnicodeChar::upcase(self : UnicodeChar) -> Char {
+  let ch = self.value
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Lu") {
     Some(upper) => upper
@@ -184,10 +230,11 @@ pub fn unicode_char_upcase(ch : Char) -> Char {
 /// # Example
 /// ```mbt check
 /// test "char downcase" {
-///   inspect(unicode_char_downcase('A'), content="a")
+///   inspect(unicode_char('A').downcase(), content="a")
 /// }
 /// ```
-pub fn unicode_char_downcase(ch : Char) -> Char {
+pub fn UnicodeChar::downcase(self : UnicodeChar) -> Char {
+  let ch = self.value
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Ll") {
     Some(lower) => lower
@@ -197,7 +244,15 @@ pub fn unicode_char_downcase(ch : Char) -> Char {
 
 ///|
 /// Case-fold a character for case-insensitive comparison.
-pub fn unicode_char_foldcase(ch : Char) -> Char {
+///
+/// # Example
+/// ```mbt check
+/// test "char foldcase" {
+///   inspect(unicode_char('A').foldcase(), content="a")
+/// }
+/// ```
+pub fn UnicodeChar::foldcase(self : UnicodeChar) -> Char {
+  let ch = self.value
   let equiv = unicode_case_equivalents(ch)
   match unicode_pick_equivalent_category(equiv, "Ll") {
     Some(lower) => lower
@@ -211,15 +266,15 @@ pub fn unicode_char_foldcase(ch : Char) -> Char {
 /// # Example
 /// ```mbt check
 /// test "string upcase" {
-///   inspect(unicode_string_upcase("abc"), content="ABC")
+///   inspect(unicode_string("abc").upcase().into_string(), content="ABC")
 /// }
 /// ```
-pub fn unicode_string_upcase(s : String) -> String {
+pub fn UnicodeString::upcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
-  for ch in s {
-    buf.write_char(unicode_char_upcase(ch))
+  for ch in self.value {
+    buf.write_char(unicode_char(ch).upcase())
   }
-  buf.to_string()
+  { value: buf.to_string() }
 }
 
 ///|
@@ -228,15 +283,15 @@ pub fn unicode_string_upcase(s : String) -> String {
 /// # Example
 /// ```mbt check
 /// test "string downcase" {
-///   inspect(unicode_string_downcase("ABC"), content="abc")
+///   inspect(unicode_string("ABC").downcase().into_string(), content="abc")
 /// }
 /// ```
-pub fn unicode_string_downcase(s : String) -> String {
+pub fn UnicodeString::downcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
-  for ch in s {
-    buf.write_char(unicode_char_downcase(ch))
+  for ch in self.value {
+    buf.write_char(unicode_char(ch).downcase())
   }
-  buf.to_string()
+  { value: buf.to_string() }
 }
 
 ///|
@@ -245,13 +300,13 @@ pub fn unicode_string_downcase(s : String) -> String {
 /// # Example
 /// ```mbt check
 /// test "string foldcase" {
-///   inspect(unicode_string_foldcase("ABC"), content="abc")
+///   inspect(unicode_string("ABC").foldcase().into_string(), content="abc")
 /// }
 /// ```
-pub fn unicode_string_foldcase(s : String) -> String {
+pub fn UnicodeString::foldcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
-  for ch in s {
-    buf.write_char(unicode_char_foldcase(ch))
+  for ch in self.value {
+    buf.write_char(unicode_char(ch).foldcase())
   }
-  buf.to_string()
+  { value: buf.to_string() }
 }
