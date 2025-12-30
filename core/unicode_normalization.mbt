@@ -344,12 +344,26 @@ fn normalize_string(s : String, compat : Bool, compose_output : Bool) -> String 
 
 ///|
 /// Normalize a string to Unicode NFD.
+///
+/// # Example
+/// ```mbt check
+/// test "normalize nfd" {
+///   inspect(unicode_string_normalize_nfd("\u{00e9}"), content="e\u{301}")
+/// }
+/// ```
 pub fn unicode_string_normalize_nfd(s : String) -> String {
   normalize_string(s, false, false)
 }
 
 ///|
 /// Normalize a string to Unicode NFC.
+///
+/// # Example
+/// ```mbt check
+/// test "normalize nfc" {
+///   inspect(unicode_string_normalize_nfc("e\u{301}"), content="\u{00e9}")
+/// }
+/// ```
 pub fn unicode_string_normalize_nfc(s : String) -> String {
   normalize_string(s, false, true)
 }

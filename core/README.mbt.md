@@ -23,5 +23,7 @@ let nfc = @core.unicode_string_normalize_nfc("e\u{301}")
 test "unicode helpers" {
   inspect(unicode_char_general_category('A'), content="Lu")
   inspect(unicode_string_foldcase("ABC"), content="abc")
+  inspect(unicode_string_normalize_nfc("e\u{301}"), content="\u{00e9}")
+  inspect(unicode_string_normalize_nfd("\u{00e9}"), content="e\u{301}")
 }
 ```

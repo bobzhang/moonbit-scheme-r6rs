@@ -56,6 +56,13 @@ let unicode_general_category_order : ReadOnlyArray[String] = [
 
 ///|
 /// Return the general category tag for the character.
+///
+/// # Example
+/// ```mbt check
+/// test "general category" {
+///   inspect(unicode_char_general_category('A'), content="Lu")
+/// }
+/// ```
 pub fn unicode_char_general_category(ch : Char) -> String {
   for category in unicode_general_category_order {
     match general_category_ranges.get(category) {
@@ -182,6 +189,13 @@ pub fn unicode_string_downcase(s : String) -> String {
 
 ///|
 /// Case-fold a string for case-insensitive comparison.
+///
+/// # Example
+/// ```mbt check
+/// test "string foldcase" {
+///   inspect(unicode_string_foldcase("ABC"), content="abc")
+/// }
+/// ```
 pub fn unicode_string_foldcase(s : String) -> String {
   let buf = @buffer.new()
   for ch in s {
