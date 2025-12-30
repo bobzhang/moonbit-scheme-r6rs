@@ -690,26 +690,15 @@ priv struct MacroExpansion {
 }
 
 ///|
-fn scopes_contains(scopes : Array[Int], scope : Int) -> Bool {
-  for item in scopes {
-    if item == scope {
-      return true
-    }
-  }
-  false
-}
-
 ///|
 fn scopes_equal_macro(left : Array[Int], right : Array[Int]) -> Bool {
   if left.length() != right.length() {
     false
   } else {
-    let mut i = 0
-    while i < left.length() {
-      if left[i] != right[i] {
+    for i, item in left {
+      if right[i] != item {
         return false
       }
-      i = i + 1
     }
     true
   }
@@ -752,15 +741,12 @@ fn rename_proc_datum(
         rename_proc_datum(a.val, def_env, call_ctx, renames, captures),
         rename_proc_datum(b.val, def_env, call_ctx, renames, captures),
       )
-    Datum::Vector(items) => {
-      let renamed : Array[Datum] = []
-      for item in items {
-        renamed.push(
-          rename_proc_datum(item, def_env, call_ctx, renames, captures),
-        )
-      }
-      Datum::Vector(renamed)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(
+        items.map((item) =>
+          rename_proc_datum(item, def_env, call_ctx, renames, captures)
+        ),
+      )
     Datum::Label(tag, value) =>
       Datum::Label(
         tag,
@@ -778,7 +764,7 @@ fn rename_proc_datum(
         ),
       )
     Datum::Value(Value::SyntaxObject(obj)) =>
-      if scopes_contains(obj.scopes, call_ctx) {
+      if obj.scopes.contains(call_ctx) {
         datum
       } else {
         let renamed_inner = rename_proc_datum(
@@ -942,14 +928,13 @@ fn expand_macro(
 
 ///|
 fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
-  let next : Array[Int] = []
-  for item in scopes {
-    next.push(item)
-  }
-  if !scopes_contains(scopes, scope) {
+  if scopes.contains(scope) {
+    scopes.copy()
+  } else {
+    let next = scopes.copy()
     next.push(scope)
+    next
   }
-  next
 }
 
 ///|

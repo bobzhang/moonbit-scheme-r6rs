@@ -288,6 +288,17 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
 }
 ```
 
+## Vector remapping in macros
+- Use `Array::map` to rebuild `Datum::Vector` transformations without mutable buffers.
+
+Example:
+```mbt
+Datum::Vector(items) =>
+  Datum::Vector(
+    items.map((item) => rename_proc_datum(item, def_env, call_ctx, renames, captures))
+  )
+```
+
 ## Reader-friendly indexing helpers
 - Use `String::to_array()` for fast Char arrays instead of manual pushes.
 - Replace manual bounds checks with `Array::get` and reuse peek helpers.

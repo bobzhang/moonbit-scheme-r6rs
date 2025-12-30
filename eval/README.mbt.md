@@ -34,6 +34,12 @@ test "evaluate program returns last value" {
 }
 
 ///|
+test "empty program" {
+  let values = eval_program_all("")
+  inspect(values.length(), content="0")
+}
+
+///|
 test "include source" {
   register_include_source("mem.scm", "(+ 1 2)")
   let value = eval_program("(include \"mem.scm\")")
