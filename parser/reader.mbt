@@ -784,13 +784,13 @@ fn parse_complex_token(
 ///|
 fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
   let chars = string_to_chars(tok)
+  let len = chars.length()
   let mut radix = match radix_override {
     Some(r) => r
     None => 10
   }
   let mut exactness : Char? = None
-  let mut i = 0
-  while i + 1 < chars.length() && chars[i] == '#' {
+  let start = for i = 0; i + 1 < len && chars[i] == '#'; {
     let tag = chars[i + 1]
     match tag {
       'b' | 'B' | 'o' | 'O' | 'd' | 'D' | 'x' | 'X' =>
@@ -815,12 +815,14 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
       }
       _ => return None
     }
-    i = i + 2
+    continue i + 2
+  } else {
+    i
   }
-  if i >= chars.length() {
+  if start >= len {
     return None
   }
-  let rest = String::from_array(chars.sub(start=i).to_array())
+  let rest = String::from_array(chars.sub(start=start).to_array())
   let allow_rat = radix_override is None
   match parse_complex_token(rest, radix, exactness, allow_rat) {
     Some(datum) => Some(datum)

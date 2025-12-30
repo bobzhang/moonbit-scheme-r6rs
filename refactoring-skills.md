@@ -143,6 +143,9 @@ moon check
 ## Streamed digit accumulation
 - Accumulate numeric values during parsing instead of collecting digits into an array first.
 
+## Prefix tag scanning
+- Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {
