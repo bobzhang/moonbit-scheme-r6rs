@@ -47,6 +47,16 @@ pub fn Reader::peek(self : Reader) -> Char? {
 }
 
 ///|
+fn reader_peek_offset(r : Reader, offset : Int) -> Char? {
+  let idx = r.pos + offset
+  if idx < r.chars.length() {
+    Some(r.chars[idx])
+  } else {
+    None
+  }
+}
+
+///|
 /// Consume and return the next character.
 ///
 /// # Example
@@ -126,27 +136,29 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
 
 ///|
 fn skip_block_comment(r : Reader) -> Unit raise ParseError {
-  r.pos = r.pos + 2
+  ignore(r.next())
+  ignore(r.next())
   let mut depth = 1
   while depth > 0 {
-    if r.pos >= r.chars.length() {
-      raise @core.ParseError("unterminated block comment")
+    match (r.peek(), reader_peek_offset(r, 1)) {
+      (None, _) => raise @core.ParseError("unterminated block comment")
+      (Some('#'), Some('|')) => {
+        depth = depth + 1
+        ignore(r.next())
+        ignore(r.next())
+        continue
+      }
+      (Some('|'), Some('#')) => {
+        depth = depth - 1
+        ignore(r.next())
+        ignore(r.next())
+        continue
+      }
+      _ => {
+        ignore(r.next())
+        continue
+      }
     }
-    if r.chars[r.pos] == '#' &&
-      r.pos + 1 < r.chars.length() &&
-      r.chars[r.pos + 1] == '|' {
-      depth = depth + 1
-      r.pos = r.pos + 2
-      continue
-    }
-    if r.chars[r.pos] == '|' &&
-      r.pos + 1 < r.chars.length() &&
-      r.chars[r.pos + 1] == '#' {
-      depth = depth - 1
-      r.pos = r.pos + 2
-      continue
-    }
-    r.pos = r.pos + 1
   }
 }
 

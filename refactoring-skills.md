@@ -131,6 +131,9 @@ moon check
 ## Reader consumption
 - Use `Reader::next()` (with `ignore(...)` if needed) to advance instead of direct `pos` mutation.
 
+## Lookahead helpers
+- Add a small `reader_peek_offset` helper to centralize bounded lookahead when scanning delimiters.
+
 ## First-token handling
 - Replace manual index counters with a `first` flag when parsing optional leading signs.
 
