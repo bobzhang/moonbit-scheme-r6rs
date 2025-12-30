@@ -1076,6 +1076,14 @@ fn next_do_name() -> String {
 
 ///|
 /// Evaluate a Scheme program and return the final value.
+///
+/// # Example
+/// ```mbt check
+/// test "eval program" {
+///   let value = eval_program("(+ 1 2)")
+///   inspect(@runtime.value_to_string(value), content="3")
+/// }
+/// ```
 pub fn eval_program(src : String) -> Value raise {
   let results = eval_program_all(src)
   if results.is_empty() {
@@ -1087,6 +1095,15 @@ pub fn eval_program(src : String) -> Value raise {
 
 ///|
 /// Evaluate a Scheme program and return all top-level results.
+///
+/// # Example
+/// ```mbt check
+/// test "eval program all" {
+///   let values = eval_program_all("(define x 1) (+ x 2)")
+///   inspect(values.length(), content="2")
+///   inspect(@runtime.value_to_string(values[1]), content="3")
+/// }
+/// ```
 pub fn eval_program_all(src : String) -> Array[Value] raise {
   let forms = parse_program(src)
   reset_library_registry()

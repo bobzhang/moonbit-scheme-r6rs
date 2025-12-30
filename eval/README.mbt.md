@@ -22,5 +22,8 @@ let result = @eval.eval_program(program)
 test "evaluate program" {
   let value = eval_program("(+ 1 2)")
   inspect(@runtime.value_to_string(value), content="3")
+  let values = eval_program_all("(define x 1) (+ x 2)")
+  inspect(values.length(), content="2")
+  inspect(@runtime.value_to_string(values[1]), content="3")
 }
 ```

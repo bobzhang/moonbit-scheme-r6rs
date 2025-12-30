@@ -1,5 +1,17 @@
 ///|
 /// Create a fresh environment with a single empty frame.
+///
+/// # Example
+/// ```mbt check
+/// test "env define and lookup" {
+///   let env = env_new()
+///   env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
+///   match env_lookup_optional(env, "x") {
+///     Some(@core.Value::Datum(@core.Datum::Int(1))) => ()
+///     _ => fail("expected bound value")
+///   }
+/// }
+/// ```
 pub fn env_new() -> Env {
   let env : Env = []
   env.push({})

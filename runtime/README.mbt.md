@@ -27,4 +27,14 @@ test "string port" {
   port_write(port, "hi")
   inspect(port_get_output_string(port), content="hi")
 }
+
+///|
+test "env basics" {
+  let env = env_new()
+  env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
+  match env_lookup_optional(env, "x") {
+    Some(@core.Value::Datum(@core.Datum::Int(1))) => ()
+    _ => fail("expected bound value")
+  }
+}
 ```

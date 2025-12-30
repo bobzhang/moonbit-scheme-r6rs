@@ -496,6 +496,15 @@ pub fn lookup_library(name : String) -> Library? {
 
 ///|
 /// Create a fresh output string port.
+///
+/// # Example
+/// ```mbt check
+/// test "output string port" {
+///   let port = new_output_string_port()
+///   port_write(port, "hi")
+///   inspect(port_get_output_string(port), content="hi")
+/// }
+/// ```
 pub fn new_output_string_port() -> Port {
   let buffer = Ref::new("")
   Port::{ id: next_port_id(), kind: PortKind::OutputString(buffer) }
