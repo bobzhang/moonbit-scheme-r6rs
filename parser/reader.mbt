@@ -5,14 +5,7 @@ using @core {type Datum, type ParseError}
 using @lexer {
   type Reader,
   digit_value,
-  is_bytevector_start,
-  is_ellipsis_start,
-  is_vector_start,
   make_reader,
-  read_string,
-  read_token,
-  reader_peek,
-  skip_ws_and_comments,
 }
 
 ///|
@@ -990,26 +983,24 @@ fn read_list(r : Reader) -> Datum raise ParseError {
   let items : Array[Datum] = []
   let mut dotted_tail : Datum? = None
   while true {
-    skip_ws_and_comments(r)
-    match reader_peek(r) {
+    match r..skip_ws_and_comments().peek() {
       None => raise @core.ParseError("unexpected EOF while reading list")
       Some(')') => {
         r.pos = r.pos + 1
         break
       }
       Some('.') =>
-        if is_ellipsis_start(r) {
-          let tok = read_token(r)
+        if r.is_ellipsis_start() {
+          let tok = r.read_token()
           items.push(Datum::Symbol(tok))
         } else {
           if items.is_empty() {
             raise @core.ParseError("unexpected dot")
           }
           r.pos = r.pos + 1
-          skip_ws_and_comments(r)
+          r.skip_ws_and_comments()
           let tail = read_expr(r)
-          skip_ws_and_comments(r)
-          match reader_peek(r) {
+          match r..skip_ws_and_comments().peek() {
             Some(')') => r.pos = r.pos + 1
             _ => raise @core.ParseError("expected ) after dotted tail")
           }
@@ -1095,8 +1086,7 @@ fn token_to_datum(tok : String) -> Datum {
 
 ///|
 fn read_expr(r : Reader) -> Datum raise ParseError {
-  skip_ws_and_comments(r)
-  match reader_peek(r) {
+  match r..skip_ws_and_comments().peek() {
     None => raise @core.ParseError("unexpected EOF")
     Some('(') => {
       r.pos = r.pos + 1
@@ -1119,7 +1109,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
     Some(',') => {
       r.pos = r.pos + 1
       let mut splicing = false
-      match reader_peek(r) {
+      match r.peek() {
         Some('@') => {
           r.pos = r.pos + 1
           splicing = true
@@ -1135,7 +1125,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
     }
     Some('#') =>
       if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == '!' {
-        let tok = read_token(r)
+        let tok = r.read_token()
         let directive = ascii_lower_string(tok)
         if directive == "#!fold-case" {
           r.fold_case = true
@@ -1145,7 +1135,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
         read_expr(r)
       } else if r.pos + 1 < r.chars.length() &&
         r.chars[r.pos + 1].is_ascii_digit() {
-        let tok = read_token(r)
+        let tok = r.read_token()
         match parse_label_token(tok) {
           Some((true, label)) => {
             match r.labels.get(label) {
@@ -1184,7 +1174,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
           ',' => {
             r.pos = r.pos + 2
             let mut splicing = false
-            match reader_peek(r) {
+            match r.peek() {
               Some('@') => {
                 r.pos = r.pos + 1
                 splicing = true
@@ -1199,33 +1189,33 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
             }
           }
           _ =>
-            if is_vector_start(r) {
+            if r.is_vector_start() {
               r.pos = r.pos + 2
               read_vector_literal(r)
-            } else if is_bytevector_start(r) {
+            } else if r.is_bytevector_start() {
               r.pos = r.pos + 5
               read_bytevector_literal(r)
             } else {
-              let tok = read_token(r)
+              let tok = r.read_token()
               token_to_datum(tok)
             }
         }
-      } else if is_vector_start(r) {
+      } else if r.is_vector_start() {
         r.pos = r.pos + 2
         read_vector_literal(r)
-      } else if is_bytevector_start(r) {
+      } else if r.is_bytevector_start() {
         r.pos = r.pos + 5
         read_bytevector_literal(r)
       } else {
-        let tok = read_token(r)
+        let tok = r.read_token()
         token_to_datum(tok)
       }
     Some('"') => {
       r.pos = r.pos + 1
-      Datum::String(Ref::new(read_string(r)))
+      Datum::String(Ref::new(r.read_string()))
     }
     Some(_) => {
-      let tok = read_token(r)
+      let tok = r.read_token()
       token_to_datum(tok)
     }
   }
@@ -1247,8 +1237,7 @@ pub fn parse_program_with_fold_case(
   r.fold_case = fold_case
   let exprs : Array[Datum] = []
   while true {
-    skip_ws_and_comments(r)
-    match reader_peek(r) {
+    match r..skip_ws_and_comments().peek() {
       None => break
       Some(_) => {
         let expr = read_expr(r)

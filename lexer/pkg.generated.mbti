@@ -8,21 +8,7 @@ import(
 // Values
 pub fn digit_value(Char) -> Int?
 
-pub fn is_bytevector_start(Reader) -> Bool
-
-pub fn is_ellipsis_start(Reader) -> Bool
-
-pub fn is_vector_start(Reader) -> Bool
-
 pub fn make_reader(String) -> Reader
-
-pub fn read_string(Reader) -> String raise @core.ParseError
-
-pub fn read_token(Reader) -> String raise @core.ParseError
-
-pub fn reader_peek(Reader) -> Char?
-
-pub fn skip_ws_and_comments(Reader) -> Unit raise @core.ParseError
 
 // Errors
 
@@ -33,7 +19,14 @@ pub(all) struct Reader {
   mut fold_case : Bool
   labels : Map[Int, Ref[@core.Datum]]
 }
+pub fn Reader::is_bytevector_start(Self) -> Bool
+pub fn Reader::is_ellipsis_start(Self) -> Bool
+pub fn Reader::is_vector_start(Self) -> Bool
 pub fn Reader::next(Self) -> Char?
+pub fn Reader::peek(Self) -> Char?
+pub fn Reader::read_string(Self) -> String raise @core.ParseError
+pub fn Reader::read_token(Self) -> String raise @core.ParseError
+pub fn Reader::skip_ws_and_comments(Self) -> Unit raise @core.ParseError
 
 // Type aliases
 

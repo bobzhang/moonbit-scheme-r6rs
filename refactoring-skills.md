@@ -55,3 +55,23 @@ moon check
 ## Low-friction edits
 - Prefer `apply_patch` for single-file edits and small, precise refactors.
 - Use `rg` to do quick sanity checks when you do not need full symbol context.
+
+## Chaining style after method refactors
+- Convert related free functions into `Type::method` so call sites can chain with `..`.
+- Update docs and tests that referenced old `@pkg.fn` helpers.
+
+Example:
+```mbt
+// Before
+skip_ws_and_comments(r)
+match reader_peek(r) { ... }
+
+// After
+match r..skip_ws_and_comments().peek() { ... }
+```
+
+Follow-up checks:
+```bash
+moon ide find-references @lexer.reader_peek
+moon info
+```
