@@ -527,6 +527,15 @@ pub fn set_current_output_port(port : Port) -> Unit {
 
 ///|
 /// Write text to a port.
+///
+/// # Example
+/// ```mbt check
+/// test "port_write" {
+///   let port = new_output_string_port()
+///   port_write(port, "ok")
+///   inspect(port_get_output_string(port), content="ok")
+/// }
+/// ```
 pub fn port_write(port : Port, text : String) -> Unit {
   match port.kind {
     PortKind::OutputString(buffer) => buffer.val = buffer.val + text
@@ -535,6 +544,14 @@ pub fn port_write(port : Port, text : String) -> Unit {
 
 ///|
 /// Extract the accumulated output from a string port.
+///
+/// # Example
+/// ```mbt check
+/// test "port_get_output_string empty" {
+///   let port = new_output_string_port()
+///   inspect(port_get_output_string(port), content="")
+/// }
+/// ```
 pub fn port_get_output_string(port : Port) -> String {
   match port.kind {
     PortKind::OutputString(buffer) => buffer.val

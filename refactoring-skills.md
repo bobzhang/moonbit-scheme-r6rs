@@ -90,6 +90,15 @@ pub fn Port::write(self : Port, text : String) -> Unit { ... }
 - Centralize `Ref[Int]` increment logic in a private helper, then reuse across `next_*` functions.
 - Apply the same helper to eval counters (closure/parameter/promise/winder) to keep patterns consistent.
 
+## Docstring test scoping
+- Doctests run in the package context, but core types may need explicit `@core.` prefixes.
+- Use fully qualified names like `@core.Datum` and `@core.Value` in examples to avoid "type not found".
+
+Quick check:
+```bash
+moon check
+```
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

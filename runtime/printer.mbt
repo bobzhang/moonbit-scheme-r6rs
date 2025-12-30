@@ -177,6 +177,14 @@ fn datum_list_to_string_state(list : Datum, state : PrinterState) -> String {
 
 ///|
 /// Render a value using Scheme write/display conventions.
+///
+/// # Example
+/// ```mbt check
+/// test "value to string" {
+///   let value = @core.Value::Datum(@core.Datum::Int(7))
+///   inspect(value_to_string(value), content="7")
+/// }
+/// ```
 pub fn value_to_string(value : Value) -> String {
   match value {
     Value::Void => "#<void>"

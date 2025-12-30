@@ -37,4 +37,10 @@ test "env basics" {
     _ => fail("expected bound value")
   }
 }
+
+///|
+test "value to string" {
+  let value = @core.Value::Datum(@core.Datum::Int(5))
+  inspect(value_to_string(value), content="5")
+}
 ```
