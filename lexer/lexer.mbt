@@ -97,22 +97,16 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
   while true {
     match self.peek() {
       Some(ch) if ch.is_ascii_whitespace() => {
-        self.pos = self.pos + 1
+        ignore(self.next())
         continue
       }
       Some(';') => {
         // Line comment
-        self.pos = self.pos + 1
+        ignore(self.next())
         while true {
-          match self.peek() {
-            Some('\n') => {
-              self.pos = self.pos + 1
-              break
-            }
-            Some(_) => {
-              self.pos = self.pos + 1
-              continue
-            }
+          match self.next() {
+            Some('\n') => break
+            Some(_) => continue
             None => break
           }
         }
@@ -240,7 +234,7 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
           break
         }
         started = true
-        self.pos = self.pos + 1
+        ignore(self.next())
         if !in_bar && chars.is_empty() && ch == '#' {
           if self.pos < self.chars.length() && self.chars[self.pos] == '\\' {
             fold_case = false
@@ -340,7 +334,7 @@ pub fn Reader::read_string(self : Reader) -> String raise ParseError {
           Some('\n') => skip_string_line_continuation(self)
           Some('\r') => {
             if self.peek() == Some('\n') {
-              self.pos = self.pos + 1
+              ignore(self.next())
             }
             skip_string_line_continuation(self)
           }
@@ -368,7 +362,7 @@ fn skip_string_line_continuation(r : Reader) -> Unit {
   while true {
     match r.peek() {
       Some(ch) if ch.is_ascii_whitespace() => {
-        r.pos = r.pos + 1
+        ignore(r.next())
         continue
       }
       _ => break

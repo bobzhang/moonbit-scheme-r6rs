@@ -127,6 +127,9 @@ moon check
 ## Functional loops
 - Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
 
+## Reader consumption
+- Use `Reader::next()` (with `ignore(...)` if needed) to advance instead of direct `pos` mutation.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {
