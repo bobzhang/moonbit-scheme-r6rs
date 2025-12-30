@@ -326,23 +326,22 @@ fn parse_float_token(tok : String) -> Float? {
 
 ///|
 fn pow10_bigint(exp : Int) -> @bigint.BigInt {
-  let mut result = bigint_from_int(1)
-  let mut i = 0
-  while i < exp {
-    result = result * bigint_from_int(10)
-    i = i + 1
+  let ten = bigint_from_int(10)
+  for i = 0, acc = bigint_from_int(1); i < exp; {
+    continue i + 1, acc * ten
+  } else {
+    acc
   }
-  result
 }
 
 ///|
 fn pow10_float(exp : Int) -> Float {
-  let mut result = Float::from_int(1)
-  let mut i = 0
   let limit = int_abs(exp)
-  while i < limit {
-    result = result * Float::from_int(10)
-    i = i + 1
+  let ten = Float::from_int(10)
+  let result = for i = 0, acc = Float::from_int(1); i < limit; {
+    continue i + 1, acc * ten
+  } else {
+    acc
   }
   if exp < 0 {
     Float::from_int(1) / result

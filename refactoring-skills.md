@@ -128,6 +128,9 @@ moon check
 - Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
   - Useful for delimiter scans like `@` or `/` in numeric tokens.
 
+## Multi-state loops
+- Use functional `for` with multiple state variables to replace `mut` accumulators in small numeric loops.
+
 ## Reader consumption
 - Use `Reader::next()` (with `ignore(...)` if needed) to advance instead of direct `pos` mutation.
 
