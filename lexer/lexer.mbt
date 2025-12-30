@@ -213,14 +213,14 @@ pub fn Reader::is_vector_start(self : Reader) -> Bool {
 /// }
 /// ```
 pub fn Reader::is_bytevector_start(self : Reader) -> Bool {
-  if self.pos + 4 >= self.chars.length() {
+  let len = self.chars.length()
+  if self.pos + 4 >= len {
     false
   } else {
-    let mut ok = self.chars[self.pos + 1] == 'v'
-    ok = ok && self.chars[self.pos + 2] == 'u'
-    ok = ok && self.chars[self.pos + 3] == '8'
-    ok = ok && self.chars[self.pos + 4] == '('
-    ok
+    self.chars[self.pos + 1] == 'v' &&
+    self.chars[self.pos + 2] == 'u' &&
+    self.chars[self.pos + 3] == '8' &&
+    self.chars[self.pos + 4] == '('
   }
 }
 

@@ -146,6 +146,9 @@ moon check
 ## First-token handling
 - Replace manual index counters with a `first` flag when parsing optional leading signs.
 
+## Boolean chaining
+- Replace stepwise `ok = ok && ...` with a single boolean expression to reduce mut.
+
 ## String conversion helper
 - Use a single `string_to_chars` helper for repeated String → Array[Char] conversions.
 - Prefer slicing the char array for prefixes instead of manual `get_char` loops.
