@@ -124,6 +124,9 @@ moon check
 ## Map iteration simplification
 - Iterate with `for key, value in map` to avoid extra `get`/`keys` loops.
 
+## Functional loops
+- Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

@@ -284,12 +284,10 @@ pub fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
   if a.universe.length() != b.universe.length() {
     return false
   }
-  let mut i = 0
-  while i < a.universe.length() {
-    if a.universe[i] != b.universe[i] {
+  for i, name in a.universe {
+    if b.universe[i] != name {
       return false
     }
-    i = i + 1
   }
   true
 }
@@ -297,12 +295,10 @@ pub fn enum_set_universe_equal(a : EnumSet, b : EnumSet) -> Bool {
 ///|
 /// Find the index of a symbol in an enum-set universe.
 pub fn enum_set_index_of(universe : Array[String], name : String) -> Int? {
-  let mut i = 0
-  while i < universe.length() {
-    if universe[i] == name {
+  for i, item in universe {
+    if item == name {
       return Some(i)
     }
-    i = i + 1
   }
   None
 }
