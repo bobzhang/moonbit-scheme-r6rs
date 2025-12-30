@@ -114,6 +114,18 @@ pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
 
 ///|
 /// Look up a binding value or raise if it is unbound.
+///
+/// # Example
+/// ```mbt check
+/// test "env lookup missing" {
+///   let env = env_new()
+///   try env_lookup(env, "missing") catch {
+///     _ => ()
+///   } noraise {
+///     _ => fail("expected error")
+///   }
+/// }
+/// ```
 pub fn env_lookup(env : Env, name : String) -> Value raise EvalError {
   env_lookup_binding(env, name).value
 }

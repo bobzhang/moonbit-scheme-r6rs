@@ -109,6 +109,9 @@ moon check
 ## Boolean API examples
 - Use `inspect(..., content="true"|"false")` in doctests to make expectations explicit.
 
+## Error-path doctests
+- Prefer `try ... catch ... noraise` for error-path doctests to avoid lint warnings.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {
