@@ -9,6 +9,15 @@ using @lexer {
 }
 
 ///|
+fn string_to_chars(value : String) -> Array[Char] {
+  let chars : Array[Char] = []
+  for ch in value {
+    chars.push(ch)
+  }
+  chars
+}
+
+///|
 fn parse_int_token(tok : String) -> Int? {
   let mut sign = 1
   let mut acc = 0
@@ -39,10 +48,7 @@ fn parse_int_token(tok : String) -> Int? {
 
 ///|
 fn parse_label_token(tok : String) -> (Bool, Int)? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   if chars.length() < 3 || chars[0] != '#' {
     return None
   }
@@ -247,10 +253,7 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> Datum? {
 
 ///|
 fn parse_rat_token(tok : String) -> Datum? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   let mut slash = -1
   for i, ch in chars {
     if ch == '/' {
@@ -350,10 +353,7 @@ fn pow10_float(exp : Int) -> Float {
 
 ///|
 fn split_exp_token(tok : String) -> (String, Int)? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   let mut idx = -1
   for i, ch in chars {
     if ch == 'e' || ch == 'E' {
@@ -407,10 +407,7 @@ fn parse_exact_decimal(tok : String) -> Datum? {
     }
     None => ()
   }
-  let chars : Array[Char] = []
-  for ch in base {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(base)
   if chars.is_empty() {
     return None
   }
@@ -458,10 +455,7 @@ fn parse_exact_decimal(tok : String) -> Datum? {
 
 ///|
 fn parse_rat_token_radix(tok : String, radix : Int) -> Datum? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   let mut slash = -1
   for i, ch in chars {
     if ch == '/' {
@@ -684,10 +678,7 @@ fn parse_complex_token(
   exactness : Char?,
   allow_rat : Bool,
 ) -> Datum? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   let mut at = -1
   let mut idx = 0
   while idx < chars.length() {
@@ -799,10 +790,7 @@ fn parse_complex_token(
 
 ///|
 fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   let mut radix = match radix_override {
     Some(r) => r
     None => 10
@@ -881,10 +869,7 @@ pub fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
 
 ///|
 fn parse_char_token(tok : String) -> Char? {
-  let chars : Array[Char] = []
-  for ch in tok {
-    chars.push(ch)
-  }
+  let chars = string_to_chars(tok)
   if chars.length() < 3 {
     None
   } else if chars[0] != '#' || chars[1] != '\\' {

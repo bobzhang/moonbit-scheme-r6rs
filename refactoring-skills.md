@@ -133,6 +133,9 @@ moon check
 ## First-token handling
 - Replace manual index counters with a `first` flag when parsing optional leading signs.
 
+## String conversion helper
+- Use a single `string_to_chars` helper for repeated String → Array[Char] conversions.
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {
