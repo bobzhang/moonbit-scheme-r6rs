@@ -299,6 +299,14 @@ Datum::Vector(items) =>
   )
 ```
 
+## Snapshot arrays cleanly
+- Use `Array::copy` to snapshot mutable stacks without manual push loops.
+
+Example:
+```mbt
+let winds_copy = wind_stack.val.copy()
+```
+
 ## Reader-friendly indexing helpers
 - Use `String::to_array()` for fast Char arrays instead of manual pushes.
 - Replace manual bounds checks with `Array::get` and reuse peek helpers.

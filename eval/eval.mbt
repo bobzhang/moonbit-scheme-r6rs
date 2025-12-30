@@ -887,18 +887,28 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
 }
 
 ///|
-fn next_counter_id(counter : Ref[Int]) -> Int {
-  let id = counter.val
-  counter.val = id + 1
+priv struct Counter {
+  cell : Ref[Int]
+}
+
+///|
+fn Counter::new() -> Counter {
+  { cell: Ref::new(0) }
+}
+
+///|
+fn Counter::next(self : Counter) -> Int {
+  let id = self.cell.val
+  self.cell.val = id + 1
   id
 }
 
 ///|
-let closure_counter : Ref[Int] = Ref::new(0)
+let closure_counter : Counter = Counter::new()
 
 ///|
 fn next_closure_id() -> Int {
-  next_counter_id(closure_counter)
+  closure_counter.next()
 }
 
 ///|
@@ -912,11 +922,11 @@ fn make_closure(
 }
 
 ///|
-let parameter_counter : Ref[Int] = Ref::new(0)
+let parameter_counter : Counter = Counter::new()
 
 ///|
 fn next_parameter_id() -> Int {
-  next_counter_id(parameter_counter)
+  parameter_counter.next()
 }
 
 ///|
@@ -952,11 +962,11 @@ fn parameter_with_converter(value : Value, converter : Value) -> Parameter {
 }
 
 ///|
-let promise_counter : Ref[Int] = Ref::new(0)
+let promise_counter : Counter = Counter::new()
 
 ///|
 fn next_promise_id() -> Int {
-  next_counter_id(promise_counter)
+  promise_counter.next()
 }
 
 ///|
@@ -965,11 +975,11 @@ fn make_promise(thunk : Value) -> Promise {
 }
 
 ///|
-let eval_env_counter : Ref[Int] = Ref::new(0)
+let eval_env_counter : Counter = Counter::new()
 
 ///|
 fn next_eval_env_id() -> Int {
-  next_counter_id(eval_env_counter)
+  eval_env_counter.next()
 }
 
 ///|
@@ -1010,10 +1020,7 @@ fn make_guard_handler(
 
 ///|
 fn capture_continuation(kont : Kont, handlers : Array[Value]) -> Continuation {
-  let winds_copy : Array[Winder] = []
-  for item in wind_stack.val {
-    winds_copy.push(item)
-  }
+  let winds_copy = wind_stack.val.copy()
   Continuation::{
     id: next_continuation_id(),
     kont,
@@ -1029,11 +1036,11 @@ priv enum MachineState {
 }
 
 ///|
-let winder_counter : Ref[Int] = Ref::new(0)
+let winder_counter : Counter = Counter::new()
 
 ///|
 fn next_winder_id() -> Int {
-  next_counter_id(winder_counter)
+  winder_counter.next()
 }
 
 ///|
@@ -1050,27 +1057,27 @@ fn make_param_winder(bindings : Array[ParamBinding]) -> Winder {
 let wind_stack : Ref[Array[Winder]] = Ref::new([])
 
 ///|
-let continuation_counter : Ref[Int] = Ref::new(0)
+let continuation_counter : Counter = Counter::new()
 
 ///|
-let guard_handler_counter : Ref[Int] = Ref::new(0)
+let guard_handler_counter : Counter = Counter::new()
 
 ///|
 fn next_continuation_id() -> Int {
-  next_counter_id(continuation_counter)
+  continuation_counter.next()
 }
 
 ///|
 fn next_guard_handler_id() -> Int {
-  next_counter_id(guard_handler_counter)
+  guard_handler_counter.next()
 }
 
 ///|
-let do_counter : Ref[Int] = Ref::new(0)
+let do_counter : Counter = Counter::new()
 
 ///|
 fn next_do_name() -> String {
-  let id = next_counter_id(do_counter)
+  let id = do_counter.next()
   "__do_loop__\{id}"
 }
 
