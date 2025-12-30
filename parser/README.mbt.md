@@ -23,5 +23,13 @@ test "parse basics" {
     Some(_) => ()
     None => fail("expected number")
   }
+  match parse_number_token_with_radix("ff", 16) {
+    Some(@core.Datum::Int(255)) => ()
+    _ => fail("expected 255")
+  }
+  match parse_program_with_fold_case("ABC", true) {
+    [@core.Datum::Symbol("abc"), ..] => ()
+    _ => fail("expected folded symbol")
+  }
 }
 ```

@@ -11,6 +11,14 @@ pub(all) struct Reader {
 
 ///|
 /// Create a reader over the given source string.
+///
+/// # Example
+/// ```mbt check
+/// test "make_reader basics" {
+///   let r = make_reader("foo bar")
+///   inspect(r.read_token(), content="foo")
+/// }
+/// ```
 pub fn make_reader(src : String) -> Reader {
   let chars : Array[Char] = []
   for ch in src {
@@ -21,6 +29,15 @@ pub fn make_reader(src : String) -> Reader {
 
 ///|
 /// Peek the next character without consuming it.
+///
+/// # Example
+/// ```mbt check
+/// test "peek does not consume" {
+///   let r = make_reader("ab")
+///   guard r.peek() is Some('a') else { fail("expected a") }
+///   guard r.peek() is Some('a') else { fail("expected a again") }
+/// }
+/// ```
 pub fn Reader::peek(self : Reader) -> Char? {
   if self.pos < self.chars.length() {
     Some(self.chars[self.pos])
@@ -31,6 +48,16 @@ pub fn Reader::peek(self : Reader) -> Char? {
 
 ///|
 /// Consume and return the next character.
+///
+/// # Example
+/// ```mbt check
+/// test "next advances reader" {
+///   let r = make_reader("ab")
+///   guard r.next() is Some('a') else { fail("expected a") }
+///   guard r.next() is Some('b') else { fail("expected b") }
+///   guard r.next() is None else { fail("expected eof") }
+/// }
+/// ```
 pub fn Reader::next(self : Reader) -> Char? {
   let ch = self.peek()
   match ch {
@@ -57,6 +84,15 @@ fn is_delim(ch : Char) -> Bool {
 
 ///|
 /// Skip whitespace and comments, leaving the next token ready to read.
+///
+/// # Example
+/// ```mbt check
+/// test "skip whitespace and comments" {
+///   let r = make_reader("  ; hi\nfoo")
+///   r.skip_ws_and_comments()
+///   guard r.peek() is Some('f') else { fail("expected f") }
+/// }
+/// ```
 pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
   while true {
     match self.peek() {
@@ -160,6 +196,14 @@ pub fn Reader::is_bytevector_start(self : Reader) -> Bool {
 
 ///|
 /// Read the next token from the reader.
+///
+/// # Example
+/// ```mbt check
+/// test "read token" {
+///   let r = make_reader("alpha beta")
+///   inspect(r.read_token(), content="alpha")
+/// }
+/// ```
 pub fn Reader::read_token(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   let mut in_bar = false
@@ -230,6 +274,14 @@ fn read_identifier_escape(r : Reader) -> Char raise ParseError {
 
 ///|
 /// Convert a digit character to its numeric value.
+///
+/// # Example
+/// ```mbt check
+/// test "digit value" {
+///   inspect(digit_value('9'), content="Some(9)")
+///   inspect(digit_value('a'), content="Some(10)")
+/// }
+/// ```
 pub fn digit_value(ch : Char) -> Int? {
   if ch.is_ascii_digit() {
     Some(ch.to_int() - '0'.to_int())
@@ -244,6 +296,15 @@ pub fn digit_value(ch : Char) -> Int? {
 
 ///|
 /// Read a string literal, handling escapes.
+///
+/// # Example
+/// ```mbt check
+/// test "read string literal" {
+///   let r = make_reader("\"hi\"")
+///   ignore(r.next()) // consume opening quote
+///   inspect(r.read_string(), content="hi")
+/// }
+/// ```
 pub fn Reader::read_string(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   while true {

@@ -861,12 +861,32 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> Datum? {
 
 ///|
 /// Parse a numeric token using default radix and exactness rules.
+///
+/// # Example
+/// ```mbt check
+/// test "parse number token" {
+///   match parse_number_token("10") {
+///     Some(@core.Datum::Int(10)) => ()
+///     _ => fail("expected integer")
+///   }
+/// }
+/// ```
 pub fn parse_number_token(tok : String) -> Datum? {
   parse_number_token_internal(tok, None)
 }
 
 ///|
 /// Parse a numeric token using a specific radix override.
+///
+/// # Example
+/// ```mbt check
+/// test "parse number token with radix" {
+///   match parse_number_token_with_radix("ff", 16) {
+///     Some(@core.Datum::Int(255)) => ()
+///     _ => fail("expected 255")
+///   }
+/// }
+/// ```
 pub fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
   parse_number_token_internal(tok, Some(radix))
 }
@@ -1223,12 +1243,34 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
 
 ///|
 /// Parse all top-level datums from a source string.
+///
+/// # Example
+/// ```mbt check
+/// test "parse program" {
+///   let forms = parse_program("#\\a")
+///   match forms {
+///     [@core.Datum::Char('a'), ..] => ()
+///     _ => fail("expected char datum")
+///   }
+/// }
+/// ```
 pub fn parse_program(src : String) -> Array[Datum] raise ParseError {
   parse_program_with_fold_case(src, false)
 }
 
 ///|
 /// Parse all top-level datums with optional case folding.
+///
+/// # Example
+/// ```mbt check
+/// test "parse program with fold case" {
+///   let forms = parse_program_with_fold_case("ABC", true)
+///   match forms {
+///     [@core.Datum::Symbol("abc"), ..] => ()
+///     _ => fail("expected folded symbol")
+///   }
+/// }
+/// ```
 pub fn parse_program_with_fold_case(
   src : String,
   fold_case : Bool,
