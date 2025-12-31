@@ -126,27 +126,26 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
 fn Reader::skip_block_comment(self : Reader) -> Unit raise ParseError {
   ignore(self.next())
   ignore(self.next())
-  let mut depth = 1
-  while depth > 0 {
+  for depth = 1; depth > 0; {
     match (self.peek(), self.peek_offset(1)) {
       (None, _) => raise @core.ParseError("unterminated block comment")
       (Some('#'), Some('|')) => {
-        depth = depth + 1
         ignore(self.next())
         ignore(self.next())
-        continue
+        continue depth + 1
       }
       (Some('|'), Some('#')) => {
-        depth = depth - 1
         ignore(self.next())
         ignore(self.next())
-        continue
+        continue depth - 1
       }
       _ => {
         ignore(self.next())
-        continue
+        continue depth
       }
     }
+  } else {
+    ()
   }
 }
 

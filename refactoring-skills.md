@@ -231,6 +231,34 @@ segment[insert_at] = ch
 ## Prefix tag scanning
 - Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
 
+## Depth-driven loops
+- Replace `mut depth` while loops with functional `for` state updates when scanning nested constructs.
+
+Example:
+```mbt
+for depth = 1; depth > 0; {
+  match (self.peek(), self.peek_offset(1)) {
+    (None, _) => raise @core.ParseError("unterminated block comment")
+    (Some('#'), Some('|')) => {
+      ignore(self.next())
+      ignore(self.next())
+      continue depth + 1
+    }
+    (Some('|'), Some('#')) => {
+      ignore(self.next())
+      ignore(self.next())
+      continue depth - 1
+    }
+    _ => {
+      ignore(self.next())
+      continue depth
+    }
+  }
+} else {
+  ()
+}
+```
+
 ## Reverse scans
 - Isolate right-to-left split detection into a helper to keep main parsers linear.
 
