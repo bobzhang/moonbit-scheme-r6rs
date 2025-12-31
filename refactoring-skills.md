@@ -180,6 +180,30 @@ pub fn env_clone(env : Env) -> Env {
 ## Multi-state loops
 - Use functional `for` with multiple state variables to replace `mut` accumulators in small numeric loops.
 
+Example:
+```mbt
+for i = 0, starter_index = -1, last_ccc = 0; i < chars.length(); {
+  let ch = chars[i]
+  let ccc = combining_class(ch)
+  if starter_index >= 0 {
+    let starter = out[starter_index]
+    match try_compose(starter, ch, last_ccc, ccc) {
+      Some(composed) => {
+        out[starter_index] = composed
+        continue i + 1, starter_index, last_ccc
+      }
+      None => ()
+    }
+  }
+  let next_starter = if ccc == 0 { out.length() } else { starter_index }
+  let next_ccc = if ccc == 0 { 0 } else { ccc }
+  out.push(ch)
+  continue i + 1, next_starter, next_ccc
+} else {
+  out
+}
+```
+
 ## Shared constants
 - Lift repeated lookup tables (like radix digit arrays) to a single `let` to avoid duplication.
 

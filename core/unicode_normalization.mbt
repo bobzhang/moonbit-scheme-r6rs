@@ -303,29 +303,26 @@ fn try_compose(
 ///|
 fn compose(chars : Array[Char]) -> Array[Char] {
   let out : Array[Char] = []
-  let mut starter_index = -1
-  let mut last_ccc = 0
-  for ch in chars {
+  for i = 0, starter_index = -1, last_ccc = 0; i < chars.length(); {
+    let ch = chars[i]
     let ccc = combining_class(ch)
     if starter_index >= 0 {
       let starter = out[starter_index]
       match try_compose(starter, ch, last_ccc, ccc) {
         Some(composed) => {
           out[starter_index] = composed
-          continue
+          continue i + 1, starter_index, last_ccc
         }
         None => ()
       }
     }
-    if ccc == 0 {
-      starter_index = out.length()
-      last_ccc = 0
-    } else {
-      last_ccc = ccc
-    }
+    let next_starter = if ccc == 0 { out.length() } else { starter_index }
+    let next_ccc = if ccc == 0 { 0 } else { ccc }
     out.push(ch)
+    continue i + 1, next_starter, next_ccc
+  } else {
+    out
   }
-  out
 }
 
 ///|
