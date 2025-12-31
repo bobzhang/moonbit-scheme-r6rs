@@ -3766,10 +3766,9 @@ fn apply_primitive(
             }
           }
           let buf = @buffer.new()
-          let mut i = 0
-          while i < len {
+          for i = 0; i < len; {
             buf.write_char(fill)
-            i = i + 1
+            continue i + 1
           }
           Value::Datum(Datum::String(Ref::new(buf.to_string())))
         }
