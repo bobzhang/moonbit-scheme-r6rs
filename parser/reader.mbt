@@ -1241,14 +1241,12 @@ pub fn parse_program_with_fold_case(
   let r = make_reader(src)
   r.fold_case = fold_case
   let exprs : Array[Datum] = []
-  while true {
-    match r..skip_ws_and_comments().peek() {
-      None => break
-      Some(_) => {
-        let expr = read_expr(r)
-        exprs.push(expr)
-      }
-    }
+  for cur = r..skip_ws_and_comments().peek(); cur is Some(_); {
+    let expr = read_expr(r)
+    exprs.push(expr)
+    continue r..skip_ws_and_comments().peek()
+  } else {
+    ()
   }
   exprs
 }

@@ -522,6 +522,17 @@ let exp = for exp = 0, value = bigint_from_int(1);
   }
 ```
 
+Example:
+```mbt
+for cur = r..skip_ws_and_comments().peek(); cur is Some(_); {
+  let expr = read_expr(r)
+  exprs.push(expr)
+  continue r..skip_ws_and_comments().peek()
+} else {
+  ()
+}
+```
+
 ## Terminator scans
 - Use a functional `for` with a `break` value to scan until a terminator without `mut`.
 - Carry the accumulator and any flags as loop state.
