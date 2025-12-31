@@ -1105,17 +1105,14 @@ fn rewrite_template_expr(
             _ => expr
           }
       }
-    Datum::Vector(items) => {
-      let rewritten : Array[Datum] = []
-      for item in items {
-        rewritten.push(
+    Datum::Vector(items) =>
+      Datum::Vector(
+        items.map((item) =>
           rewrite_template_expr(
             item, bindings, renames, ellipsis, ellipsis_active, error_message, env,
-          ),
-        )
-      }
-      Datum::Vector(rewritten)
-    }
+          )
+        ),
+      )
     _ => expr
   }
 }
