@@ -892,6 +892,9 @@ fn apply_primitive(
         n => raise arity_mismatch(2, n)
       }
     Primitive::Gcd => {
+      // invariant : i >= 0 && i <= args.length()
+      // decreases : args.length() - i
+      // assert : use_big || acc_big == bigint_from_int(0)
       let (use_big, acc_int, acc_big) =
         for i = 0,
           use_big = false,
@@ -930,6 +933,9 @@ fn apply_primitive(
       }
     }
     Primitive::Lcm => {
+      // invariant : i >= 0 && i <= args.length()
+      // decreases : args.length() - i
+      // assert : use_big || acc_big == bigint_from_int(1)
       let (use_big, acc_int, acc_big) =
         for i = 0,
           use_big = false,

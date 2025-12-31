@@ -977,6 +977,13 @@ fn list_from_items(items : Array[Datum], base : Datum) -> Datum {
 fn read_list(r : Reader) -> Datum raise ParseError {
   let items : Array[Datum] = []
   let list = for cur = r..skip_ws_and_comments().peek(); true; {
+    // invariant : items.length() >= 0
+    // TODO(decreases) : reader position not exposed; possible bug
+    // assert :
+    //   match cur {
+    //     Some('.') => r.is_ellipsis_start() || items.length() > 0
+    //     _ => true
+    //   }
     match cur {
       None => raise @core.ParseError("unexpected EOF while reading list")
       Some(')') => {
@@ -1017,6 +1024,13 @@ fn read_list(r : Reader) -> Datum raise ParseError {
 fn datum_list_to_array_parse(list : Datum) -> Array[Datum] raise ParseError {
   let items : Array[Datum] = []
   for cur = list; true; {
+    // invariant : items.length() >= 0
+    // TODO(decreases) : list length not explicit; possible bug
+    // assert :
+    //   match cur {
+    //     Datum::Pair(_, _) | Datum::Nil => true
+    //     _ => false
+    //   }
     match cur {
       Datum::Nil => break
       Datum::Pair(a, b) => {

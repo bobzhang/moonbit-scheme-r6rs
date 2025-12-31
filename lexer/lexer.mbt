@@ -93,6 +93,9 @@ fn is_delim(ch : Char) -> Bool {
 /// ```
 pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
   for cur = self.peek(); true; {
+    // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+    // decreases : self.chars.length() - self.pos
+    // assert : self.pos <= self.chars.length()
     match cur {
       Some(ch) if ch.is_ascii_whitespace() => {
         ignore(self.next())
@@ -233,6 +236,9 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   let (in_bar, started) =
     for in_bar = false, started = false, fold_case = self.fold_case; true; {
+      // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+      // decreases : self.chars.length() - self.pos
+      // assert : !in_bar || started
       match self.peek() {
         Some(ch) => {
           if !in_bar && is_delim(ch) {
@@ -336,6 +342,9 @@ pub fn digit_value(ch : Char) -> Int? {
 pub fn Reader::read_string(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
   for cur = self.next(); true; {
+    // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+    // decreases : self.chars.length() - self.pos
+    // assert : self.pos <= self.chars.length()
     match cur {
       None => raise @core.ParseError("unterminated string")
       Some('"') => break
@@ -377,6 +386,9 @@ pub fn Reader::read_string(self : Reader) -> String raise ParseError {
 ///|
 fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
   for cur = self.peek(); true; {
+    // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+    // decreases : self.chars.length() - self.pos
+    // assert : self.pos <= self.chars.length()
     match cur {
       Some(ch) if ch.is_ascii_whitespace() => {
         ignore(self.next())
@@ -392,6 +404,9 @@ fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
 ///|
 fn Reader::read_hex_escape(self : Reader) -> Char raise ParseError {
   for acc = 0, has_digit = false; true; {
+    // invariant : acc >= 0
+    // decreases : self.chars.length() - self.pos
+    // assert : acc >= 0
     match self.next() {
       None => raise @core.ParseError("unterminated string")
       Some(';') => {
