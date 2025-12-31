@@ -323,6 +323,16 @@ Example:
 let winds_copy = wind_stack.val.copy()
 ```
 
+## Map over parsed lists
+- Convert list datums once, then map to avoid duplicate traversal logic.
+
+Example:
+```mbt
+pub fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
+  datum_list_to_array(list).map((item) => value_from_datum(item))
+}
+```
+
 ## Fast exponent loops without mut
 - Use functional `for` state to implement exponentiation by squaring without mutable variables.
 

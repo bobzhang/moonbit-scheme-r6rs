@@ -859,19 +859,7 @@ pub fn datum_list_to_array(list : Datum) -> Array[Datum] raise EvalError {
 ///|
 /// Convert a list datum into an array of values.
 pub fn datum_list_to_value_array(list : Datum) -> Array[Value] raise EvalError {
-  let items : Array[Value] = []
-  let mut cur = list
-  while true {
-    match datum_unlabel(cur) {
-      Datum::Nil => break
-      Datum::Pair(a, b) => {
-        items.push(value_from_datum(a.val))
-        cur = b.val
-      }
-      _ => raise @core.EvalError("type error: list expected")
-    }
-  }
-  items
+  datum_list_to_array(list).map((item) => value_from_datum(item))
 }
 
 ///|
