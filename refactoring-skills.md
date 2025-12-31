@@ -488,6 +488,25 @@ for a = left,
   }
 ```
 
+## Conditional offset accumulation
+- When building a value from conditional bits, fold `(i, acc)` in a functional loop.
+- Compute the offset inside the loop to keep the mutation-free pattern obvious.
+
+Example:
+```mbt
+let reversed = for i = 0, reversed = bigint_from_int(0); i < width; {
+  let next =
+    if datum_bitwise_bit_set(field, i) {
+      reversed + bigint_pow2(width - 1 - i)
+    } else {
+      reversed
+    }
+  continue i + 1, next
+} else {
+  reversed
+}
+```
+
 ## Prefix tag scanning
 - Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
 

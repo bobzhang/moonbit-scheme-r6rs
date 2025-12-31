@@ -58,6 +58,12 @@ test "fixnum comparisons" {
 }
 
 ///|
+test "bitwise reverse bit field" {
+  let value = eval_program("(bitwise-reverse-bit-field #b1011 0 4)")
+  inspect(@runtime.value_to_string(value), content="13")
+}
+
+///|
 test "syntax-rules macro" {
   let program =
     "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"

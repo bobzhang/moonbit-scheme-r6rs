@@ -1809,13 +1809,16 @@ fn datum_bitwise_reverse_bit_field(
     return value
   }
   let field = datum_bitwise_bit_field(value, start, end)
-  let mut reversed = bigint_from_int(0)
-  let mut i = 0
-  while i < width {
-    if datum_bitwise_bit_set(field, i) {
-      reversed = reversed + bigint_pow2(width - 1 - i)
-    }
-    i = i + 1
+  let reversed = for i = 0, reversed = bigint_from_int(0); i < width; {
+    let next =
+      if datum_bitwise_bit_set(field, i) {
+        reversed + bigint_pow2(width - 1 - i)
+      } else {
+        reversed
+      }
+    continue i + 1, next
+  } else {
+    reversed
   }
   datum_bitwise_copy_bit_field(
     value,
