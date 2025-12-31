@@ -5153,6 +5153,9 @@ fn filter_exports_by_phase(
   }
   let result : Map[String, Binding] = {}
   for key in exports.keys() {
+    // invariant : true
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : true
     match exports.get(key) {
       Some(binding) =>
         match binding.value {
