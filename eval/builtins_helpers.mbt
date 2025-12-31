@@ -1012,6 +1012,9 @@ fn int_to_string_radix(value : Int, radix : Int) -> String {
   let n = if value < 0 { -value } else { value }
   let chars : Array[Char] = []
   for n = n; n > 0; {
+    // invariant : n >= 0
+    // decreases : n
+    // assert : n >= 0
     let rem = n % radix
     chars.push(radix_digits[rem])
     continue n / radix
@@ -1032,6 +1035,9 @@ fn bigint_to_string_radix(value : @bigint.BigInt, radix : Int) -> String {
   let radix_big = bigint_from_int(radix)
   let chars : Array[Char] = []
   for n = n; n.compare_int(0) > 0; {
+    // invariant : n.compare_int(0) >= 0
+    // TODO(decreases) : BigInt measure not explicit; possible bug
+    // assert : n.compare_int(0) >= 0
     let rem = n % radix_big
     chars.push(radix_digits[rem.to_int()])
     continue n / radix_big
@@ -1079,6 +1085,9 @@ fn string_replace_range(
   }
   let buf = @buffer.new()
   for i = 0; i < len; {
+    // invariant : i >= 0 && i <= len
+    // decreases : len - i
+    // assert : i <= len
     match s.get_char(i) {
       Some(ch) =>
         if i >= start && i < end {
