@@ -2537,30 +2537,31 @@ fn quasisyntax_expand(
 
 ///|
 fn list_with_tail(items : Array[Datum], tail : Datum) -> Datum {
-  let mut result = tail
-  for item in items.rev_iter() {
-    result = pair_new(item, result)
+  for i = items.length(), result = tail; i > 0; {
+    let idx = i - 1
+    continue i - 1, pair_new(items[idx], result)
+  } else {
+    result
   }
-  result
 }
 
 ///|
 fn parse_formals(expr : Datum) -> Formals raise EvalError {
   let names : Array[String] = []
-  let mut cur = expr
-  while true {
+  for cur = expr; true; {
     match datum_unwrap_syntax(cur) {
-      Datum::Nil => return Formals::{ params: names, rest: None }
-      Datum::Symbol(name) => return Formals::{ params: names, rest: Some(name) }
+      Datum::Nil => break Formals::{ params: names, rest: None }
+      Datum::Symbol(name) => break Formals::{ params: names, rest: Some(name) }
       Datum::Pair(car, cdr) => {
         let name = parse_symbol(car.val)
         names.push(name)
-        cur = cdr.val
+        continue cdr.val
       }
       _ => raise @core.EvalError("type error: symbol expected")
     }
+  } else {
+    Formals::{ params: names, rest: None }
   }
-  Formals::{ params: names, rest: None }
 }
 
 ///|
@@ -4113,16 +4114,17 @@ fn apply_condition_proc(
         raise arity_mismatch(1, args.length())
       } else {
         let base = condition_base_type()
-        let mut ok = false
-        match condition_components_opt(args[0], base) {
+        let ok = match condition_components_opt(args[0], base) {
           Some(components) =>
-            for record in components {
-              if record_type_is_a(record.record_type, record_type) {
-                ok = true
-                break
+            for i = 0; i < components.length(); {
+              if record_type_is_a(components[i].record_type, record_type) {
+                break true
               }
+              continue i + 1
+            } else {
+              false
             }
-          None => ()
+          None => false
         }
         MachineState::Apply(bool_value(ok), kont, handlers)
       }
@@ -4132,13 +4134,16 @@ fn apply_condition_proc(
       } else {
         let base = condition_base_type()
         let components = condition_components(args[0], base)
-        let mut found : Record? = None
-        for record in components {
-          if record_type_is_a(record.record_type, record_type) {
-            found = Some(record)
-            break
+        let found =
+          for i = 0; i < components.length(); {
+            let record = components[i]
+            if record_type_is_a(record.record_type, record_type) {
+              break Some(record)
+            }
+            continue i + 1
+          } else {
+            None
           }
-        }
         match found {
           Some(record) =>
             MachineState::Apply(record.fields[idx].val, kont, handlers)

@@ -491,6 +491,23 @@ let ok = for i = 0; i < items.length(); {
 }
 ```
 
+## Find scans
+- Use `break Some(value)` to return the first match from a loop.
+
+Example:
+```mbt
+let found =
+  for i = 0; i < items.length(); {
+    let item = items[i]
+    if pred(item) {
+      break Some(item)
+    }
+    continue i + 1
+  } else {
+    None
+  }
+```
+
 ## Predicate-driven loops
 - Move `while true` + `match` exit checks into the `for` predicate when possible.
 - Use `else` to return the final state cleanly.
