@@ -1198,6 +1198,9 @@ fn rationalize_float(value : Float, tol : Float) -> (Int, Int) {
   let frac0 = x - Float::from_int(a0)
   let (p1, q1) = for iter = 0, p0 = 1, q0 = 0, p1 = a0, q1 = 1, frac = frac0;
     iter < 64; {
+      // invariant : iter >= 0 && iter <= 64
+      // decreases : 64 - iter
+      // assert : iter <= 64
       let approx = Float::from_int(p1) / Float::from_int(q1)
       let diff = if x >= approx { x - approx } else { approx - x }
       if diff <= tol || frac == 0.0 {
