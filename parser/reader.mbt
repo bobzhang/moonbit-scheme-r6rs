@@ -962,7 +962,7 @@ fn read_list(r : Reader) -> Datum raise ParseError {
     match r..skip_ws_and_comments().peek() {
       None => raise @core.ParseError("unexpected EOF while reading list")
       Some(')') => {
-        r.pos = r.pos + 1
+        ignore(r.next())
         break
       }
       Some('.') =>
@@ -973,11 +973,11 @@ fn read_list(r : Reader) -> Datum raise ParseError {
           if items.is_empty() {
             raise @core.ParseError("unexpected dot")
           }
-          r.pos = r.pos + 1
+          ignore(r.next())
           r.skip_ws_and_comments()
           let tail = read_expr(r)
           match r..skip_ws_and_comments().peek() {
-            Some(')') => r.pos = r.pos + 1
+            Some(')') => ignore(r.next())
             _ => raise @core.ParseError("expected ) after dotted tail")
           }
           dotted_tail = Some(tail)
@@ -1064,29 +1064,29 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
   match r..skip_ws_and_comments().peek() {
     None => raise @core.ParseError("unexpected EOF")
     Some('(') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       read_list(r)
     }
     Some(')') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       raise @core.ParseError("unexpected )")
     }
     Some('\'') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       let expr = read_expr(r)
       make_quote(expr)
     }
     Some('`') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       let expr = read_expr(r)
       make_quasiquote(expr)
     }
     Some(',') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       let mut splicing = false
       match r.peek() {
         Some('@') => {
-          r.pos = r.pos + 1
+          ignore(r.next())
           splicing = true
         }
         _ => ()
@@ -1151,7 +1151,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
             let mut splicing = false
             match r.peek() {
               Some('@') => {
-                r.pos = r.pos + 1
+                ignore(r.next())
                 splicing = true
               }
               _ => ()
@@ -1186,7 +1186,7 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
         token_to_datum(tok)
       }
     Some('"') => {
-      r.pos = r.pos + 1
+      ignore(r.next())
       Datum::String(Ref::new(r.read_string()))
     }
     Some(_) => {
