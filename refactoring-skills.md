@@ -384,6 +384,21 @@ let splicing = match r.peek() {
 ## Boolean chaining
 - Replace stepwise `ok = ok && ...` with a single boolean expression to reduce mut.
 
+## Direct array iteration
+- Prefer `for item in array` to avoid index counters when only values matter.
+
+Example:
+```mbt
+for frame in env {
+  for key in frame.keys() {
+    match frame.get(key) {
+      Some(binding) => exports[key] = binding
+      None => ()
+    }
+  }
+}
+```
+
 ## Array equality scans
 - Use a functional `for` with `break false` for early exits instead of `mut` indices.
 

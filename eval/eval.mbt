@@ -812,16 +812,13 @@ fn init_env() -> Env {
 ///|
 fn env_export_map(env : Env) -> Map[String, Binding] {
   let exports : Map[String, Binding] = {}
-  let mut i = 0
-  while i < env.length() {
-    let frame = env[i]
+  for frame in env {
     for key in frame.keys() {
       match frame.get(key) {
         Some(binding) => exports[key] = binding
         None => ()
       }
     }
-    i = i + 1
   }
   exports
 }
