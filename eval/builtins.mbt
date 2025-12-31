@@ -1024,6 +1024,9 @@ fn apply_primitive(
       let has_inexact = best is Datum::Float(_)
       let (best, has_inexact) =
         for i = 1, best = best, has_inexact = has_inexact; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_number(args[i])
           let next_best = if num_less(best, cur) { cur } else { best }
           let next_has_inexact = has_inexact || cur is Datum::Float(_)
@@ -1045,6 +1048,9 @@ fn apply_primitive(
       let has_inexact = best is Datum::Float(_)
       let (best, has_inexact) =
         for i = 1, best = best, has_inexact = has_inexact; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_number(args[i])
           let next_best = if num_greater(best, cur) { cur } else { best }
           let next_has_inexact = has_inexact || cur is Datum::Float(_)
@@ -1148,6 +1154,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_exact_integer(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_exact_integer(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::And)
         } else {
@@ -1161,6 +1170,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_exact_integer(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_exact_integer(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::Or)
         } else {
@@ -1174,6 +1186,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_exact_integer(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_exact_integer(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::Xor)
         } else {
@@ -1690,6 +1705,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_fixnum_datum(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_fixnum_datum(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::And)
         } else {
@@ -1703,6 +1721,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_fixnum_datum(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_fixnum_datum(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::Or)
         } else {
@@ -1716,6 +1737,9 @@ fn apply_primitive(
       } else {
         let acc = value_as_fixnum_datum(args[0])
         let acc = for i = 1, acc = acc; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let next = value_as_fixnum_datum(args[i])
           continue i + 1, datum_bitwise_binop(acc, next, BitOp::Xor)
         } else {
@@ -1926,6 +1950,9 @@ fn apply_primitive(
       } else {
         let first = value_as_flonum(args[0])
         let ok = for i = 1; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           if value_as_flonum(args[i]) != first {
             break false
           }
@@ -1941,6 +1968,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_flonum(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_flonum(args[i])
           if prev >= cur {
             break false
@@ -1957,6 +1987,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_flonum(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_flonum(args[i])
           if prev <= cur {
             break false
@@ -2424,6 +2457,9 @@ fn apply_primitive(
         1 => {
           let cur = value_as_datum(args[0])
           let cur = for i = chain.length(), cur = cur; i > 0; {
+            // invariant : i >= 0 && i <= chain.length()
+            // decreases : i
+            // assert : i <= chain.length()
             let idx = i - 1
             let op = match chain.get_char(idx) {
               Some(ch) => ch
@@ -2449,6 +2485,9 @@ fn apply_primitive(
     Primitive::List => {
       let items : Array[Datum] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         items.push(value_to_datum_element(arg))
       }
       Value::Datum(list_from_array(items))
@@ -2464,6 +2503,9 @@ fn apply_primitive(
           }
           let items : Array[Datum] = []
           for i = 0; i < len; {
+            // invariant : i >= 0 && i <= len
+            // decreases : len - i
+            // assert : i <= len
             items.push(fill)
             continue i + 1
           }
@@ -3091,6 +3133,9 @@ fn apply_primitive(
           let desc = value_as_record_type_descriptor(args[0])
           let items : Array[Datum] = []
           for field in desc.record_type.fields {
+            // invariant : desc.record_type.fields.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : desc.record_type.fields.length() >= 0
             items.push(Datum::Symbol(field.name))
           }
           Value::Datum(list_from_array(items))
@@ -3191,11 +3236,17 @@ fn apply_primitive(
           match parent_type {
             Some(parent) =>
               for field in parent.fields {
+                // invariant : parent.fields.length() >= 0
+                // TODO(decreases) : loop index not exposed; possible bug
+                // assert : parent.fields.length() >= 0
                 fields.push(field)
               }
             None => ()
           }
           for field in new_fields {
+            // invariant : new_fields.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : new_fields.length() >= 0
             fields.push(field)
           }
           let effective_opaque = match parent_type {
@@ -3306,8 +3357,14 @@ fn apply_primitive(
       let base = condition_base_type()
       let components : Array[Record] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         let parts = condition_components(arg, base)
         for record in parts {
+          // invariant : parts.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : parts.length() >= 0
           components.push(record)
         }
       }
@@ -3333,6 +3390,9 @@ fn apply_primitive(
           let components = condition_components(args[0], base)
           let items : Array[Datum] = []
           for record in components {
+            // invariant : components.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : components.length() >= 0
             items.push(Datum::Record(record))
           }
           Value::Datum(list_from_array(items))
@@ -3446,6 +3506,9 @@ fn apply_primitive(
           }
           let entries : Array[HashtableEntry] = []
           for entry in table.entries.val {
+            // invariant : table.entries.val.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : table.entries.val.length() >= 0
             entries.push(HashtableEntry::{
               key: entry.key,
               value: Ref::new(entry.value.val),
@@ -3482,6 +3545,9 @@ fn apply_primitive(
           let table = value_as_hashtable(args[0])
           let items : Array[Datum] = []
           for entry in table.entries.val {
+            // invariant : table.entries.val.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : table.entries.val.length() >= 0
             items.push(value_to_datum_element(entry.key))
           }
           Value::Datum(Datum::Vector(items))
@@ -3495,6 +3561,9 @@ fn apply_primitive(
           let key_items : Array[Datum] = []
           let value_items : Array[Datum] = []
           for entry in table.entries.val {
+            // invariant : table.entries.val.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : table.entries.val.length() >= 0
             key_items.push(value_to_datum_element(entry.key))
             value_items.push(value_to_datum_element(entry.value.val))
           }
@@ -3594,6 +3663,9 @@ fn apply_primitive(
           let right = value_as_enum_set(args[1])
           enum_set_require_same_universe(left, right)
           let ok = for i = 0; i < left.members.length(); {
+            // invariant : i >= 0 && i <= left.members.length()
+            // decreases : left.members.length() - i
+            // assert : i <= left.members.length()
             if left.members[i] && !right.members[i] {
               break false
             }
@@ -3612,6 +3684,9 @@ fn apply_primitive(
           let right = value_as_enum_set(args[1])
           enum_set_require_same_universe(left, right)
           let ok = for i = 0; i < left.members.length(); {
+            // invariant : i >= 0 && i <= left.members.length()
+            // decreases : left.members.length() - i
+            // assert : i <= left.members.length()
             if left.members[i] != right.members[i] {
               break false
             }
@@ -3631,6 +3706,9 @@ fn apply_primitive(
           enum_set_require_same_universe(left, right)
           let members = enum_set_members_all_false(left.universe)
           for i = 0; i < members.length(); {
+            // invariant : i >= 0 && i <= members.length()
+            // decreases : members.length() - i
+            // assert : i <= members.length()
             members[i] = left.members[i] || right.members[i]
             continue i + 1
           }
@@ -3646,6 +3724,9 @@ fn apply_primitive(
           enum_set_require_same_universe(left, right)
           let members = enum_set_members_all_false(left.universe)
           for i = 0; i < members.length(); {
+            // invariant : i >= 0 && i <= members.length()
+            // decreases : members.length() - i
+            // assert : i <= members.length()
             members[i] = left.members[i] && right.members[i]
             continue i + 1
           }
@@ -3661,6 +3742,9 @@ fn apply_primitive(
           enum_set_require_same_universe(left, right)
           let members = enum_set_members_all_false(left.universe)
           for i = 0; i < members.length(); {
+            // invariant : i >= 0 && i <= members.length()
+            // decreases : members.length() - i
+            // assert : i <= members.length()
             members[i] = left.members[i] && !right.members[i]
             continue i + 1
           }
@@ -3674,6 +3758,9 @@ fn apply_primitive(
           let set = value_as_enum_set(args[0])
           let members = enum_set_members_all_false(set.universe)
           for i = 0; i < members.length(); {
+            // invariant : i >= 0 && i <= members.length()
+            // decreases : members.length() - i
+            // assert : i <= members.length()
             members[i] = !set.members[i]
             continue i + 1
           }
@@ -3688,6 +3775,9 @@ fn apply_primitive(
           let target = value_as_enum_set(args[1])
           let members = enum_set_members_all_false(target.universe)
           for i = 0; i < target.universe.length(); {
+            // invariant : i >= 0 && i <= target.universe.length()
+            // decreases : target.universe.length() - i
+            // assert : i <= target.universe.length()
             let name = target.universe[i]
             members[i] = enum_set_member_by_name(source, name)
             continue i + 1
@@ -3702,6 +3792,9 @@ fn apply_primitive(
           let set = value_as_enum_set(args[0])
           let items : Array[Datum] = []
           for i = 0; i < set.universe.length(); {
+            // invariant : i >= 0 && i <= set.universe.length()
+            // decreases : set.universe.length() - i
+            // assert : i <= set.universe.length()
             if set.members[i] {
               items.push(Datum::Symbol(set.universe[i]))
             }
@@ -3851,6 +3944,9 @@ fn apply_primitive(
     Primitive::String => {
       let buf = @buffer.new()
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         let ch = value_as_char(arg)
         buf.write_char(ch)
       }
@@ -3872,6 +3968,9 @@ fn apply_primitive(
           }
           let buf = @buffer.new()
           for i = 0; i < len; {
+            // invariant : i >= 0 && i <= len
+            // decreases : len - i
+            // assert : i <= len
             buf.write_char(fill)
             continue i + 1
           }
@@ -3899,6 +3998,9 @@ fn apply_primitive(
     Primitive::StringAppend => {
       let buf = @buffer.new()
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         buf.write_string(value_as_string(arg))
       }
       Value::Datum(Datum::String(Ref::new(buf.to_string())))
@@ -3999,6 +4101,9 @@ fn apply_primitive(
           }
           let buf = @buffer.new()
           for i = 0; i < to_len; {
+            // invariant : i >= 0 && i <= to_len
+            // decreases : to_len - i
+            // assert : i <= to_len
             match to_str.get_char(i) {
               Some(ch) =>
                 if i >= at && i < at + count {
@@ -4059,6 +4164,9 @@ fn apply_primitive(
           }
           let items : Array[Datum] = []
           for i = start; i < end; {
+            // invariant : i >= start && i <= end
+            // decreases : end - i
+            // assert : i <= end
             match s.get_char(i) {
               Some(ch) => items.push(Datum::Char(ch))
               None => raise @core.EvalError("index out of range")
@@ -4076,6 +4184,9 @@ fn apply_primitive(
           let items = datum_list_to_array(datum)
           let buf = @buffer.new()
           for item in items {
+            // invariant : items.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : items.length() >= 0
             match item {
               Datum::Char(ch) => buf.write_char(ch)
               _ => raise @core.EvalError("type error: char expected")
@@ -4162,6 +4273,9 @@ fn apply_primitive(
     Primitive::Vector => {
       let items : Array[Datum] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         items.push(value_to_datum_element(arg))
       }
       Value::Datum(Datum::Vector(items))
@@ -4177,6 +4291,9 @@ fn apply_primitive(
           }
           let items : Array[Datum] = []
           for i = 0; i < len; {
+            // invariant : i >= 0 && i <= len
+            // decreases : len - i
+            // assert : i <= len
             items.push(fill)
             continue i + 1
           }
@@ -4241,6 +4358,9 @@ fn apply_primitive(
             raise @core.EvalError("index out of range")
           }
           for i = start; i < end; {
+            // invariant : i >= start && i <= end
+            // decreases : end - i
+            // assert : i <= end
             items[i] = fill
             continue i + 1
           }
@@ -4295,10 +4415,16 @@ fn apply_primitive(
           }
           let temp : Array[Datum] = []
           for i = 0; i < count; {
+            // invariant : i >= 0 && i <= count
+            // decreases : count - i
+            // assert : i <= count
             temp.push(from_items[start + i])
             continue i + 1
           }
           for j = 0; j < count; {
+            // invariant : j >= 0 && j <= count
+            // decreases : count - j
+            // assert : j <= count
             to_items[at + j] = temp[j]
             continue j + 1
           }
@@ -4309,8 +4435,14 @@ fn apply_primitive(
     Primitive::VectorAppend => {
       let items : Array[Datum] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         let vec = value_as_vector(arg)
         for item in vec {
+          // invariant : vec.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : vec.length() >= 0
           items.push(item)
         }
       }
@@ -4349,6 +4481,9 @@ fn apply_primitive(
     Primitive::ByteVector => {
       let items : Array[Int] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         items.push(value_as_byte(arg))
       }
       Value::Datum(Datum::ByteVector(items))
@@ -4360,6 +4495,9 @@ fn apply_primitive(
           let fill = if args.length() == 2 { value_as_byte(args[1]) } else { 0 }
           let items : Array[Int] = []
           for i = 0; i < len; {
+            // invariant : i >= 0 && i <= len
+            // decreases : len - i
+            // assert : i <= len
             items.push(fill)
             continue i + 1
           }
@@ -4393,6 +4531,9 @@ fn apply_primitive(
             bool_value(false)
           } else {
             let ok = for i = 0; i < left.length(); {
+              // invariant : i >= 0 && i <= left.length()
+              // decreases : left.length() - i
+              // assert : i <= left.length()
               if left[i] != right[i] {
                 break false
               }
@@ -4473,10 +4614,16 @@ fn apply_primitive(
           }
           let temp : Array[Int] = []
           for i = 0; i < count; {
+            // invariant : i >= 0 && i <= count
+            // decreases : count - i
+            // assert : i <= count
             temp.push(from_items[start + i])
             continue i + 1
           }
           for j = 0; j < count; {
+            // invariant : j >= 0 && j <= count
+            // decreases : count - j
+            // assert : j <= count
             to_items[at + j] = temp[j]
             continue j + 1
           }
@@ -4487,8 +4634,14 @@ fn apply_primitive(
     Primitive::ByteVectorAppend => {
       let items : Array[Int] = []
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         let vec = value_as_bytevector(arg)
         for item in vec {
+          // invariant : vec.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : vec.length() >= 0
           items.push(item)
         }
       }
@@ -4513,6 +4666,9 @@ fn apply_primitive(
             raise @core.EvalError("index out of range")
           }
           for i = start; i < end; {
+            // invariant : i >= start && i <= end
+            // decreases : end - i
+            // assert : i <= end
             items[i] = fill
             continue i + 1
           }
@@ -4539,6 +4695,9 @@ fn apply_primitive(
           }
           let datums : Array[Datum] = []
           for i = start; i < end; {
+            // invariant : i >= start && i <= end
+            // decreases : end - i
+            // assert : i <= end
             datums.push(Datum::Int(items[i]))
             continue i + 1
           }
@@ -4553,6 +4712,9 @@ fn apply_primitive(
           let items = datum_list_to_array(datum)
           let bytes : Array[Int] = []
           for item in items {
+            // invariant : items.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : items.length() >= 0
             match item {
               Datum::Int(n) => {
                 if n < 0 || n > 255 {
@@ -4813,6 +4975,9 @@ fn apply_primitive(
           let items = datum_list_to_array(datum)
           let results : Array[Datum] = []
           for item in items {
+            // invariant : items.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : items.length() >= 0
             let (name, scopes, binding_id) = match datum_unlabel(item) {
               Datum::Symbol(name) => (name, [], None)
               Datum::Value(Value::SyntaxObject(obj)) =>
@@ -4820,6 +4985,9 @@ fn apply_primitive(
                   Datum::Symbol(name) => {
                     let copied : Array[Int] = []
                     for scope in obj.scopes {
+                      // invariant : obj.scopes.length() >= 0
+                      // TODO(decreases) : loop index not exposed; possible bug
+                      // assert : obj.scopes.length() >= 0
                       copied.push(scope)
                     }
                     (name, copied, obj.binding_id)
@@ -4905,12 +5073,18 @@ fn apply_primitive(
         _ => {
           let items : Array[Datum] = []
           for i = 0; i < args.length() - 1; {
+            // invariant : i >= 0 && i <= args.length() - 1
+            // decreases : args.length() - 1 - i
+            // assert : i <= args.length() - 1
             let datum = match args[i] {
               Value::Datum(d) => d
               _ => raise @core.EvalError("type error: list expected")
             }
             let part = datum_list_to_array(datum)
             for item in part {
+              // invariant : part.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : part.length() >= 0
               items.push(item)
             }
             continue i + 1
@@ -4928,6 +5102,9 @@ fn apply_primitive(
           }
           let items = datum_list_to_array(datum)
           let result = for i = 0, result = Datum::Nil; i < items.length(); {
+            // invariant : i >= 0 && i <= items.length()
+            // decreases : items.length() - i
+            // assert : i <= items.length()
             continue i + 1, pair_new(items[i], result)
           } else {
             result
