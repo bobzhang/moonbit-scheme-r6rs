@@ -796,8 +796,7 @@ fn expand_macro_rules(
     SyntaxRulesKind::SyntaxCase => None
   }
   let ellipsis_active = !is_literal(rules.literals, rules.ellipsis)
-  let mut i = 0
-  while i < rules.rules.length() {
+  for i = 0; i < rules.rules.length(); {
     let rule = rules.rules[i]
     let bindings : Map[String, BindingVal] = {}
     match (rule.pattern, call) {
@@ -821,8 +820,7 @@ fn expand_macro_rules(
                 SyntaxRulesKind::SyntaxRules => env
               }
               if !fender_allows(fender, bindings, fender_env) {
-                i = i + 1
-                continue
+                continue i + 1
               }
             }
             None => ()
@@ -865,7 +863,7 @@ fn expand_macro_rules(
           return MacroExpansion::{ datum: expanded, captures }
         }
     }
-    i = i + 1
+    continue i + 1
   }
   raise @core.EvalError("no matching syntax-rules pattern")
 }

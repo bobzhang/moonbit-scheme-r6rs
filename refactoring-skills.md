@@ -577,6 +577,21 @@ let result = for i = 0, result = bigint_from_int(0), factor = bigint_from_int(1)
   }
 ```
 
+## Rule scans with early return
+- Replace index-based `while` loops with `for` + `continue` when matching a rule list.
+- Keep `return` for the match case and `continue i + 1` for the fallback.
+
+Example:
+```mbt
+for i = 0; i < rules.rules.length(); {
+  let rule = rules.rules[i]
+  if matches(rule) {
+    return expand(rule)
+  }
+  continue i + 1
+}
+```
+
 ## Prefix tag scanning
 - Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
 
