@@ -903,11 +903,7 @@ fn parse_char_token(tok : String) -> Char? {
 
 ///|
 fn ascii_lower_string(value : String) -> String {
-  let chars : Array[Char] = []
-  for ch in value {
-    chars.push(ch.to_ascii_lowercase())
-  }
-  String::from_array(chars)
+  String::from_array(value.to_array().map((ch) => ch.to_ascii_lowercase()))
 }
 
 ///|

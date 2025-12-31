@@ -348,6 +348,16 @@ fn pow_int(base : Int, exp : Int) -> Int {
 }
 ```
 
+## Lowercase strings with map
+- Convert to a `Char` array and map lowercasing in one expression.
+
+Example:
+```mbt
+fn ascii_lower_string(value : String) -> String {
+  String::from_array(value.to_array().map((ch) => ch.to_ascii_lowercase()))
+}
+```
+
 ## Reverse buffers with Array::rev
 - Use `Array::rev` instead of manual reverse-iter builds.
 
