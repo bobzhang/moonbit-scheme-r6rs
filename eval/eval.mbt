@@ -2771,6 +2771,9 @@ fn eval_case_lambda(args : Array[Datum], env : Env) -> Value raise EvalError {
   }
   let clauses : Array[CaseClause] = []
   for clause in args {
+    // invariant : args.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : args.length() >= 0
     let parts = datum_list_to_array(clause)
     if parts.length() < 2 {
       raise @core.EvalError("invalid case-lambda")
@@ -2807,6 +2810,9 @@ fn parse_syntax_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(String, MacroTransformer)] = []
   for binding in bindings {
+    // invariant : bindings.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.length() >= 0
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
       raise @core.EvalError("type error: syntax binding expected")
@@ -2824,6 +2830,9 @@ fn parse_bindings(expr : Datum) -> Array[(String, Datum)] raise EvalError {
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(String, Datum)] = []
   for binding in bindings {
+    // invariant : bindings.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.length() >= 0
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
       raise @core.EvalError("type error: binding expected")
@@ -2842,6 +2851,9 @@ fn parse_value_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(Formals, Datum)] = []
   for binding in bindings {
+    // invariant : bindings.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.length() >= 0
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
       raise @core.EvalError("invalid let-values")
@@ -2860,6 +2872,9 @@ fn parse_parameterize_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(Datum, Datum)] = []
   for binding in bindings {
+    // invariant : bindings.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.length() >= 0
     let parts = datum_list_to_array(binding)
     if parts.length() != 2 {
       raise @core.EvalError("invalid parameterize")
@@ -2892,6 +2907,9 @@ fn parse_bool(expr : Datum) -> Bool raise EvalError {
 fn parse_symbol_list(items : Array[Datum]) -> Array[String] raise EvalError {
   let names : Array[String] = []
   for item in items {
+    // invariant : items.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : items.length() >= 0
     names.push(parse_symbol(item))
   }
   names
@@ -2949,6 +2967,9 @@ fn guard_start(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   for i = 0; i < clauses.length(); {
+    // invariant : i >= 0 && i <= clauses.length()
+    // decreases : clauses.length() - i
+    // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
       continue i + 1
