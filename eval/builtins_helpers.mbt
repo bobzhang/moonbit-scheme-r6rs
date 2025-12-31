@@ -1970,20 +1970,20 @@ fn list_member(
   item : Value,
   list : Datum,
 ) -> Value raise EvalError {
-  let mut cur = list
-  while true {
+  for cur = list; true; {
     match cur {
-      Datum::Nil => return bool_value(false)
+      Datum::Nil => break bool_value(false)
       Datum::Pair(car, cdr) => {
         if equality_match(mode, item, value_from_datum(car.val)) {
-          return Value::Datum(cur)
+          break Value::Datum(cur)
         }
-        cur = cdr.val
+        continue cdr.val
       }
       _ => raise @core.EvalError("type error: proper list expected")
     }
+  } else {
+    bool_value(false)
   }
-  bool_value(false)
 }
 
 ///|
@@ -1992,25 +1992,25 @@ fn list_assoc(
   key : Value,
   list : Datum,
 ) -> Value raise EvalError {
-  let mut cur = list
-  while true {
+  for cur = list; true; {
     match cur {
-      Datum::Nil => return bool_value(false)
+      Datum::Nil => break bool_value(false)
       Datum::Pair(entry, rest) => {
         let entry_val = entry.val
         match entry_val {
           Datum::Pair(car, _) =>
             if equality_match(mode, key, value_from_datum(car.val)) {
-              return Value::Datum(entry_val)
+              break Value::Datum(entry_val)
             }
           _ => raise @core.EvalError("type error: pair expected")
         }
-        cur = rest.val
+        continue rest.val
       }
       _ => raise @core.EvalError("type error: proper list expected")
     }
+  } else {
+    bool_value(false)
   }
-  bool_value(false)
 }
 
 ///|

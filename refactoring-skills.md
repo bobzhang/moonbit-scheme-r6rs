@@ -303,6 +303,29 @@ fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
 ## Tuple destructuring
 - Replace `mut` temporaries with a single `let (a, b) = match ...` when branching sets both.
 
+## List traversal with functional state
+- Replace `mut cur` list loops with a functional `for` and `break` to return values.
+
+Example:
+```mbt
+fn list_member(mode : EqualityMode, item : Value, list : Datum) -> Value raise EvalError {
+  for cur = list; true; {
+    match cur {
+      Datum::Nil => break bool_value(false)
+      Datum::Pair(car, cdr) => {
+        if equality_match(mode, item, value_from_datum(car.val)) {
+          break Value::Datum(cur)
+        }
+        continue cdr.val
+      }
+      _ => raise @core.EvalError("type error: proper list expected")
+    }
+  } else {
+    bool_value(false)
+  }
+}
+```
+
 Example:
 ```mbt
 fn next_counter_id(counter : Ref[Int]) -> Int {

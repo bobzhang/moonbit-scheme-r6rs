@@ -40,6 +40,12 @@ test "empty program" {
 }
 
 ///|
+test "empty program value" {
+  let value = eval_program("")
+  inspect(@runtime.value_to_string(value), content="#<void>")
+}
+
+///|
 test "include source" {
   register_include_source("mem.scm", "(+ 1 2)")
   let value = eval_program("(include \"mem.scm\")")
