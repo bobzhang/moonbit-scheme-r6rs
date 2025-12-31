@@ -110,6 +110,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_number(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_number(args[i])
           if !num_greater(prev, cur) {
             break false
@@ -126,6 +129,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_number(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_number(args[i])
           if !num_less_eq(prev, cur) {
             break false
@@ -142,6 +148,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_number(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_number(args[i])
           if !num_greater_eq(prev, cur) {
             break false
