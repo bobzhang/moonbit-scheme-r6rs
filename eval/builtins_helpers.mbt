@@ -1890,6 +1890,26 @@ fn check_slice_range(start : Int, end : Int, len : Int) -> Unit raise EvalError 
 }
 
 ///|
+/// Validate copy ranges and return the number of elements to copy.
+fn check_copy_range(
+  start : Int,
+  end : Int,
+  from_len : Int,
+  at : Int,
+  to_len : Int,
+) -> Int raise EvalError {
+  check_slice_range(start, end, from_len)
+  if at < 0 {
+    raise @core.EvalError("index out of range")
+  }
+  let count = end - start
+  if at + count > to_len {
+    raise @core.EvalError("index out of range")
+  }
+  count
+}
+
+///|
 fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
   if case_insensitive { unicode_char(ch).foldcase() } else { ch }
 }

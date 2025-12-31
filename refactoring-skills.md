@@ -200,6 +200,28 @@ for i = 0; i < clauses.length(); {
 }
 ```
 
+## Split primitive dispatches
+- Move large `match prim` blocks into per-domain `apply_*_primitive` helpers that return `Value?`.
+- Keep `apply_primitive` as a small dispatcher and leave a `apply_primitive_core` for the remaining primitives.
+
+Example:
+```mbt
+fn apply_primitive(prim : Primitive, args : Array[Value]) -> Value raise EvalError {
+  match apply_char_string_primitive(prim, args) {
+    Some(value) => value
+    None => apply_primitive_core(prim, args)
+  }
+}
+```
+
+## Copy-range helpers
+- Extract `check_copy_range(start, end, from_len, at, to_len)` to reuse bounds checks in copy primitives.
+
+Example:
+```mbt
+let count = check_copy_range(start, end, from_items.length(), at, to_items.length())
+```
+
 ## Division-based counters
 - Replace `while n > 0` loops with a functional `for` that carries `(n, count)` state.
 
