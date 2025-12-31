@@ -384,6 +384,27 @@ fn chars_rev_to_string(chars : Array[Char]) -> String {
 }
 ```
 
+## String indexing via to_array
+- Convert to `Array[Char]` when you need char indices or counts without manual counters.
+
+Example:
+```mbt
+fn string_to_utf8_bytes(s : String, start : Int, end : Int) -> Array[Int] raise EvalError {
+  let chars = s.to_array()
+  let len = chars.length()
+  if start < 0 || end < start || end > len {
+    raise @core.EvalError("index out of range")
+  }
+  let bytes : Array[Int] = []
+  for i, ch in chars {
+    if i >= start && i < end {
+      utf8_encode_char(ch.to_int(), bytes)
+    }
+  }
+  bytes
+}
+```
+
 ## Reader-friendly indexing helpers
 - Use `String::to_array()` for fast Char arrays instead of manual pushes.
 - Replace manual bounds checks with `Array::get` and reuse peek helpers.

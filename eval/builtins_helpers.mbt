@@ -2188,11 +2188,7 @@ fn utf8_encode_char(
 
 ///|
 fn string_char_length(s : String) -> Int {
-  let mut len = 0
-  for _ in s {
-    len = len + 1
-  }
-  len
+  s.to_array().length()
 }
 
 ///|
@@ -2201,19 +2197,16 @@ fn string_to_utf8_bytes(
   start : Int,
   end : Int,
 ) -> Array[Int] raise EvalError {
-  if start < 0 || end < start {
+  let chars = s.to_array()
+  let len = chars.length()
+  if start < 0 || end < start || end > len {
     raise @core.EvalError("index out of range")
   }
   let bytes : Array[Int] = []
-  let mut idx = 0
-  for ch in s {
-    if idx >= start && idx < end {
+  for i, ch in chars {
+    if i >= start && i < end {
       utf8_encode_char(ch.to_int(), bytes)
     }
-    idx = idx + 1
-  }
-  if end > idx {
-    raise @core.EvalError("index out of range")
   }
   bytes
 }
