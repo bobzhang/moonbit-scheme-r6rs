@@ -1607,29 +1607,26 @@ fn bigint_bitwise_nonneg(
   right : @bigint.BigInt,
   op : BitOp,
 ) -> @bigint.BigInt {
-  let mut a = left
-  let mut b = right
   let two = bigint_from_int(2)
-  let mut bit = bigint_from_int(1)
-  let mut result = bigint_from_int(0)
-  while !bigint_is_zero(a) || !bigint_is_zero(b) {
-    let a_bit = a % two
-    let b_bit = b % two
-    let a_one = !bigint_is_zero(a_bit)
-    let b_one = !bigint_is_zero(b_bit)
-    let out_one = match op {
-      BitOp::And => a_one && b_one
-      BitOp::Or => a_one || b_one
-      BitOp::Xor => a_one != b_one
+  for a = left,
+    b = right,
+    bit = bigint_from_int(1),
+    result = bigint_from_int(0);
+    !bigint_is_zero(a) || !bigint_is_zero(b); {
+      let a_bit = a % two
+      let b_bit = b % two
+      let a_one = !bigint_is_zero(a_bit)
+      let b_one = !bigint_is_zero(b_bit)
+      let out_one = match op {
+        BitOp::And => a_one && b_one
+        BitOp::Or => a_one || b_one
+        BitOp::Xor => a_one != b_one
+      }
+      let next_result = if out_one { result + bit } else { result }
+      continue a / two, b / two, bit * two, next_result
+    } else {
+      result
     }
-    if out_one {
-      result = result + bit
-    }
-    a = a / two
-    b = b / two
-    bit = bit * two
-  }
-  result
 }
 
 ///|

@@ -442,6 +442,25 @@ let chars = for n = n, chars = []; n > 0; {
 }
 ```
 
+## Bitwise accumulation loops
+- Carry `(a, b, bit, result)` in a functional loop to avoid four `mut` vars.
+- Update the accumulated result with a derived `next_result` each iteration.
+
+Example:
+```mbt
+for a = left,
+  b = right,
+  bit = bigint_from_int(1),
+  result = bigint_from_int(0);
+  !bigint_is_zero(a) || !bigint_is_zero(b); {
+    let out_one = ...
+    let next_result = if out_one { result + bit } else { result }
+    continue a / two, b / two, bit * two, next_result
+  } else {
+    result
+  }
+```
+
 ## Prefix tag scanning
 - Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
 
