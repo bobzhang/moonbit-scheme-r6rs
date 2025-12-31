@@ -235,6 +235,24 @@ match args {
 }
 ```
 
+Optional-arity example:
+```mbt
+match args {
+  [vec_value] => copy_slice(vec_value, start=0, end=None)
+  [vec_value, start_value] => copy_slice(vec_value, start=value_as_int_index(start_value), end=None)
+  [vec_value, start_value, end_value] =>
+    copy_slice(
+      vec_value,
+      start=value_as_int_index(start_value),
+      end=Some(value_as_int_index(end_value)),
+    )
+  _ =>
+    raise @core.EvalError(
+      "arity mismatch: expected 1 to 3 got \{args.length()}",
+    )
+}
+```
+
 ## Loop specs as comments
 - Write formal, type-checkable expressions in `// invariant : ...`, `// decreases : ...`, and `// assert : ...`.
 - When the loop index is not exposed, add a TODO for decreases to flag potential issues.
