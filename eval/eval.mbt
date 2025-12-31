@@ -4909,17 +4909,12 @@ fn is_syntax_keyword(name : String) -> Bool {
     records_syntax_keywords(),
     conditions_syntax_keywords(),
   ]
-  let mut i = 0
-  while i < lists.length() {
-    let keywords = lists[i]
-    let mut j = 0
-    while j < keywords.length() {
-      if keywords[j] == name {
+  for keywords in lists {
+    for kw in keywords {
+      if kw == name {
         return true
       }
-      j = j + 1
     }
-    i = i + 1
   }
   false
 }
@@ -5299,11 +5294,10 @@ fn case_dispatch(
   kont : Kont,
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
-  let mut i = 0
-  while i < clauses.length() {
+  for i = 0; i < clauses.length(); {
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
-      i = i + 1
+      continue i + 1
     } else {
       match symbol_name(parts[0]) {
         Some("else") => {
@@ -5313,11 +5307,13 @@ fn case_dispatch(
         _ => ()
       }
       let datums = datum_list_to_array(parts[0])
-      let mut matched = false
-      for datum in datums {
-        if value_eqv(key, Value::Datum(datum)) {
-          matched = true
+      let matched = for j = 0; j < datums.length(); {
+        if value_eqv(key, Value::Datum(datums[j])) {
+          break true
         }
+        continue j + 1
+      } else {
+        false
       }
       if matched {
         if parts.length() >= 2 && symbol_name(parts[1]) is Some("=>") {
@@ -5334,7 +5330,7 @@ fn case_dispatch(
         let body = parts.sub(start=1).to_array()
         return eval_sequence_state(body, env, kont, handlers)
       }
-      i = i + 1
+      continue i + 1
     }
   }
   MachineState::Apply(Value::Void, kont, handlers)
@@ -5347,11 +5343,10 @@ fn cond_start(
   kont : Kont,
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
-  let mut i = 0
-  while i < clauses.length() {
+  for i = 0; i < clauses.length(); {
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
-      i = i + 1
+      continue i + 1
     } else {
       let head = symbol_name(parts[0])
       if head is Some("else") {
@@ -5398,24 +5393,24 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
           if items.length() == 1 {
             true
           } else {
-            let mut i = 1
-            while i < items.length() {
+            for i = 1; i < items.length(); {
               if !cond_expand_feature(items[i]) {
-                return false
+                break false
               }
-              i = i + 1
+              continue i + 1
+            } else {
+              true
             }
-            true
           }
         Datum::Symbol("or") => {
-          let mut i = 1
-          while i < items.length() {
+          for i = 1; i < items.length(); {
             if cond_expand_feature(items[i]) {
-              return true
+              break true
             }
-            i = i + 1
+            continue i + 1
+          } else {
+            false
           }
-          false
         }
         Datum::Symbol("not") => {
           if items.length() != 2 {
@@ -5444,8 +5439,7 @@ fn eval_cond_expand_state(
   kont : Kont,
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
-  let mut i = 0
-  while i < clauses.length() {
+  for i = 0; i < clauses.length(); {
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
       raise @core.EvalError("invalid cond-expand")
@@ -5464,7 +5458,7 @@ fn eval_cond_expand_state(
           return eval_sequence_state(body, env, kont, handlers)
         }
     }
-    i = i + 1
+    continue i + 1
   }
   MachineState::Apply(Value::Void, kont, handlers)
 }
