@@ -284,6 +284,9 @@ pub fn UnicodeChar::foldcase(self : UnicodeChar) -> Char {
 pub fn UnicodeString::upcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
+    // invariant : self.value.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : self.value.length() >= 0
     buf.write_char(unicode_char(ch).upcase())
   }
   { value: buf.to_string() }
@@ -301,6 +304,9 @@ pub fn UnicodeString::upcase(self : UnicodeString) -> UnicodeString {
 pub fn UnicodeString::downcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
+    // invariant : self.value.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : self.value.length() >= 0
     buf.write_char(unicode_char(ch).downcase())
   }
   { value: buf.to_string() }
@@ -318,6 +324,9 @@ pub fn UnicodeString::downcase(self : UnicodeString) -> UnicodeString {
 pub fn UnicodeString::foldcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
+    // invariant : self.value.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : self.value.length() >= 0
     buf.write_char(unicode_char(ch).foldcase())
   }
   { value: buf.to_string() }
