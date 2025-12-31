@@ -358,6 +358,22 @@ fn ascii_lower_string(value : String) -> String {
 }
 ```
 
+## Digit scans with functional indices
+- Use index-based functional `for` loops to accumulate values without `mut`.
+
+Example:
+```mbt
+let acc = for i = 1, acc = 0; i < end; {
+  let ch = chars[i]
+  if !ch.is_ascii_digit() {
+    return None
+  }
+  continue i + 1, acc * 10 + (ch.to_int() - '0'.to_int())
+} else {
+  acc
+}
+```
+
 ## Reverse buffers with Array::rev
 - Use `Array::rev` instead of manual reverse-iter builds.
 

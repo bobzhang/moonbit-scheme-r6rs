@@ -52,13 +52,15 @@ fn parse_label_token(tok : String) -> (Bool, Int)? {
   if last != '=' && last != '#' {
     return None
   }
-  let mut acc = 0
   let end = chars.length() - 1
-  for ch in chars.sub(start=1, end=end) {
+  let acc = for i = 1, acc = 0; i < end; {
+    let ch = chars[i]
     if !ch.is_ascii_digit() {
       return None
     }
-    acc = acc * 10 + (ch.to_int() - '0'.to_int())
+    continue i + 1, acc * 10 + (ch.to_int() - '0'.to_int())
+  } else {
+    acc
   }
   Some((last == '=', acc))
 }
