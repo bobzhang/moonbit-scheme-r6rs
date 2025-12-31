@@ -392,6 +392,35 @@ let acc = for i = 1, acc = 0; i < end; {
 }
 ```
 
+## Hex digit parsing helper
+- Extract a helper that parses hex digits with functional `for` state, then reuse it in char literal parsing.
+
+Example:
+```mbt
+fn parse_hex_digits(chars : Array[Char]) -> Int? {
+  let (acc, has_digit) = for i = 0, acc = 0, has_digit = false;
+    i < chars.length(); {
+      match digit_value(chars[i]) {
+        Some(digit) if digit < 16 => continue i + 1, acc * 16 + digit, true
+        _ => return None
+      }
+    } else {
+      (acc, has_digit)
+    }
+  if has_digit { Some(acc) } else { None }
+}
+
+match parse_hex_digits(hex_chars) {
+  Some(value) => value.to_char()
+  None => None
+}
+```
+
+Tooling:
+```bash
+moon ide outline parser
+```
+
 ## Reverse buffers with Array::rev
 - Use `Array::rev` instead of manual reverse-iter builds.
 

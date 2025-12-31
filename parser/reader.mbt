@@ -846,6 +846,21 @@ pub fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
 }
 
 ///|
+fn parse_hex_digits(chars : Array[Char]) -> Int? {
+  let (acc, has_digit) = for i = 0, acc = 0, has_digit = false;
+    i < chars.length(); {
+      match digit_value(chars[i]) {
+        Some(digit) if digit < 16 =>
+          continue i + 1, acc * 16 + digit, true
+        _ => return None
+      }
+    } else {
+      (acc, has_digit)
+    }
+  if has_digit { Some(acc) } else { None }
+}
+
+///|
 fn parse_char_token(tok : String) -> Char? {
   let chars = string_to_chars(tok)
   if chars.length() < 3 {
@@ -863,22 +878,10 @@ fn parse_char_token(tok : String) -> Char? {
         match lower.get_char(0) {
           Some('x') => {
             let hex_chars = rest.sub(start=1).to_array()
-            if hex_chars.is_empty() {
-              return None
+            return match parse_hex_digits(hex_chars) {
+              Some(value) => value.to_char()
+              None => None
             }
-            let mut acc = 0
-            for ch in hex_chars {
-              match digit_value(ch) {
-                Some(digit) =>
-                  if digit < 16 {
-                    acc = acc * 16 + digit
-                  } else {
-                    return None
-                  }
-                None => return None
-              }
-            }
-            return acc.to_char()
           }
           _ => ()
         }

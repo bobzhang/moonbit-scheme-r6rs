@@ -31,6 +31,10 @@ test "parse basics" {
     Some(@core.Datum::Int(255)) => ()
     _ => fail("expected 255")
   }
+  match parse_program("#\\x41 #\\space") {
+    [@core.Datum::Char('A'), @core.Datum::Char(' '), ..] => ()
+    _ => fail("expected char literals")
+  }
   match parse_program("#vu8(1 2)") {
     [@core.Datum::ByteVector(items), ..] =>
       inspect(items.length(), content="2")
