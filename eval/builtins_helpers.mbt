@@ -1892,6 +1892,9 @@ fn compare_chain_string(
   }
   let prev = foldcase_string_if(value_as_string(args[0]), case_insensitive)
   for i = 1, prev = prev; i < args.length(); {
+    // invariant : i >= 1 && i <= args.length()
+    // decreases : args.length() - i
+    // assert : i <= args.length()
     let cur = foldcase_string_if(value_as_string(args[i]), case_insensitive)
     let cmp = prev.lexical_compare(cur)
     if !compare_ok(mode, cmp) {
@@ -1910,6 +1913,9 @@ fn compare_chain_bool(args : Array[Value]) -> Bool raise EvalError {
   }
   let prev = value_as_bool(args[0])
   for i = 1, prev = prev; i < args.length(); {
+    // invariant : i >= 1 && i <= args.length()
+    // decreases : args.length() - i
+    // assert : i <= args.length()
     let cur = value_as_bool(args[i])
     if prev != cur {
       return false
@@ -1927,6 +1933,9 @@ fn compare_chain_symbol(args : Array[Value]) -> Bool raise EvalError {
   }
   let prev = value_as_symbol(args[0])
   for i = 1, prev = prev; i < args.length(); {
+    // invariant : i >= 1 && i <= args.length()
+    // decreases : args.length() - i
+    // assert : i <= args.length()
     let cur = value_as_symbol(args[i])
     if prev != cur {
       return false
@@ -1942,6 +1951,9 @@ fn hash_string_value(s : String) -> Int {
   let modulus = 2147483647
   let factor = 65599
   for i = 0, hash = 0; i < s.length(); {
+    // invariant : i >= 0 && i <= s.length()
+    // decreases : s.length() - i
+    // assert : i <= s.length()
     match s.get_char(i) {
       Some(ch) => {
         let next = (hash * factor + ch.to_int()) % modulus
@@ -1976,6 +1988,13 @@ fn list_member(
   list : Datum,
 ) -> Value raise EvalError {
   for cur = list; true; {
+    // invariant : true
+    // TODO(decreases) : list length not explicit; possible bug
+    // assert :
+    //   match cur {
+    //     Datum::Pair(_, _) | Datum::Nil => true
+    //     _ => true
+    //   }
     match cur {
       Datum::Nil => break bool_value(false)
       Datum::Pair(car, cdr) => {
@@ -1998,6 +2017,13 @@ fn list_assoc(
   list : Datum,
 ) -> Value raise EvalError {
   for cur = list; true; {
+    // invariant : true
+    // TODO(decreases) : list length not explicit; possible bug
+    // assert :
+    //   match cur {
+    //     Datum::Pair(_, _) | Datum::Nil => true
+    //     _ => true
+    //   }
     match cur {
       Datum::Nil => break bool_value(false)
       Datum::Pair(entry, rest) => {
