@@ -5546,6 +5546,9 @@ fn import_set_exports(expr : Datum) -> Map[String, Binding] raise EvalError {
 fn import_set_into_env(expr : Datum, env : Env) -> Unit raise EvalError {
   let exports = import_set_exports(expr)
   for key in exports.keys() {
+    // invariant : exports.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : exports.keys().length() >= 0
     match exports.get(key) {
       Some(binding) => env_define_binding(env, key, binding)
       None => ()
@@ -5569,14 +5572,23 @@ fn eval_library_state(
   let body = args.sub(start=3).to_array()
   let lib_env = init_env()
   for import_set in imports {
+    // invariant : imports.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : imports.length() >= 0
     import_set_into_env(import_set, lib_env)
   }
   for form in body {
+    // invariant : body.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : body.length() >= 0
     let _ = eval_expr(form, lib_env)
 
   }
   let export_map : Map[String, Binding] = {}
   for export_spec in exports {
+    // invariant : exports.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : exports.length() >= 0
     let (external, internal) = export_spec
     if is_syntax_keyword(internal) {
       export_map[external] = Binding::{
@@ -5599,6 +5611,9 @@ fn eval_import_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   for spec in args {
+    // invariant : args.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : args.length() >= 0
     import_set_into_env(spec, env)
   }
   MachineState::Apply(Value::Void, kont, handlers)
