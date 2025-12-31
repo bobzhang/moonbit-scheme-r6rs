@@ -2,7 +2,7 @@
 using @core {type Datum, type ParseError, unicode_char}
 
 ///|
-pub(all) struct Reader {
+pub struct Reader {
   chars : Array[Char]
   mut pos : Int
   mut fold_case : Bool

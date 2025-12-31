@@ -13,7 +13,7 @@ pub fn make_reader(String) -> Reader
 // Errors
 
 // Types and methods
-pub(all) struct Reader {
+pub struct Reader {
   chars : Array[Char]
   mut pos : Int
   mut fold_case : Bool

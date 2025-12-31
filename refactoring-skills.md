@@ -1806,6 +1806,24 @@ r.set_fold_case(true)
 match r.label_get(label) { ... }
 ```
 
+## Make struct fields opaque
+- Use `pub struct` (instead of `pub(all)`) when callers should not construct or mutate fields directly.
+- Provide a constructor helper like `make_reader` and methods for the allowed operations.
+
+Example:
+```mbt
+pub struct Reader {
+  chars : Array[Char]
+  mut pos : Int
+  mut fold_case : Bool
+  labels : Map[Int, Ref[Datum]]
+}
+
+pub fn make_reader(src : String) -> Reader {
+  ...
+}
+```
+
 ## Internal methods on type aliases
 - Use private `Type::method` helpers to encapsulate repeated logic without changing the public API.
 - Chaining with `..` keeps small constructors readable.
