@@ -1545,14 +1545,14 @@ fn array_datum_equal(left : Array[Datum], right : Array[Datum]) -> Bool {
   if left.length() != right.length() {
     false
   } else {
-    let mut i = 0
-    while i < left.length() {
+    for i = 0; i < left.length(); {
       if !datum_equal(left[i], right[i]) {
-        return false
+        break false
       }
-      i = i + 1
+      continue i + 1
+    } else {
+      true
     }
-    true
   }
 }
 
@@ -1561,14 +1561,14 @@ fn array_int_equal(left : Array[Int], right : Array[Int]) -> Bool {
   if left.length() != right.length() {
     false
   } else {
-    let mut i = 0
-    while i < left.length() {
+    for i = 0; i < left.length(); {
       if left[i] != right[i] {
-        return false
+        break false
       }
-      i = i + 1
+      continue i + 1
+    } else {
+      true
     }
-    true
   }
 }
 
