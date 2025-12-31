@@ -45,6 +45,20 @@ test "unicode helpers" {
 }
 
 ///|
+test "unicode char case" {
+  inspect(unicode_char('a').is_lowercase(), content="true")
+  inspect(unicode_char('0').is_alphabetic(), content="false")
+  match unicode_char('a').upcase() {
+    'A' => ()
+    _ => fail("expected A")
+  }
+  match unicode_char('A').downcase() {
+    'a' => ()
+    _ => fail("expected a")
+  }
+}
+
+///|
 test "datum constructors" {
   match Datum::Int(42) {
     Datum::Int(42) => ()
