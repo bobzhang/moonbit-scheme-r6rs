@@ -338,6 +338,22 @@ fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
 ## Tuple destructuring
 - Replace `mut` temporaries with a single `let (a, b) = match ...` when branching sets both.
 
+## First match scans
+- Use a functional `for` with `break` to grab the first matching index without `mut`.
+
+Example:
+```mbt
+let idx = for i = 0; i < chars.length(); {
+  let ch = chars[i]
+  if ch == 'e' || ch == 'E' {
+    break i
+  }
+  continue i + 1
+} else {
+  -1
+}
+```
+
 ## List traversal with functional state
 - Replace `mut cur` list loops with a functional `for` and `break` to return values.
 

@@ -345,12 +345,14 @@ fn pow10_float(exp : Int) -> Float {
 ///|
 fn split_exp_token(tok : String) -> (String, Int)? {
   let chars = string_to_chars(tok)
-  let mut idx = -1
-  for i, ch in chars {
+  let idx = for i = 0; i < chars.length(); {
+    let ch = chars[i]
     if ch == 'e' || ch == 'E' {
-      idx = i
-      break
+      break i
     }
+    continue i + 1
+  } else {
+    -1
   }
   if idx == -1 {
     None
