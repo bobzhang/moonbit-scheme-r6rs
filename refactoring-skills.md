@@ -1002,3 +1002,27 @@ pub fn eval_program(src : String) -> Value raise {
   @eval.eval_program(src)
 }
 ```
+
+## Functional comparison chains
+- When comparing a sequence of numeric arguments, use a functional `for` with early `break` to avoid `mut`.
+- Carry the previous value as loop state to model `<`, `>`, `<=`, `>=` checks cleanly.
+
+Example:
+```mbt
+fn flonum_increasing(args : Array[Value]) -> Bool {
+  if args.length() <= 1 {
+    true
+  } else {
+    let first = value_as_flonum(args[0])
+    for i = 1, prev = first; i < args.length(); {
+      let cur = value_as_flonum(args[i])
+      if prev >= cur {
+        break false
+      }
+      continue i + 1, cur
+    } else {
+      true
+    }
+  }
+}
+```
