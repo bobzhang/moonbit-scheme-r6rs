@@ -30,6 +30,9 @@ test "eval program" {
   inspect(forms.length(), content="1")
   let values = eval_program_all("(define x 1) (+ x 2)")
   inspect(values.length(), content="2")
+  register_include_source("mem.scm", "(+ 2 3)")
+  let included = eval_program("(include \"mem.scm\")")
+  inspect(value_to_string(included), content="5")
   match parse_number_token("10") {
     Some(@core.Datum::Int(10)) => ()
     _ => fail("expected int")
