@@ -334,6 +334,20 @@ fn list_from_items(items : Array[Datum], base : Datum) -> Datum {
 
 ## Reader consumption
 - Use `Reader::next()` (with `ignore(...)` if needed) to advance instead of direct `pos` mutation.
+- Extract small reader steps (like line-comment skipping) into `Reader::` methods so call sites can chain.
+
+Example:
+```mbt
+fn Reader::skip_line_comment(self : Reader) -> Unit {
+  while true {
+    match self.next() {
+      Some('\n') => break
+      Some(_) => continue
+      None => break
+    }
+  }
+}
+```
 
 ## Lookahead helpers
 - Add a small `reader_peek_offset` helper to centralize bounded lookahead when scanning delimiters.

@@ -101,13 +101,7 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
       Some(';') => {
         // Line comment
         ignore(self.next())
-        while true {
-          match self.next() {
-            Some('\n') => break
-            Some(_) => continue
-            None => break
-          }
-        }
+        self.skip_line_comment()
         continue
       }
       Some('#') =>
@@ -118,6 +112,17 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
           break
         }
       _ => break
+    }
+  }
+}
+
+///|
+fn Reader::skip_line_comment(self : Reader) -> Unit {
+  while true {
+    match self.next() {
+      Some('\n') => break
+      Some(_) => continue
+      None => break
     }
   }
 }
