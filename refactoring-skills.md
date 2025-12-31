@@ -423,6 +423,15 @@ fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
 ## Tuple destructuring
 - Replace `mut` temporaries with a single `let (a, b) = match ...` when branching sets both.
 
+Example:
+```mbt
+let (sign, start) = match chars[0] {
+  '+' => (1, 1)
+  '-' => (-1, 1)
+  _ => (1, 0)
+}
+```
+
 ## First match scans
 - Use a functional `for` with `break` to grab the first matching index without `mut`.
 

@@ -407,11 +407,10 @@ fn parse_exact_decimal(tok : String) -> Datum? {
   if chars.is_empty() {
     return None
   }
-  let mut sign = 1
-  let mut start = 0
-  if chars[0] == '+' || chars[0] == '-' {
-    sign = if chars[0] == '-' { -1 } else { 1 }
-    start = 1
+  let (sign, start) = match chars[0] {
+    '+' => (1, 1)
+    '-' => (-1, 1)
+    _ => (1, 0)
   }
   let mut seen_dot = false
   let mut frac_len = 0
@@ -437,12 +436,12 @@ fn parse_exact_decimal(tok : String) -> Datum? {
   if !has_digit {
     return None
   }
-  let mut num = if sign < 0 { -acc } else { acc }
-  let mut den = pow10_bigint(frac_len)
-  if exp >= 0 {
-    num = num * pow10_bigint(exp)
+  let num = if sign < 0 { -acc } else { acc }
+  let den = pow10_bigint(frac_len)
+  let (num, den) = if exp >= 0 {
+    (num * pow10_bigint(exp), den)
   } else {
-    den = den * pow10_bigint(-exp)
+    (num, den * pow10_bigint(-exp))
   }
   normalize_big_rat(num, den)
 }
