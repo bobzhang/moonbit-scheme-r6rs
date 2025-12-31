@@ -1853,12 +1853,22 @@ let exports_map = lib.exports()
 ## README mbt check for new APIs
 - Add a tiny `mbt check` snippet when exposing a new helper or method.
 - This keeps docs and behavior in sync and exercises the call site.
+- When touching global registries, use a unique name to avoid cross-test coupling.
 
 Example:
 ```mbt
 let r = make_reader("ABC")
 r.set_fold_case(true)
 inspect(r.read_token(), content="abc")
+```
+
+Example:
+```mbt
+let binding = Binding::{
+  id: next_binding_id(),
+  value: @core.Value::Datum(@core.Datum::Int(1)),
+}
+register_library("doc/runtime-lib", { "x": binding })
 ```
 
 ## Internal methods on type aliases

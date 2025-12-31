@@ -110,4 +110,25 @@ test "value from datum" {
     _ => fail("expected datum value")
   }
 }
+
+///|
+test "library exports" {
+  let binding = @core.Binding::{
+    id: next_binding_id(),
+    value: @core.Value::Datum(@core.Datum::Int(1)),
+  }
+  register_library("doc/runtime-lib", { "x": binding })
+  match lookup_library("doc/runtime-lib") {
+    Some(lib) =>
+      match lib.exports().get("x") {
+        Some(exported) =>
+          match exported.value {
+            @core.Value::Datum(@core.Datum::Int(1)) => ()
+            _ => fail("expected datum export")
+          }
+        None => fail("expected export")
+      }
+    None => fail("expected library")
+  }
+}
 ```
