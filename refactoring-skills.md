@@ -1850,6 +1850,17 @@ fn Library::new(exports : Map[String, Binding]) -> Library {
 let exports_map = lib.exports()
 ```
 
+## README mbt check for new APIs
+- Add a tiny `mbt check` snippet when exposing a new helper or method.
+- This keeps docs and behavior in sync and exercises the call site.
+
+Example:
+```mbt
+let r = make_reader("ABC")
+r.set_fold_case(true)
+inspect(r.read_token(), content="abc")
+```
+
 ## Internal methods on type aliases
 - Use private `Type::method` helpers to encapsulate repeated logic without changing the public API.
 - Chaining with `..` keeps small constructors readable.
