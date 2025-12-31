@@ -22,6 +22,8 @@ let tok = reader.read_token()
 ///|
 test "reader helpers" {
   inspect(digit_value('9'), content="Some(9)")
+  inspect(digit_value('a'), content="Some(10)")
+  inspect(digit_value('F'), content="Some(15)")
   let r = make_reader("#(1 2)")
   inspect(r.is_vector_start(), content="true")
   let ellipsis = make_reader("...")
@@ -40,6 +42,8 @@ test "reader helpers" {
   let r3 = make_reader("\"hi\"")
   ignore(r3.next())
   inspect(r3.read_string(), content="hi")
+  let escaped = make_reader("\\x41;bc")
+  inspect(escaped.read_token(), content="Abc")
 }
 
 ///|

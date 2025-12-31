@@ -40,6 +40,7 @@ pub fn Reader::peek(self : Reader) -> Char? {
 }
 
 ///|
+/// Peek ahead by a fixed offset without consuming input.
 fn Reader::peek_offset(self : Reader, offset : Int) -> Char? {
   self.chars.get(self.pos + offset)
 }
@@ -66,6 +67,7 @@ pub fn Reader::next(self : Reader) -> Char? {
 }
 
 ///|
+/// Return true if a character is a token delimiter.
 fn is_delim(ch : Char) -> Bool {
   if ch.is_ascii_whitespace() {
     true
@@ -122,6 +124,7 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
 }
 
 ///|
+/// Consume a line comment after `;`.
 fn Reader::skip_line_comment(self : Reader) -> Unit {
   for cur = self.next(); true; {
     // invariant : self.pos >= 0 && self.pos <= self.chars.length()
@@ -138,6 +141,7 @@ fn Reader::skip_line_comment(self : Reader) -> Unit {
 }
 
 ///|
+/// Consume a nested block comment starting with `#|`.
 fn Reader::skip_block_comment(self : Reader) -> Unit raise ParseError {
   ignore(self.next())
   ignore(self.next())
@@ -304,6 +308,7 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
 }
 
 ///|
+/// Read an escaped identifier character (supports `\x..;`).
 fn Reader::read_identifier_escape(self : Reader) -> Char raise ParseError {
   match self.next() {
     Some('x') | Some('X') => self.read_hex_escape()
@@ -390,6 +395,7 @@ pub fn Reader::read_string(self : Reader) -> String raise ParseError {
 }
 
 ///|
+/// Skip trailing whitespace after a string line continuation.
 fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
   for cur = self.peek(); true; {
     // invariant : self.pos >= 0 && self.pos <= self.chars.length()
@@ -408,6 +414,7 @@ fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
 }
 
 ///|
+/// Read a `\x..;` hex escape, requiring at least one hex digit.
 fn Reader::read_hex_escape(self : Reader) -> Char raise ParseError {
   for acc = 0, has_digit = false; true; {
     // invariant : acc >= 0
