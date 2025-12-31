@@ -196,6 +196,9 @@ fn parse_bigint_token_radix(tok : String, radix : Int) -> @bigint.BigInt? {
   let base = bigint_from_int(radix)
   let (sign, acc, has_digit) = for i = 0, sign = 1, acc = bigint_from_int(0),
     first = true, has_digit = false; i < tok.length(); {
+      // invariant : i >= 0 && i <= tok.length()
+      // decreases : tok.length() - i
+      // assert : i <= tok.length()
       match tok.get_char(i) {
         Some(ch) => {
           if first && (ch == '+' || ch == '-') {
@@ -252,6 +255,9 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> Datum? {
 ///|
 fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
   let found = for i = 0, found = -1; i < chars.length(); {
+    // invariant : i >= 0 && i <= chars.length()
+    // decreases : chars.length() - i
+    // assert : i <= chars.length()
     let ch = chars[i]
     if ch == target {
       if found != -1 {
@@ -287,6 +293,9 @@ fn parse_float_token(tok : String) -> Float? {
   let (sign, int_part, frac_part, frac_div, seen_dot, seen_digit) = for i = 0,
     sign = Float::from_int(1), int_part = 0, frac_part = 0, frac_div = 1,
     seen_dot = false, seen_digit = false, first = true; i < tok.length(); {
+      // invariant : i >= 0 && i <= tok.length()
+      // decreases : tok.length() - i
+      // assert : i <= tok.length()
       match tok.get_char(i) {
         Some(ch) => {
           if first && (ch == '+' || ch == '-') {
@@ -340,6 +349,9 @@ fn parse_float_token(tok : String) -> Float? {
 fn pow10_bigint(exp : Int) -> @bigint.BigInt {
   let ten = bigint_from_int(10)
   for i = 0, acc = bigint_from_int(1); i < exp; {
+    // invariant : i >= 0 && i <= exp
+    // decreases : exp - i
+    // assert : i <= exp
     continue i + 1, acc * ten
   } else {
     acc
@@ -351,6 +363,9 @@ fn pow10_float(exp : Int) -> Float {
   let limit = int_abs(exp)
   let ten = Float::from_int(10)
   let result = for i = 0, acc = Float::from_int(1); i < limit; {
+    // invariant : i >= 0 && i <= limit
+    // decreases : limit - i
+    // assert : i <= limit
     continue i + 1, acc * ten
   } else {
     acc
