@@ -27,12 +27,7 @@ const HANGUL_S_COUNT : Int = HANGUL_L_COUNT * HANGUL_N_COUNT
 
 ///|
 fn data_chars(data : String) -> ReadOnlyArray[Char] {
-  let out : Array[Char] = []
-  for ch in data {
-    if ch != '\n' && ch != '\r' {
-      out.push(ch)
-    }
-  }
+  let out = data.to_array().filter((ch) => ch != '\n' && ch != '\r')
   ReadOnlyArray::from_array(out[:])
 }
 
@@ -56,21 +51,22 @@ fn build_decomp_map(
   count : Int,
 ) -> Map[Char, Array[Char]] {
   let map = Map::new(capacity=count)
-  let mut i = 0
-  while i < data.length() {
+  for i = 0; i < data.length(); {
     let ch = data[i]
     let len = data[i + 1].to_int()
-    i = i + 2
+    let start = i + 2
     let seq : Array[Char] = []
-    let mut j = 0
-    while j < len {
-      seq.push(data[i + j])
-      j = j + 1
+    for j = 0; j < len; {
+      seq.push(data[start + j])
+      continue j + 1
+    } else {
+      ()
     }
-    i = i + len
     map[ch] = seq
+    continue start + len
+  } else {
+    map
   }
-  map
 }
 
 ///|
@@ -79,14 +75,14 @@ fn build_combining_class_map(
   count : Int,
 ) -> Map[Char, Int] {
   let map = Map::new(capacity=count)
-  let mut i = 0
-  while i < data.length() {
+  for i = 0; i < data.length(); {
     let ch = data[i]
     let cls = data[i + 1].to_int()
-    i = i + 2
     map[ch] = cls
+    continue i + 2
+  } else {
+    map
   }
-  map
 }
 
 ///|
@@ -95,15 +91,15 @@ fn build_composition_map(
   count : Int,
 ) -> Map[UInt, Char] {
   let map = Map::new(capacity=count)
-  let mut i = 0
-  while i + 2 < data.length() {
+  for i = 0; i + 2 < data.length(); {
     let starter = data[i]
     let combining = data[i + 1]
     let composed = data[i + 2]
-    i = i + 3
     map[compose_key(starter, combining)] = composed
+    continue i + 3
+  } else {
+    map
   }
-  map
 }
 
 ///|

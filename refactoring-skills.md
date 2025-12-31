@@ -271,7 +271,7 @@ fn next_port_id() -> Int {
 
 ## Array helpers for less mut
 - Use `Array::map` to build arrays without manual `push`.
-- Use `Array::copy` and `Array::contains` instead of manual clone/contains loops.
+- Use `Array::copy`, `Array::contains`, and `Array::filter` instead of manual loops.
 
 Example:
 ```mbt
@@ -285,6 +285,22 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
     next.push(scope)
     next
   }
+}
+```
+
+## Step-wise loops
+- Use functional `for` with `continue` to advance by fixed strides (like packed unicode tables).
+
+Example:
+```mbt
+for i = 0; i + 2 < data.length(); {
+  let starter = data[i]
+  let combining = data[i + 1]
+  let composed = data[i + 2]
+  map[compose_key(starter, combining)] = composed
+  continue i + 3
+} else {
+  map
 }
 ```
 
