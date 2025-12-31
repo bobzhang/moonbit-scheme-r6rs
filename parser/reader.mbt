@@ -381,6 +381,9 @@ fn pow10_float(exp : Int) -> Float {
 fn split_exp_token(tok : String) -> (String, Int)? {
   let chars = string_to_chars(tok)
   let idx = for i = 0; i < chars.length(); {
+    // invariant : i >= 0 && i <= chars.length()
+    // decreases : chars.length() - i
+    // assert : i <= chars.length()
     let ch = chars[i]
     if ch == 'e' || ch == 'E' {
       break i
@@ -687,6 +690,9 @@ fn find_complex_split(core_chars : Array[Char], radix : Int) -> Int? {
     return None
   }
   for i = core_chars.length(); i > 1; {
+    // invariant : i >= 1 && i <= core_chars.length()
+    // decreases : i - 1
+    // assert : i <= core_chars.length()
     let idx = i - 1
     let ch = core_chars[idx]
     if ch == '+' || ch == '-' {
@@ -1291,6 +1297,9 @@ pub fn parse_program_with_fold_case(
   r.fold_case = fold_case
   let exprs : Array[Datum] = []
   for cur = r..skip_ws_and_comments().peek(); cur is Some(_); {
+    // invariant : exprs.length() >= 0
+    // TODO(decreases) : reader position not explicit; possible bug
+    // assert : exprs.length() >= 0
     let expr = read_expr(r)
     exprs.push(expr)
     continue r..skip_ws_and_comments().peek()

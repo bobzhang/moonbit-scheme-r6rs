@@ -124,6 +124,9 @@ pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
 ///|
 fn Reader::skip_line_comment(self : Reader) -> Unit {
   for cur = self.next(); true; {
+    // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+    // decreases : self.chars.length() - self.pos
+    // assert : self.pos <= self.chars.length()
     match cur {
       Some('\n') => break
       Some(_) => continue self.next()
@@ -139,6 +142,9 @@ fn Reader::skip_block_comment(self : Reader) -> Unit raise ParseError {
   ignore(self.next())
   ignore(self.next())
   for depth = 1; depth > 0; {
+    // invariant : depth > 0
+    // TODO(decreases) : depth can increase; possible bug
+    // assert : depth > 0
     match (self.peek(), self.peek_offset(1)) {
       (None, _) => raise @core.ParseError("unterminated block comment")
       (Some('#'), Some('|')) => {
