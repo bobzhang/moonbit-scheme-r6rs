@@ -6,9 +6,10 @@ fn apply_primitive(
 ) -> Value raise EvalError {
   match prim {
     Primitive::Add => {
-      let mut acc = Datum::Int(0)
-      for arg in args {
-        acc = num_add(acc, value_as_number(arg))
+      let acc = for i = 0, acc = Datum::Int(0); i < args.length(); {
+        continue i + 1, num_add(acc, value_as_number(args[i]))
+      } else {
+        acc
       }
       Value::Datum(acc)
     }
@@ -30,9 +31,10 @@ fn apply_primitive(
         }
       }
     Primitive::Mul => {
-      let mut product = Datum::Int(1)
-      for arg in args {
-        product = num_mul(product, value_as_number(arg))
+      let product = for i = 0, product = Datum::Int(1); i < args.length(); {
+        continue i + 1, num_mul(product, value_as_number(args[i]))
+      } else {
+        product
       }
       Value::Datum(product)
     }
