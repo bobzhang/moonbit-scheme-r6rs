@@ -2595,18 +2595,16 @@ fn formals_bindings(
       }
   }
   let bindings : Array[(String, Value)] = []
-  let mut i = 0
-  while i < params.length() {
+  for i = 0; i < params.length(); {
     bindings.push((params[i], values[i]))
-    i = i + 1
+    continue i + 1
   }
   match formals.rest {
     Some(name) => {
       let rest_values : Array[Value] = []
-      let mut j = min_len
-      while j < values.length() {
+      for j = min_len; j < values.length(); {
         rest_values.push(values[j])
-        j = j + 1
+        continue j + 1
       }
       bindings.push((name, values_to_list_value(rest_values)))
     }
