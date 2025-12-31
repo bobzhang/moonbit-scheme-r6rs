@@ -27,7 +27,6 @@ using @core {
   type Port,
   type Primitive,
   type Promise,
-  type PromiseState,
   type Record,
   type SyntaxObject,
   type RecordConstructorDescriptor,
@@ -44,7 +43,6 @@ using @core {
   type Value,
   type WindAction,
   type Winder,
-  type WinderKind,
   unicode_char,
   unicode_string,
 }

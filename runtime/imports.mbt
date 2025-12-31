@@ -13,7 +13,6 @@ using @core {
   type Hashtable,
   type HashtableEquiv,
   type Port,
-  type PortKind,
   type Record,
   type RecordConstructorDescriptor,
   type RecordField,

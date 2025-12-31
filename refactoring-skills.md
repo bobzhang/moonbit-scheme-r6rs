@@ -196,6 +196,17 @@ pub fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
 - Iterate with `for key, value in map` to avoid extra `get`/`keys` loops.
 - Use `map.is_empty()` for quick emptiness checks instead of scanning `keys()`.
 
+## Imports hygiene
+- Remove unused type imports from `using @core { ... }` blocks when `moon` warns about them.
+
+Example:
+```mbt
+using @core {
+  type Port,
+  // type PortKind, // unused
+}
+```
+
 ## Deep clone with map
 - Combine `Array::map` and `Map::map` to copy nested env frames without manual `mut` loops.
 
