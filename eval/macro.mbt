@@ -350,14 +350,7 @@ fn parse_symbol_name(expr : Datum) -> String raise EvalError {
 
 ///|
 fn is_literal(literals : Array[String], name : String) -> Bool {
-  let mut i = 0
-  while i < literals.length() {
-    if literals[i] == name {
-      return true
-    }
-    i = i + 1
-  }
-  false
+  literals.contains(name)
 }
 
 ///|
@@ -425,8 +418,7 @@ fn validate_pattern_list(
   ellipsis_active : Bool,
   error_message : String,
 ) -> Unit raise EvalError {
-  let mut i = 0
-  while i < items.length() {
+  for i = 0; i < items.length(); {
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -440,7 +432,7 @@ fn validate_pattern_list(
         ellipsis_active,
         error_message,
       )
-      i = i + 2
+      continue i + 2
     } else {
       validate_pattern(
         items[i],
@@ -449,8 +441,10 @@ fn validate_pattern_list(
         ellipsis_active,
         error_message,
       )
-      i = i + 1
+      continue i + 1
     }
+  } else {
+    ()
   }
 }
 

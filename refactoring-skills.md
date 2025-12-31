@@ -421,6 +421,23 @@ let (start, radix, exactness) = for i = 0, radix = base_radix,
 ## Depth-driven loops
 - Replace `mut depth` while loops with functional `for` state updates when scanning nested constructs.
 
+## Conditional stride loops
+- Use functional `for` with `continue i + 2` when the loop step depends on lookahead.
+
+Example:
+```mbt
+for i = 0; i < items.length(); {
+  if i + 1 < items.length() && datum_is_symbol(items[i + 1], ellipsis) {
+    ...
+    continue i + 2
+  }
+  ...
+  continue i + 1
+} else {
+  ()
+}
+```
+
 Example:
 ```mbt
 for depth = 1; depth > 0; {
