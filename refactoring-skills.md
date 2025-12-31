@@ -1586,6 +1586,7 @@ let best = for i = 0, best = None; i < items.length(); {
 - Annotate loops with `// invariant : ...`, `// decreases : ...`, and `// assert : ...` inside the loop body.
 - If a measure is not expressible, add `// TODO(decreases) : ...` to flag the risk.
 - For BigInt state, use helper measures like `bigint_bit_length_nonneg` to keep the decreases clause in `Int`.
+- In nested loops, add a separate spec block per loop; for `map.keys()` iteration, use `keys().length()` in the invariant.
 
 Example:
 ```mbt

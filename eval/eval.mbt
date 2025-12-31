@@ -813,7 +813,13 @@ fn init_env() -> Env {
 fn env_export_map(env : Env) -> Map[String, Binding] {
   let exports : Map[String, Binding] = {}
   for frame in env {
+    // invariant : env.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : env.length() >= 0
     for key in frame.keys() {
+      // invariant : frame.keys().length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : frame.keys().length() >= 0
       match frame.get(key) {
         Some(binding) => exports[key] = binding
         None => ()
@@ -827,6 +833,9 @@ fn env_export_map(env : Env) -> Map[String, Binding] {
 fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
   let exports = env_export_map(env)
   for name in base_syntax_keywords() {
+    // invariant : base_syntax_keywords().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : base_syntax_keywords().length() >= 0
     exports[name] = Binding::{
       id: next_binding_id(),
       value: Value::SyntaxKeyword(name),
@@ -859,6 +868,9 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     "make-undefined-violation", "undefined-violation?",
   ]
   for name in condition_names {
+    // invariant : condition_names.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : condition_names.length() >= 0
     condition_exports[name] = env_lookup_binding(env, name)
   }
   condition_exports["define-condition-type"] = Binding::{
@@ -878,6 +890,9 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     "&no-nans", "make-no-nans-violation", "no-nans-violation?",
   ]
   for name in flonum_names {
+    // invariant : flonum_names.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : flonum_names.length() >= 0
     flonum_exports[name] = env_lookup_binding(env, name)
   }
   register_library_entry("rnrs.arithmetic.flonums", Some([6]), flonum_exports)
