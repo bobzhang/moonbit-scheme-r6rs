@@ -4072,10 +4072,9 @@ fn apply_primitive(
             Datum::Nil
           }
           let items : Array[Datum] = []
-          let mut i = 0
-          while i < len {
+          for i = 0; i < len; {
             items.push(fill)
-            i = i + 1
+            continue i + 1
           }
           Value::Datum(Datum::Vector(items))
         }
@@ -4137,10 +4136,9 @@ fn apply_primitive(
           if start < 0 || end < start || end > items.length() {
             raise @core.EvalError("index out of range")
           }
-          let mut i = start
-          while i < end {
+          for i = start; i < end; {
             items[i] = fill
-            i = i + 1
+            continue i + 1
           }
           Value::Void
         }
@@ -4290,14 +4288,15 @@ fn apply_primitive(
           if left.length() != right.length() {
             bool_value(false)
           } else {
-            let mut i = 0
-            while i < left.length() {
+            let ok = for i = 0; i < left.length(); {
               if left[i] != right[i] {
-                return bool_value(false)
+                break false
               }
-              i = i + 1
+              continue i + 1
+            } else {
+              true
             }
-            bool_value(true)
+            bool_value(ok)
           }
         }
         n => raise arity_mismatch(2, n)
