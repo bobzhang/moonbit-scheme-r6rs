@@ -1560,3 +1560,24 @@ let (use_big, acc_int, acc_big) =
     (use_big, acc_int, acc_big)
   }
 ```
+
+## Best-match selection loops
+- Keep `best : Option[T]` in the `for` state and update it when a candidate wins.
+- Use `continue` to skip disqualified entries without mutating.
+
+Example:
+```mbt
+let best = for i = 0, best = None; i < items.length(); {
+  let entry = items[i]
+  if !entry.is_candidate() {
+    continue i + 1, best
+  }
+  let next_best = match best {
+    None => Some(entry)
+    Some(current) => if entry.score > current.score { Some(entry) } else { Some(current) }
+  }
+  continue i + 1, next_best
+} else {
+  best
+}
+```

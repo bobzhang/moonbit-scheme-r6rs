@@ -1026,14 +1026,10 @@ fn rewrite_template_expr(
         Some(items) => {
           if !items.is_empty() {
             let head = items[0]
-            let mut is_template_form = false
-            if datum_is_symbol(head, "syntax") {
-              is_template_form = true
-            } else if datum_is_symbol(head, "quasisyntax") {
-              is_template_form = true
-            } else if datum_is_symbol(head, "with-syntax") {
-              is_template_form = true
-            }
+            let is_template_form =
+              datum_is_symbol(head, "syntax") ||
+              datum_is_symbol(head, "quasisyntax") ||
+              datum_is_symbol(head, "with-syntax")
             if is_template_form {
               let indices : Array[Int] = []
               let expanded = expand_template_indexed(
@@ -2336,12 +2332,12 @@ fn max_binding_len(
           if is_quote_form(items) {
             0
           } else {
-            let mut max_len = 0
-            for item in items {
-              let len = max_binding_len(item, bindings, indices)
-              if len > max_len {
-                max_len = len
-              }
+            let max_len = for i = 0, max_len = 0; i < items.length(); {
+              let len = max_binding_len(items[i], bindings, indices)
+              let next = if len > max_len { len } else { max_len }
+              continue i + 1, next
+            } else {
+              max_len
             }
             max_len
           }
@@ -2360,12 +2356,12 @@ fn max_binding_len(
           }
       }
     Datum::Vector(items) => {
-      let mut max_len = 0
-      for item in items {
-        let len = max_binding_len(item, bindings, indices)
-        if len > max_len {
-          max_len = len
-        }
+      let max_len = for i = 0, max_len = 0; i < items.length(); {
+        let len = max_binding_len(items[i], bindings, indices)
+        let next = if len > max_len { len } else { max_len }
+        continue i + 1, next
+      } else {
+        max_len
       }
       max_len
     }
@@ -2396,12 +2392,13 @@ fn template_has_repeat_binding(
           if is_quote_form(items) {
             false
           } else {
-            let mut found = false
-            for item in items {
-              if template_has_repeat_binding(item, bindings, ellipsis, indices) {
-                found = true
-                break
+            let found = for i = 0; i < items.length(); {
+              if template_has_repeat_binding(items[i], bindings, ellipsis, indices) {
+                break true
               }
+              continue i + 1
+            } else {
+              false
             }
             found
           }
@@ -2414,12 +2411,13 @@ fn template_has_repeat_binding(
           }
       }
     Datum::Vector(items) => {
-      let mut found = false
-      for item in items {
-        if template_has_repeat_binding(item, bindings, ellipsis, indices) {
-          found = true
-          break
+      let found = for i = 0; i < items.length(); {
+        if template_has_repeat_binding(items[i], bindings, ellipsis, indices) {
+          break true
         }
+        continue i + 1
+      } else {
+        false
       }
       found
     }

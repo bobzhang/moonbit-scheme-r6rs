@@ -3581,62 +3581,68 @@ fn eval_define_record_type_state(
   let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1).to_array())
   let pred_name = parse_symbol(args[2])
   let raw_specs = args.sub(start=3).to_array()
-  let mut parent_name : String? = None
-  let mut protocol_expr : Datum? = None
-  let mut is_sealed = false
-  let mut is_opaque = false
-  let mut uid : String? = None
   let field_specs : Array[Datum] = []
-  for spec in raw_specs {
-    let parts = datum_list_to_array(spec)
-    if parts.length() >= 1 && parts.length() <= 2 {
-      match symbol_name(parts[0]) {
-        Some("parent") if parts.length() == 2 => {
-          if parent_name is Some(_) {
-            raise @core.EvalError("invalid define-record-type")
+  let (parent_name, protocol_expr, is_sealed, is_opaque, uid) =
+    for i = 0,
+      parent_name = None,
+      protocol_expr = None,
+      is_sealed = false,
+      is_opaque = false,
+      uid = None;
+      i < raw_specs.length(); {
+      let spec = raw_specs[i]
+      let parts = datum_list_to_array(spec)
+      if parts.length() >= 1 && parts.length() <= 2 {
+        match symbol_name(parts[0]) {
+          Some("parent") if parts.length() == 2 => {
+            if parent_name is Some(_) {
+              raise @core.EvalError("invalid define-record-type")
+            }
+            let parent_name = Some(parse_symbol(parts[1]))
+            continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
           }
-          parent_name = Some(parse_symbol(parts[1]))
-          continue
+          Some("protocol") if parts.length() == 2 => {
+            if protocol_expr is Some(_) {
+              raise @core.EvalError("invalid define-record-type")
+            }
+            let protocol_expr = Some(parts[1])
+            continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+          }
+          Some("sealed") => {
+            let is_sealed = if parts.length() == 1 {
+              true
+            } else {
+              parse_bool(parts[1])
+            }
+            continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+          }
+          Some("opaque") => {
+            let is_opaque = if parts.length() == 1 {
+              true
+            } else {
+              parse_bool(parts[1])
+            }
+            continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+          }
+          Some("nongenerative") => {
+            if uid is Some(_) {
+              raise @core.EvalError("invalid define-record-type")
+            }
+            let uid = if parts.length() == 1 {
+              Some(record_name)
+            } else {
+              Some(parse_symbol(parts[1]))
+            }
+            continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+          }
+          _ => ()
         }
-        Some("protocol") if parts.length() == 2 => {
-          if protocol_expr is Some(_) {
-            raise @core.EvalError("invalid define-record-type")
-          }
-          protocol_expr = Some(parts[1])
-          continue
-        }
-        Some("sealed") => {
-          is_sealed = if parts.length() == 1 {
-            true
-          } else {
-            parse_bool(parts[1])
-          }
-          continue
-        }
-        Some("opaque") => {
-          is_opaque = if parts.length() == 1 {
-            true
-          } else {
-            parse_bool(parts[1])
-          }
-          continue
-        }
-        Some("nongenerative") => {
-          if uid is Some(_) {
-            raise @core.EvalError("invalid define-record-type")
-          }
-          if parts.length() == 1 {
-            uid = Some(record_name)
-          } else {
-            uid = Some(parse_symbol(parts[1]))
-          }
-          continue
-        }
-        _ => ()
       }
+      field_specs.push(spec)
+      continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+    } else {
+      (parent_name, protocol_expr, is_sealed, is_opaque, uid)
     }
-    field_specs.push(spec)
-  }
   let parent_desc = match parent_name {
     Some(name) =>
       match lookup_record_type_descriptor(name) {
@@ -4769,34 +4775,44 @@ fn select_library_for_ref(reference : LibraryRef) -> LibraryVersionInfo? {
     None => None
     Some(available) => {
       let version_ref = reference.version_ref
-      let mut best : LibraryVersionInfo? = None
-      for entry in available {
+      let best = for i = 0, best = (None : LibraryVersionInfo?);
+        i < available.length(); {
+        let entry = available[i]
         match version_ref {
           Some(ref_value) => {
             if !entry.has_version {
-              continue
+              continue i + 1, best
             }
             if !version_ref_matches(entry.version, ref_value) {
-              continue
+              continue i + 1, best
             }
           }
           None => ()
         }
-        match best {
-          None => best = Some(entry)
+        let next_best = match best {
+          None => Some(entry)
           Some(current) =>
             if version_ref is None {
               if entry.has_version && !current.has_version {
-                best = Some(entry)
+                Some(entry)
               } else if entry.has_version && current.has_version {
                 if compare_versions(entry.version, current.version) > 0 {
-                  best = Some(entry)
+                  Some(entry)
+                } else {
+                  Some(current)
                 }
+              } else {
+                Some(current)
               }
             } else if compare_versions(entry.version, current.version) > 0 {
-              best = Some(entry)
+              Some(entry)
+            } else {
+              Some(current)
             }
         }
+        continue i + 1, next_best
+      } else {
+        best
       }
       best
     }
@@ -5068,12 +5084,12 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
   if items.is_empty() {
     raise @core.EvalError("invalid import set")
   }
-  let mut run = false
-  let mut expand = false
-  for item in items {
+  let (run, expand) = for i = 0, run = false, expand = false;
+    i < items.length(); {
+    let item = items[i]
     match item {
-      Datum::Symbol("run") => run = true
-      Datum::Symbol("expand") => expand = true
+      Datum::Symbol("run") => continue i + 1, true, expand
+      Datum::Symbol("expand") => continue i + 1, run, true
       Datum::Pair(_, _) | Datum::Nil => {
         let parts = datum_list_to_array(item)
         if parts.length() != 2 {
@@ -5084,9 +5100,9 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
             match parts[1] {
               Datum::Int(n) =>
                 if n == 0 {
-                  run = true
+                  continue i + 1, true, expand
                 } else if n > 0 {
-                  expand = true
+                  continue i + 1, run, true
                 } else {
                   raise @core.EvalError("invalid import set")
                 }
@@ -5097,6 +5113,8 @@ fn parse_for_phases(items : Array[Datum]) -> ImportPhases raise EvalError {
       }
       _ => raise @core.EvalError("invalid import set")
     }
+  } else {
+    (run, expand)
   }
   if !run && !expand {
     raise @core.EvalError("invalid import set")
