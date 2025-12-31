@@ -3156,11 +3156,17 @@ fn eval_begin_for_syntax_state(
 ) -> MachineState raise EvalError {
   let syntax_env = env_clone(env)
   for form in args {
+    // invariant : args.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : args.length() >= 0
     let _ = eval_expr(form, syntax_env)
 
   }
   let frame = syntax_env[syntax_env.length() - 1]
   for key in frame.keys() {
+    // invariant : frame.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : frame.keys().length() >= 0
     match frame.get(key) {
       Some(binding) =>
         match binding.value {
@@ -3273,6 +3279,9 @@ fn eval_guard_state(
     let resume_value = Value::Continuation(capture_continuation(kont, handlers))
     let guard_handlers : Array[Value] = []
     for item in handlers {
+      // invariant : handlers.length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : handlers.length() >= 0
       guard_handlers.push(item)
     }
     let handler = Value::GuardHandler(
@@ -3280,6 +3289,9 @@ fn eval_guard_state(
     )
     let next_handlers : Array[Value] = []
     for item in handlers {
+      // invariant : handlers.length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : handlers.length() >= 0
       next_handlers.push(item)
     }
     next_handlers.push(handler)
