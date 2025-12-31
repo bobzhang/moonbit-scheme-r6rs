@@ -552,6 +552,19 @@ for a = left,
   }
 ```
 
+## Binary op folds
+- Fold argument arrays with a functional `for` to avoid `mut` accumulators.
+
+Example:
+```mbt
+let acc = for i = 1, acc = first; i < args.length(); {
+  let next = value_as_exact_integer(args[i])
+  continue i + 1, datum_bitwise_binop(acc, next, BitOp::And)
+} else {
+  acc
+}
+```
+
 ## Conditional offset accumulation
 - When building a value from conditional bits, fold `(i, acc)` in a functional loop.
 - Compute the offset inside the loop to keep the mutation-free pattern obvious.

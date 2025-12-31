@@ -1107,12 +1107,12 @@ fn apply_primitive(
       if args.is_empty() {
         Value::Datum(Datum::Int(-1))
       } else {
-        let mut acc = value_as_exact_integer(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let acc = value_as_exact_integer(args[0])
+        let acc = for i = 1, acc = acc; i < args.length(); {
           let next = value_as_exact_integer(args[i])
-          acc = datum_bitwise_binop(acc, next, BitOp::And)
-          i = i + 1
+          continue i + 1, datum_bitwise_binop(acc, next, BitOp::And)
+        } else {
+          acc
         }
         Value::Datum(acc)
       }
@@ -1120,12 +1120,12 @@ fn apply_primitive(
       if args.is_empty() {
         Value::Datum(Datum::Int(0))
       } else {
-        let mut acc = value_as_exact_integer(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let acc = value_as_exact_integer(args[0])
+        let acc = for i = 1, acc = acc; i < args.length(); {
           let next = value_as_exact_integer(args[i])
-          acc = datum_bitwise_binop(acc, next, BitOp::Or)
-          i = i + 1
+          continue i + 1, datum_bitwise_binop(acc, next, BitOp::Or)
+        } else {
+          acc
         }
         Value::Datum(acc)
       }
@@ -1133,12 +1133,12 @@ fn apply_primitive(
       if args.is_empty() {
         Value::Datum(Datum::Int(0))
       } else {
-        let mut acc = value_as_exact_integer(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let acc = value_as_exact_integer(args[0])
+        let acc = for i = 1, acc = acc; i < args.length(); {
           let next = value_as_exact_integer(args[i])
-          acc = datum_bitwise_binop(acc, next, BitOp::Xor)
-          i = i + 1
+          continue i + 1, datum_bitwise_binop(acc, next, BitOp::Xor)
+        } else {
+          acc
         }
         Value::Datum(acc)
       }

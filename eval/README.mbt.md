@@ -64,6 +64,12 @@ test "bitwise reverse bit field" {
 }
 
 ///|
+test "bitwise folds" {
+  let value = eval_program("(bitwise-and #b1111 #b1100 #b1010)")
+  inspect(@runtime.value_to_string(value), content="8")
+}
+
+///|
 test "syntax-rules macro" {
   let program =
     "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
