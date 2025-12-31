@@ -334,7 +334,7 @@ fn apply_numeric_primitive(prim : Primitive, args : Array[Value]) -> Value? rais
 Example:
 ```mbt
 match args {
-  [Value::Datum(Datum::Symbol(_))] => bool_value(true)
+  [Datum(Symbol(_))] => bool_value(true)
   [_] => bool_value(false)
   _ => raise arity_mismatch(1, args.length())
 }
@@ -722,7 +722,7 @@ Example:
 let (best, has_inexact) = for i = 1, best = best, has_inexact = has_inexact; i < args.length(); {
   let cur = value_as_number(args[i])
   let next_best = if num_less(best, cur) { cur } else { best }
-  let next_has_inexact = has_inexact || cur is Datum::Float(_)
+  let next_has_inexact = has_inexact || cur is Float(_)
   continue i + 1, next_best, next_has_inexact
 } else {
   (best, has_inexact)
@@ -1095,8 +1095,8 @@ Example:
 fn list_member(mode : EqualityMode, item : Value, list : Datum) -> Value raise EvalError {
   for cur = list; true; {
     match cur {
-      Datum::Nil => break bool_value(false)
-      Datum::Pair(car, cdr) => {
+      Nil => break bool_value(false)
+      Pair(car, cdr) => {
         if equality_match(mode, item, value_from_datum(car.val)) {
           break Value::Datum(cur)
         }
@@ -1118,7 +1118,7 @@ Example:
 let seen : Array[Int] = []
 for cur = value; true; {
   match cur {
-    Datum::Label(id, cell) => {
+    Label(id, cell) => {
       if seen.contains(id) {
         break cur
       }
@@ -1283,7 +1283,7 @@ for i = 0; i + 2 < data.length(); {
 
 Example:
 ```mbt
-Datum::Vector(items) =>
+Vector(items) =>
   Datum::Vector(
     items.map((item) => rename_proc_datum(item, def_env, call_ctx, renames, captures))
   )
@@ -1314,7 +1314,7 @@ Example:
 ```mbt
 let bytes = items.map((item) =>
   match item {
-    Datum::Int(n) => {
+    Int(n) => {
       if n < 0 || n > 255 {
         raise @core.ParseError("bytevector element out of range")
       }
@@ -1684,7 +1684,7 @@ let (use_big, acc_int, acc_big) =
     i < args.length(); {
     let value = value_as_exact_integer(args[i])
     match value {
-      Datum::Int(n) =>
+      Int(n) =>
         if use_big {
           let next_acc_big = bigint_gcd(acc_big, bigint_from_int(n))
           continue i + 1, true, acc_int, next_acc_big
@@ -1692,7 +1692,7 @@ let (use_big, acc_int, acc_big) =
           let next_acc_int = gcd(acc_int, n)
           continue i + 1, false, next_acc_int, acc_big
         }
-      Datum::BigInt(n) => {
+      BigInt(n) => {
         let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
         let next_acc_big = bigint_gcd(base_big, n)
         continue i + 1, true, acc_int, next_acc_big
@@ -1754,12 +1754,12 @@ for cur = list; true; {
   // TODO(decreases) : list length not explicit; possible bug
   // assert :
   //   match cur {
-  //     Datum::Pair(_, _) | Datum::Nil => true
+  //     Pair(_, _) | Nil => true
   //     _ => false
   //   }
   match cur {
-    Datum::Nil => break
-    Datum::Pair(a, b) => {
+    Nil => break
+    Pair(a, b) => {
       items.push(a.val)
       continue b.val
     }
@@ -1902,11 +1902,28 @@ Example:
 match env.get_binding(name) {
   Some(binding) =>
     match binding.value {
-      Value::Macro(transformer) => Some(transformer)
+      Macro(transformer) => Some(transformer)
       _ => None
     }
   _ => None
 }
+```
+
+## Drop constructor prefixes in patterns
+- In `match` patterns, you can omit `TypePath::` when the scrutinee type is known.
+- Keep prefixes in expressions unless the type is explicit; otherwise the compiler treats the constructor name as an unbound value.
+
+Example:
+```mbt
+match datum {
+  Int(n) => n
+  Pair(_, _) | Nil => 0
+  _ => 0
+}
+
+// Expression form: keep prefix or add a type annotation.
+let value = Datum::Int(1)
+let typed : Datum = Int(1)
 ```
 
 ## Small state helpers on private structs
