@@ -5673,6 +5673,9 @@ fn case_dispatch(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   for i = 0; i < clauses.length(); {
+    // invariant : i >= 0 && i <= clauses.length()
+    // decreases : clauses.length() - i
+    // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
       continue i + 1
@@ -5686,6 +5689,9 @@ fn case_dispatch(
       }
       let datums = datum_list_to_array(parts[0])
       let matched = for j = 0; j < datums.length(); {
+        // invariant : j >= 0 && j <= datums.length()
+        // decreases : datums.length() - j
+        // assert : j <= datums.length()
         if value_eqv(key, Value::Datum(datums[j])) {
           break true
         }
@@ -5722,6 +5728,9 @@ fn cond_start(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   for i = 0; i < clauses.length(); {
+    // invariant : i >= 0 && i <= clauses.length()
+    // decreases : clauses.length() - i
+    // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
       continue i + 1
@@ -5772,6 +5781,9 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
             true
           } else {
             for i = 1; i < items.length(); {
+              // invariant : i >= 1 && i <= items.length()
+              // decreases : items.length() - i
+              // assert : i <= items.length()
               if !cond_expand_feature(items[i]) {
                 break false
               }
@@ -5782,6 +5794,9 @@ fn cond_expand_feature(expr : Datum) -> Bool raise EvalError {
           }
         Datum::Symbol("or") => {
           for i = 1; i < items.length(); {
+            // invariant : i >= 1 && i <= items.length()
+            // decreases : items.length() - i
+            // assert : i <= items.length()
             if cond_expand_feature(items[i]) {
               break true
             }
@@ -5818,6 +5833,9 @@ fn eval_cond_expand_state(
   handlers : Array[Value],
 ) -> MachineState raise EvalError {
   for i = 0; i < clauses.length(); {
+    // invariant : i >= 0 && i <= clauses.length()
+    // decreases : clauses.length() - i
+    // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
     if parts.is_empty() {
       raise @core.EvalError("invalid cond-expand")
