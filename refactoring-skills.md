@@ -222,6 +222,23 @@ Example:
 let count = check_copy_range(start, end, from_items.length(), at, to_items.length())
 ```
 
+## Large match extraction
+- For huge primitive blocks, keep the original `match prim` as a `*_core` function returning `Value`.
+- Wrap it with a small `apply_*_primitive` that returns `Value?` and only handles the listed variants.
+- Use a short `python3` snippet to extract `Primitive::` names when building the wrapper list.
+
+Example:
+```mbt
+fn apply_numeric_primitive(prim : Primitive, args : Array[Value]) -> Value? raise EvalError {
+  match prim {
+    Primitive::Add
+    | Primitive::Sub
+    => Some(apply_numeric_primitive_core(prim, args))
+    _ => None
+  }
+}
+```
+
 ## Division-based counters
 - Replace `while n > 0` loops with a functional `for` that carries `(n, count)` state.
 
