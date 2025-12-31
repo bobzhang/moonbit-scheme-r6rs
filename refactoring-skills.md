@@ -194,6 +194,7 @@ pub fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
 
 ## Map iteration simplification
 - Iterate with `for key, value in map` to avoid extra `get`/`keys` loops.
+- Use `map.is_empty()` for quick emptiness checks instead of scanning `keys()`.
 
 ## Deep clone with map
 - Combine `Array::map` and `Map::map` to copy nested env frames without manual `mut` loops.

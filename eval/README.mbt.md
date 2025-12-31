@@ -46,6 +46,12 @@ test "empty program value" {
 }
 
 ///|
+test "eval error" {
+  let result = try? eval_program("(car 1)")
+  inspect(result is Err(_), content="true")
+}
+
+///|
 test "numeric comparisons" {
   let value = eval_program("(and (= 1 1 1) (< 1 2 3) (>= 3 2 1))")
   inspect(@runtime.value_to_string(value), content="#t")

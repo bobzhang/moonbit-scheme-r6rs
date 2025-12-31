@@ -1427,19 +1427,9 @@ fn load_stdlib(env : Env) -> Unit raise {
 }
 
 ///|
-fn captures_is_empty(captures : Map[String, Value]) -> Bool {
-  for _ in captures.keys() {
-    // invariant : captures.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : captures.keys().length() >= 0
-    return false
-  }
-  true
-}
-
 ///|
 fn env_with_captures(env : Env, captures : Map[String, Value]) -> Env {
-  if captures_is_empty(captures) {
+  if captures.is_empty() {
     return env
   }
   let next_env = env_extend(env)
