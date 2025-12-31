@@ -1978,20 +1978,19 @@ fn apply_primitive(
       if args.is_empty() {
         raise arity_mismatch(1, 0)
       }
-      let mut current = value_as_flonum(args[0])
+      let current = value_as_flonum(args[0])
       if float_is_nan(current) {
         return Value::Datum(Datum::Float(current))
       }
-      let mut i = 1
-      while i < args.length() {
+      let current = for i = 1, current = current; i < args.length(); {
         let cur = value_as_flonum(args[i])
         if float_is_nan(cur) {
-          return Value::Datum(Datum::Float(cur))
+          break cur
         }
-        if cur > current {
-          current = cur
-        }
-        i = i + 1
+        let next = if cur > current { cur } else { current }
+        continue i + 1, next
+      } else {
+        current
       }
       Value::Datum(Datum::Float(current))
     }
@@ -1999,20 +1998,19 @@ fn apply_primitive(
       if args.is_empty() {
         raise arity_mismatch(1, 0)
       }
-      let mut current = value_as_flonum(args[0])
+      let current = value_as_flonum(args[0])
       if float_is_nan(current) {
         return Value::Datum(Datum::Float(current))
       }
-      let mut i = 1
-      while i < args.length() {
+      let current = for i = 1, current = current; i < args.length(); {
         let cur = value_as_flonum(args[i])
         if float_is_nan(cur) {
-          return Value::Datum(Datum::Float(cur))
+          break cur
         }
-        if cur < current {
-          current = cur
-        }
-        i = i + 1
+        let next = if cur < current { cur } else { current }
+        continue i + 1, next
+      } else {
+        current
       }
       Value::Datum(Datum::Float(current))
     }
@@ -2035,11 +2033,11 @@ fn apply_primitive(
         0 => raise arity_mismatch(1, 0)
         1 => Value::Datum(Datum::Float(-value_as_flonum(args[0])))
         _ => {
-          let mut result = value_as_flonum(args[0])
-          let mut i = 1
-          while i < args.length() {
-            result = result - value_as_flonum(args[i])
-            i = i + 1
+          let result = value_as_flonum(args[0])
+          let result = for i = 1, result = result; i < args.length(); {
+            continue i + 1, result - value_as_flonum(args[i])
+          } else {
+            result
           }
           Value::Datum(Datum::Float(result))
         }
@@ -2052,11 +2050,11 @@ fn apply_primitive(
           Value::Datum(Datum::Float(Float::from_int(1) / denom))
         }
         _ => {
-          let mut result = value_as_flonum(args[0])
-          let mut i = 1
-          while i < args.length() {
-            result = result / value_as_flonum(args[i])
-            i = i + 1
+          let result = value_as_flonum(args[0])
+          let result = for i = 1, result = result; i < args.length(); {
+            continue i + 1, result / value_as_flonum(args[i])
+          } else {
+            result
           }
           Value::Datum(Datum::Float(result))
         }

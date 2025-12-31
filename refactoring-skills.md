@@ -501,6 +501,23 @@ let (best, has_inexact) = for i = 1, best = best, has_inexact = has_inexact; i <
 }
 ```
 
+## Sentinel short-circuit
+- Use `break value` to return a sentinel (like NaN) while scanning.
+
+Example:
+```mbt
+let current = for i = 1, current = current; i < args.length(); {
+  let cur = value_as_flonum(args[i])
+  if float_is_nan(cur) {
+    break cur
+  }
+  let next = if cur > current { cur } else { current }
+  continue i + 1, next
+} else {
+  current
+}
+```
+
 ## String conversion helper
 - Use a single `string_to_chars` helper for repeated String → Array[Char] conversions.
 - Prefer slicing the char array for prefixes instead of manual `get_char` loops.

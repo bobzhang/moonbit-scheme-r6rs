@@ -70,6 +70,12 @@ test "bitwise folds" {
 }
 
 ///|
+test "flonum min/max" {
+  let value = eval_program("(list (flmax 1.0 2.5 2.0) (flmin 1.0 -1.0 0.0))")
+  inspect(@runtime.value_to_string(value), content="(2.5 -1)")
+}
+
+///|
 test "syntax-rules macro" {
   let program =
     "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
