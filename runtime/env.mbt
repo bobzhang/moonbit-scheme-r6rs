@@ -59,6 +59,9 @@ fn env_get(env : Env, name : String) -> Binding? {
     return None
   }
   let result : Binding? = for i = env.length() - 1; i >= 0; i = i - 1 {
+    // invariant : i >= 0 && i < env.length()
+    // decreases : i
+    // assert : i < env.length()
     let frame = env[i]
     match frame.get(name) {
       Some(binding) => break Some(binding)
@@ -168,6 +171,9 @@ pub fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError 
     raise @core.EvalError("unbound variable: \{name}")
   }
   let updated = for i = env.length() - 1; i >= 0; i = i - 1 {
+    // invariant : i >= 0 && i < env.length()
+    // decreases : i
+    // assert : i < env.length()
     let frame = env[i]
     if frame.contains(name) {
       let binding = frame[name]
