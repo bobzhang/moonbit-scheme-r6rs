@@ -1339,8 +1339,7 @@ fn match_pattern_list_from(
     pat_idx + 1 < pats.length() &&
     datum_is_symbol(pats[pat_idx + 1], ellipsis) {
     let max_count = inputs.length() - inp_idx
-    let mut count = max_count
-    while count >= 0 {
+    for count = max_count; count >= 0; {
       let base = bindings_clone(bindings)
       match
         collect_repeat_bindings(
@@ -1375,7 +1374,7 @@ fn match_pattern_list_from(
           }
         None => ()
       }
-      count = count - 1
+      continue count - 1
     }
     false
   } else {
@@ -1464,18 +1463,19 @@ fn collect_pattern_vars(
 ///|
 fn datum_list_to_array_opt(list : Datum) -> Array[Datum]? {
   let items : Array[Datum] = []
-  let mut cur = list
-  while true {
+  let ok = for cur = list; true; {
     match datum_unlabel(cur) {
-      Datum::Nil => break
+      Datum::Nil => break true
       Datum::Pair(a, b) => {
         items.push(a.val)
-        cur = b.val
+        continue b.val
       }
-      _ => return None
+      _ => break false
     }
+  } else {
+    false
   }
-  Some(items)
+  if ok { Some(items) } else { None }
 }
 
 ///|
