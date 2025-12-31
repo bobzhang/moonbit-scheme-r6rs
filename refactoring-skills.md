@@ -207,6 +207,12 @@ for i = 0, starter_index = -1, last_ccc = 0; i < chars.length(); {
 ## Shared constants
 - Lift repeated lookup tables (like radix digit arrays) to a single `let` to avoid duplication.
 
+Example:
+```mbt
+let base = bigint_from_int(radix)
+let next_acc = acc * base + bigint_from_int(digit)
+```
+
 ## Insertion index scans
 - Use a functional `for` with `break` to compute the insertion point while shifting elements.
 

@@ -181,28 +181,31 @@ fn parse_bigint_token_radix(tok : String, radix : Int) -> @bigint.BigInt? {
   if radix < 2 || radix > 36 {
     return None
   }
-  let mut sign = 1
-  let mut acc = bigint_from_int(0)
-  let mut first = true
-  let mut has_digit = false
-  for ch in tok {
-    if first && (ch == '+' || ch == '-') {
-      sign = if ch == '-' { -1 } else { 1 }
-      first = false
-      continue
-    }
-    first = false
-    match digit_value(ch) {
-      Some(digit) => {
-        if digit >= radix {
-          return None
+  let base = bigint_from_int(radix)
+  let (sign, acc, has_digit) = for i = 0, sign = 1, acc = bigint_from_int(0),
+    first = true, has_digit = false; i < tok.length(); {
+      match tok.get_char(i) {
+        Some(ch) => {
+          if first && (ch == '+' || ch == '-') {
+            let next_sign = if ch == '-' { -1 } else { 1 }
+            continue i + 1, next_sign, acc, false, has_digit
+          }
+          match digit_value(ch) {
+            Some(digit) => {
+              if digit >= radix {
+                return None
+              }
+              let next_acc = acc * base + bigint_from_int(digit)
+              continue i + 1, sign, next_acc, false, true
+            }
+            None => return None
+          }
         }
-        acc = acc * bigint_from_int(radix) + bigint_from_int(digit)
-        has_digit = true
+        None => break (sign, acc, has_digit)
       }
-      None => return None
+    } else {
+      (sign, acc, has_digit)
     }
-  }
   if has_digit {
     Some(if sign < 0 { -acc } else { acc })
   } else {
