@@ -505,6 +505,21 @@ let (best, has_inexact) = for i = 1, best = best, has_inexact = has_inexact; i <
 - Use a single `string_to_chars` helper for repeated String → Array[Char] conversions.
 - Prefer slicing the char array for prefixes instead of manual `get_char` loops.
 
+## Safe string indexing
+- Use `get_char` inside a functional `for` to handle UTF-16 boundaries explicitly.
+
+Example:
+```mbt
+let items : Array[Datum] = []
+for i = 0; i < s.length(); {
+  match s.get_char(i) {
+    Some(ch) => items.push(Datum::Char(ch))
+    None => raise @core.EvalError("index out of range")
+  }
+  continue i + 1
+}
+```
+
 ## Streamed digit accumulation
 - Accumulate numeric values during parsing instead of collecting digits into an array first.
 

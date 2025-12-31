@@ -5614,13 +5614,12 @@ fn map_step(
 ///|
 fn string_to_char_list(s : String) -> Datum raise EvalError {
   let items : Array[Datum] = []
-  let mut i = 0
-  while i < s.length() {
+  for i = 0; i < s.length(); {
     match s.get_char(i) {
       Some(ch) => items.push(Datum::Char(ch))
       None => raise @core.EvalError("index out of range")
     }
-    i = i + 1
+    continue i + 1
   }
   list_from_array(items)
 }
