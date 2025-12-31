@@ -86,6 +86,9 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
   let ellipsis_active = !is_literal(literals, ellipsis)
   let rules : Array[SyntaxRule] = []
   for i = literal_idx + 1; i < parts.length(); {
+    // invariant : i >= literal_idx + 1 && i <= parts.length()
+    // decreases : parts.length() - i
+    // assert : i < parts.length()
     let rule_parts = datum_list_to_array(parts[i])
     if rule_parts.length() != 2 {
       raise @core.EvalError("invalid syntax-rules")
@@ -134,6 +137,9 @@ fn parse_identifier_syntax(
     })
   } else {
     for i = 1; i < parts.length(); {
+      // invariant : i >= 1 && i <= parts.length()
+      // decreases : parts.length() - i
+      // assert : i < parts.length()
       let rule_parts = datum_list_to_array(parts[i])
       if rule_parts.length() != 2 {
         raise @core.EvalError("invalid identifier-syntax")
@@ -182,6 +188,9 @@ fn parse_syntax_case_rules(
   let ellipsis_active = !is_literal(literals, "...")
   let rules : Array[SyntaxRule] = []
   for i = 0; i < clauses.length(); {
+    // invariant : i >= 0 && i <= clauses.length()
+    // decreases : clauses.length() - i
+    // assert : i < clauses.length()
     let rule_parts = datum_list_to_array(clauses[i])
     if rule_parts.length() == 2 {
       validate_pattern(
