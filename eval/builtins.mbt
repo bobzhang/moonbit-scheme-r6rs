@@ -1973,6 +1973,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_flonum(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_flonum(args[i])
           if prev > cur {
             break false
@@ -1989,6 +1992,9 @@ fn apply_primitive(
       } else {
         let prev = value_as_flonum(args[0])
         let ok = for i = 1, prev = prev; i < args.length(); {
+          // invariant : i >= 1 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : i <= args.length()
           let cur = value_as_flonum(args[i])
           if prev < cur {
             break false
@@ -2057,6 +2063,9 @@ fn apply_primitive(
         return Value::Datum(Datum::Float(current))
       }
       let current = for i = 1, current = current; i < args.length(); {
+        // invariant : i >= 1 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : i <= args.length()
         let cur = value_as_flonum(args[i])
         if float_is_nan(cur) {
           break cur
@@ -2077,6 +2086,9 @@ fn apply_primitive(
         return Value::Datum(Datum::Float(current))
       }
       let current = for i = 1, current = current; i < args.length(); {
+        // invariant : i >= 1 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : i <= args.length()
         let cur = value_as_flonum(args[i])
         if float_is_nan(cur) {
           break cur
@@ -2090,6 +2102,9 @@ fn apply_primitive(
     }
     Primitive::FlAdd => {
       let acc = for i = 0, acc = Float::from_int(0); i < args.length(); {
+        // invariant : i >= 0 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : i <= args.length()
         continue i + 1, acc + value_as_flonum(args[i])
       } else {
         acc
@@ -2098,6 +2113,9 @@ fn apply_primitive(
     }
     Primitive::FlMul => {
       let acc = for i = 0, acc = Float::from_int(1); i < args.length(); {
+        // invariant : i >= 0 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : i <= args.length()
         continue i + 1, acc * value_as_flonum(args[i])
       } else {
         acc
@@ -2111,6 +2129,9 @@ fn apply_primitive(
         _ => {
           let result = value_as_flonum(args[0])
           let result = for i = 1, result = result; i < args.length(); {
+            // invariant : i >= 1 && i <= args.length()
+            // decreases : args.length() - i
+            // assert : i <= args.length()
             continue i + 1, result - value_as_flonum(args[i])
           } else {
             result
@@ -2128,6 +2149,9 @@ fn apply_primitive(
         _ => {
           let result = value_as_flonum(args[0])
           let result = for i = 1, result = result; i < args.length(); {
+            // invariant : i >= 1 && i <= args.length()
+            // decreases : args.length() - i
+            // assert : i <= args.length()
             continue i + 1, result / value_as_flonum(args[i])
           } else {
             result
