@@ -60,14 +60,7 @@ fn is_core_identifier(name : String) -> Bool {
     "error", "assertion-violation", "implementation-restriction-violation", "undefined-violation",
     "syntax-violation",
   ]
-  let mut i = 0
-  while i < core.length() {
-    if core[i] == name {
-      return true
-    }
-    i = i + 1
-  }
-  false
+  core.contains(name)
 }
 
 ///|
@@ -80,23 +73,19 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
     Datum::Symbol("syntax-rules") => ()
     _ => raise @core.EvalError("invalid syntax-rules")
   }
-  let mut ellipsis = "..."
-  let mut literal_idx = 1
-  match parts[1] {
+  let (ellipsis, literal_idx) = match parts[1] {
     Datum::Symbol(name) => {
-      ellipsis = name
-      literal_idx = 2
       if parts.length() < 4 {
         raise @core.EvalError("invalid syntax-rules")
       }
+      (name, 2)
     }
-    _ => ()
+    _ => ("...", 1)
   }
   let literals = parse_literal_list(parts[literal_idx])
   let ellipsis_active = !is_literal(literals, ellipsis)
   let rules : Array[SyntaxRule] = []
-  let mut i = literal_idx + 1
-  while i < parts.length() {
+  for i = literal_idx + 1; i < parts.length(); {
     let rule_parts = datum_list_to_array(parts[i])
     if rule_parts.length() != 2 {
       raise @core.EvalError("invalid syntax-rules")
@@ -109,7 +98,9 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
       "invalid syntax-rules",
     )
     rules.push({ pattern: rule_parts[0], template: rule_parts[1], fender: None })
-    i = i + 1
+    continue i + 1
+  } else {
+    ()
   }
   {
     literals,

@@ -177,6 +177,17 @@ pub fn env_clone(env : Env) -> Env {
 - Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
   - Useful for delimiter scans like `@` or `/` in numeric tokens.
 
+Example:
+```mbt
+for i = literal_idx + 1; i < parts.length(); {
+  let rule_parts = datum_list_to_array(parts[i])
+  ...
+  continue i + 1
+} else {
+  ()
+}
+```
+
 ## Division-based counters
 - Replace `while n > 0` loops with a functional `for` that carries `(n, count)` state.
 

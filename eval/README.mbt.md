@@ -52,6 +52,14 @@ test "numeric comparisons" {
 }
 
 ///|
+test "syntax-rules macro" {
+  let program =
+    "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="5")
+}
+
+///|
 test "include source" {
   register_include_source("mem.scm", "(+ 1 2)")
   let value = eval_program("(include \"mem.scm\")")
