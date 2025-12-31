@@ -4800,8 +4800,7 @@ fn apply_primitive(
         1 => args[0]
         _ => {
           let items : Array[Datum] = []
-          let mut i = 0
-          while i < args.length() - 1 {
+          for i = 0; i < args.length() - 1; {
             let datum = match args[i] {
               Value::Datum(d) => d
               _ => raise @core.EvalError("type error: list expected")
@@ -4810,7 +4809,7 @@ fn apply_primitive(
             for item in part {
               items.push(item)
             }
-            i = i + 1
+            continue i + 1
           }
           let tail = value_to_datum_element(args[args.length() - 1])
           Value::Datum(list_with_tail(items, tail))
