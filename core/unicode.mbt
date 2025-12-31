@@ -147,13 +147,19 @@ pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
 ///|
 fn unicode_case_equivalents(ch : Char) -> Array[Char] {
   let out : Array[Char] = [ch]
-  let mut cur = ch
-  while case_folding.get(cur) is Some(next) {
-    if out.contains(next) {
-      break
+  for cur = ch; true; {
+    match case_folding.get(cur) {
+      Some(next) => {
+        if out.contains(next) {
+          break
+        }
+        out.push(next)
+        continue next
+      }
+      None => break
     }
-    out.push(next)
-    cur = next
+  } else {
+    ()
   }
   out
 }

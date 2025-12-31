@@ -277,6 +277,26 @@ for depth = 1; depth > 0; {
 ## Reverse scans
 - Isolate right-to-left split detection into a helper to keep main parsers linear.
 
+## Looping on map lookups
+- Replace `mut` cursor variables with a functional loop that advances via `continue` on map lookups.
+
+Example:
+```mbt
+let out : Array[Char] = [ch]
+for cur = ch; true; {
+  match case_folding.get(cur) {
+    Some(next) => {
+      if out.contains(next) { break }
+      out.push(next)
+      continue next
+    }
+    None => break
+  }
+} else {
+  ()
+}
+```
+
 ## Suffix digit scans
 - Use functional `for` with `break` to find the first non-digit from the end without `mut`.
 
