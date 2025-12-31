@@ -973,19 +973,21 @@ fn list_from_items(items : Array[Datum], base : Datum) -> Datum {
 }
 
 ///|
+/// Read a list or dotted list after consuming the opening parenthesis.
 fn read_list(r : Reader) -> Datum raise ParseError {
   let items : Array[Datum] = []
-  while true {
-    match r..skip_ws_and_comments().peek() {
+  let list = for cur = r..skip_ws_and_comments().peek(); true; {
+    match cur {
       None => raise @core.ParseError("unexpected EOF while reading list")
       Some(')') => {
         ignore(r.next())
-        return list_from_items(items, Datum::Nil)
+        break list_from_items(items, Datum::Nil)
       }
       Some('.') =>
         if r.is_ellipsis_start() {
           let tok = r.read_token()
           items.push(Datum::Symbol(tok))
+          continue r..skip_ws_and_comments().peek()
         } else {
           if items.is_empty() {
             raise @core.ParseError("unexpected dot")
@@ -997,15 +999,18 @@ fn read_list(r : Reader) -> Datum raise ParseError {
             Some(')') => ignore(r.next())
             _ => raise @core.ParseError("expected ) after dotted tail")
           }
-          return list_from_items(items, tail)
+          break list_from_items(items, tail)
         }
       _ => {
         let expr = read_expr(r)
         items.push(expr)
+        continue r..skip_ws_and_comments().peek()
       }
     }
+  } else {
+    Datum::Nil
   }
-  raise @core.ParseError("unexpected EOF while reading list")
+  list
 }
 
 ///|

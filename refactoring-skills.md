@@ -1472,3 +1472,30 @@ for cur = self.peek(); true; {
   ()
 }
 ```
+
+## Parser list scans
+- Use `break` with a value to replace multiple `return` sites in list parsing loops.
+- Drive the loop with `continue r..skip_ws_and_comments().peek()` to preserve chaining style.
+
+Example:
+```mbt
+let list = for cur = r..skip_ws_and_comments().peek(); true; {
+  match cur {
+    Some(')') => {
+      ignore(r.next())
+      break list_from_items(items, Datum::Nil)
+    }
+    Some('.') if !r.is_ellipsis_start() => {
+      ignore(r.next())
+      let tail = read_expr(r)
+      break list_from_items(items, tail)
+    }
+    _ => {
+      items.push(read_expr(r))
+      continue r..skip_ws_and_comments().peek()
+    }
+  }
+} else {
+  Datum::Nil
+}
+```

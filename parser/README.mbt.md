@@ -72,6 +72,18 @@ test "parse basics" {
       }
     _ => fail("expected dotted pair")
   }
+  match parse_program("(a ;comment\n b)") {
+    [@core.Datum::Pair(car, cdr), ..] =>
+      match (car.val, cdr.val) {
+        (@core.Datum::Symbol("a"), @core.Datum::Pair(next, tail)) =>
+          match (next.val, tail.val) {
+            (@core.Datum::Symbol("b"), @core.Datum::Nil) => ()
+            _ => fail("expected (a b)")
+          }
+        _ => fail("expected (a b)")
+      }
+    _ => fail("expected list")
+  }
   match parse_program_with_fold_case("ABC", true) {
     [@core.Datum::Symbol("abc"), ..] => ()
     _ => fail("expected folded symbol")
