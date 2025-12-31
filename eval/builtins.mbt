@@ -892,28 +892,32 @@ fn apply_primitive(
         n => raise arity_mismatch(2, n)
       }
     Primitive::Gcd => {
-      let mut acc_int = 0
-      let mut acc_big = bigint_from_int(0)
-      let mut use_big = false
-      for arg in args {
-        let value = value_as_exact_integer(arg)
-        match value {
-          Datum::Int(n) =>
-            if use_big {
-              acc_big = bigint_gcd(acc_big, bigint_from_int(n))
-            } else {
-              acc_int = gcd(acc_int, n)
+      let (use_big, acc_int, acc_big) =
+        for i = 0,
+          use_big = false,
+          acc_int = 0,
+          acc_big = bigint_from_int(0);
+          i < args.length(); {
+          let value = value_as_exact_integer(args[i])
+          match value {
+            Datum::Int(n) =>
+              if use_big {
+                let next_acc_big = bigint_gcd(acc_big, bigint_from_int(n))
+                continue i + 1, true, acc_int, next_acc_big
+              } else {
+                let next_acc_int = gcd(acc_int, n)
+                continue i + 1, false, next_acc_int, acc_big
+              }
+            Datum::BigInt(n) => {
+              let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
+              let next_acc_big = bigint_gcd(base_big, n)
+              continue i + 1, true, acc_int, next_acc_big
             }
-          Datum::BigInt(n) => {
-            if !use_big {
-              use_big = true
-              acc_big = bigint_from_int(acc_int)
-            }
-            acc_big = bigint_gcd(acc_big, n)
+            _ => raise @core.EvalError("type error: integer expected")
           }
-          _ => raise @core.EvalError("type error: integer expected")
+        } else {
+          (use_big, acc_int, acc_big)
         }
-      }
       if use_big {
         Value::Datum(
           match bigint_to_int_option(acc_big) {
@@ -926,42 +930,48 @@ fn apply_primitive(
       }
     }
     Primitive::Lcm => {
-      let mut acc_int = 1
-      let mut acc_big = bigint_from_int(1)
-      let mut use_big = false
-      for arg in args {
-        let value = value_as_exact_integer(arg)
-        match value {
-          Datum::Int(n) =>
-            if use_big {
-              let n_big = bigint_from_int(n)
-              if acc_big.is_zero() || n_big.is_zero() {
-                acc_big = bigint_from_int(0)
+      let (use_big, acc_int, acc_big) =
+        for i = 0,
+          use_big = false,
+          acc_int = 1,
+          acc_big = bigint_from_int(1);
+          i < args.length(); {
+          let value = value_as_exact_integer(args[i])
+          match value {
+            Datum::Int(n) =>
+              if use_big {
+                let n_big = bigint_from_int(n)
+                let next_acc_big =
+                  if acc_big.is_zero() || n_big.is_zero() {
+                    bigint_from_int(0)
+                  } else {
+                    let g = bigint_gcd(acc_big, n_big)
+                    bigint_abs(acc_big / g * n_big)
+                  }
+                continue i + 1, true, acc_int, next_acc_big
+              } else if acc_int == 0 || n == 0 {
+                continue i + 1, false, 0, acc_big
               } else {
-                let g = bigint_gcd(acc_big, n_big)
-                acc_big = bigint_abs(acc_big / g * n_big)
+                let g = gcd(acc_int, n)
+                let next_acc_int = int_abs(acc_int / g * n)
+                continue i + 1, false, next_acc_int, acc_big
               }
-            } else if acc_int == 0 || n == 0 {
-              acc_int = 0
-            } else {
-              let g = gcd(acc_int, n)
-              acc_int = int_abs(acc_int / g * n)
+            Datum::BigInt(n) => {
+              let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
+              let next_acc_big =
+                if base_big.is_zero() || n.is_zero() {
+                  bigint_from_int(0)
+                } else {
+                  let g = bigint_gcd(base_big, n)
+                  bigint_abs(base_big / g * n)
+                }
+              continue i + 1, true, acc_int, next_acc_big
             }
-          Datum::BigInt(n) => {
-            if !use_big {
-              use_big = true
-              acc_big = bigint_from_int(acc_int)
-            }
-            if acc_big.is_zero() || n.is_zero() {
-              acc_big = bigint_from_int(0)
-            } else {
-              let g = bigint_gcd(acc_big, n)
-              acc_big = bigint_abs(acc_big / g * n)
-            }
+            _ => raise @core.EvalError("type error: integer expected")
           }
-          _ => raise @core.EvalError("type error: integer expected")
+        } else {
+          (use_big, acc_int, acc_big)
         }
-      }
       if use_big {
         Value::Datum(
           match bigint_to_int_option(acc_big) {
@@ -2524,7 +2534,7 @@ fn apply_primitive(
             Value::SyntaxObject(obj) => obj.binding_id
             _ => None
           }
-          let mut base = match args[1] {
+          let base = match args[1] {
             Value::SyntaxObject(obj) => obj.datum
             Value::Datum(d) => d
             _ => raise @core.EvalError("type error: datum expected")
@@ -2537,19 +2547,23 @@ fn apply_primitive(
               }
             _ => None
           }
-          match (template_name, datum_unlabel(base)) {
+          let base = match (template_name, datum_unlabel(base)) {
             (Some(template), Datum::Symbol(base_name)) =>
               match strip_gensym_suffix(template) {
                 Some(immediate) =>
                   if strip_gensym_suffix(immediate) is Some(_) {
                     let original = strip_all_gensym_suffixes(template)
                     if original == base_name {
-                      base = Datum::Symbol(immediate)
+                      Datum::Symbol(immediate)
+                    } else {
+                      base
                     }
+                  } else {
+                    base
                   }
-                None => ()
+                None => base
               }
-            _ => ()
+            _ => base
           }
           let datum = syntax_wrap_root(base, scopes)
           let binding_id = match datum_unlabel(base) {
@@ -4829,9 +4843,10 @@ fn apply_primitive(
             _ => raise @core.EvalError("type error: list expected")
           }
           let items = datum_list_to_array(datum)
-          let mut result = Datum::Nil
-          for item in items {
-            result = pair_new(item, result)
+          let result = for i = 0, result = Datum::Nil; i < items.length(); {
+            continue i + 1, pair_new(items[i], result)
+          } else {
+            result
           }
           Value::Datum(result)
         }

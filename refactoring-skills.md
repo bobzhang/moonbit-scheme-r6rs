@@ -1526,3 +1526,37 @@ Example:
 let shift = count % width
 let shift = if shift < 0 { shift + width } else { shift }
 ```
+
+## Multi-accumulator folds
+- Carry `(use_big, acc_int, acc_big)` through a `for` loop to avoid multiple `mut` variables.
+- Use `continue` to update all state whenever the numeric mode changes.
+
+Example:
+```mbt
+let (use_big, acc_int, acc_big) =
+  for i = 0,
+    use_big = false,
+    acc_int = 0,
+    acc_big = bigint_from_int(0);
+    i < args.length(); {
+    let value = value_as_exact_integer(args[i])
+    match value {
+      Datum::Int(n) =>
+        if use_big {
+          let next_acc_big = bigint_gcd(acc_big, bigint_from_int(n))
+          continue i + 1, true, acc_int, next_acc_big
+        } else {
+          let next_acc_int = gcd(acc_int, n)
+          continue i + 1, false, next_acc_int, acc_big
+        }
+      Datum::BigInt(n) => {
+        let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
+        let next_acc_big = bigint_gcd(base_big, n)
+        continue i + 1, true, acc_int, next_acc_big
+      }
+      _ => raise @core.EvalError("type error: integer expected")
+    }
+  } else {
+    (use_big, acc_int, acc_big)
+  }
+```
