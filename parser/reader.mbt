@@ -1167,90 +1167,81 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
       }
     }
     Some('#') =>
-      if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == '!' {
-        let tok = r.read_token()
-        let directive = ascii_lower_string(tok)
-        if directive == "#!fold-case" {
-          r.fold_case = true
-        } else if directive == "#!no-fold-case" {
-          r.fold_case = false
+      match r.peek_next() {
+        Some('!') => {
+          let tok = r.read_token()
+          let directive = ascii_lower_string(tok)
+          if directive == "#!fold-case" {
+            r.fold_case = true
+          } else if directive == "#!no-fold-case" {
+            r.fold_case = false
+          }
+          read_expr(r)
         }
-        read_expr(r)
-      } else if r.pos + 1 < r.chars.length() &&
-        r.chars[r.pos + 1].is_ascii_digit() {
-        let tok = r.read_token()
-        match parse_label_token(tok) {
-          Some((true, label)) => {
-            match r.labels.get(label) {
-              Some(_) => raise @core.ParseError("duplicate label")
-              None => ()
-            }
-            let cell = Ref::new(Datum::Nil)
-            r.labels[label] = cell
-            let datum = read_expr(r)
-            cell.val = datum
-            Datum::Label(label, cell)
-          }
-          Some((false, label)) =>
-            match r.labels.get(label) {
-              Some(cell) => Datum::Label(label, cell)
-              None => raise @core.ParseError("undefined label")
-            }
-          None => token_to_datum(tok)
-        }
-      } else if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == ';' {
-        r.pos = r.pos + 2
-        let _ = read_expr(r)
-        read_expr(r)
-      } else if r.pos + 1 < r.chars.length() {
-        match r.chars[r.pos + 1] {
-          '\'' => {
-            r.pos = r.pos + 2
-            let expr = read_expr(r)
-            make_syntax(expr)
-          }
-          '`' => {
-            r.pos = r.pos + 2
-            let expr = read_expr(r)
-            make_quasisyntax(expr)
-          }
-          ',' => {
-            r.pos = r.pos + 2
-            let splicing = match r.peek() {
-              Some('@') => {
-                ignore(r.next())
-                true
+        Some(ch) if ch.is_ascii_digit() => {
+          let tok = r.read_token()
+          match parse_label_token(tok) {
+            Some((true, label)) => {
+              match r.labels.get(label) {
+                Some(_) => raise @core.ParseError("duplicate label")
+                None => ()
               }
-              _ => false
+              let cell = Ref::new(Datum::Nil)
+              r.labels[label] = cell
+              let datum = read_expr(r)
+              cell.val = datum
+              Datum::Label(label, cell)
             }
-            let expr = read_expr(r)
-            if splicing {
-              make_unsyntax_splicing(expr)
-            } else {
-              make_unsyntax(expr)
-            }
+            Some((false, label)) =>
+              match r.labels.get(label) {
+                Some(cell) => Datum::Label(label, cell)
+                None => raise @core.ParseError("undefined label")
+              }
+            None => token_to_datum(tok)
           }
-          _ =>
-            if r.is_vector_start() {
-              r.pos = r.pos + 2
-              read_vector_literal(r)
-            } else if r.is_bytevector_start() {
-              r.pos = r.pos + 5
-              read_bytevector_literal(r)
-            } else {
-              let tok = r.read_token()
-              token_to_datum(tok)
-            }
         }
-      } else if r.is_vector_start() {
-        r.pos = r.pos + 2
-        read_vector_literal(r)
-      } else if r.is_bytevector_start() {
-        r.pos = r.pos + 5
-        read_bytevector_literal(r)
-      } else {
-        let tok = r.read_token()
-        token_to_datum(tok)
+        Some(';') => {
+          r.advance(2)
+          let _ = read_expr(r)
+          read_expr(r)
+        }
+        Some('\'') => {
+          r.advance(2)
+          let expr = read_expr(r)
+          make_syntax(expr)
+        }
+        Some('`') => {
+          r.advance(2)
+          let expr = read_expr(r)
+          make_quasisyntax(expr)
+        }
+        Some(',') => {
+          r.advance(2)
+          let splicing = match r.peek() {
+            Some('@') => {
+              ignore(r.next())
+              true
+            }
+            _ => false
+          }
+          let expr = read_expr(r)
+          if splicing {
+            make_unsyntax_splicing(expr)
+          } else {
+            make_unsyntax(expr)
+          }
+        }
+        _ =>
+          if r.is_vector_start() {
+            r.advance(2)
+            read_vector_literal(r)
+          } else if r.is_bytevector_start() {
+            r.advance(5)
+            read_bytevector_literal(r)
+          } else {
+            let tok = r.read_token()
+            token_to_datum(tok)
+          }
       }
     Some('"') => {
       ignore(r.next())

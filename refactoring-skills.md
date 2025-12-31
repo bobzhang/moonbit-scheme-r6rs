@@ -1769,3 +1769,28 @@ for cur = list; true; {
   ()
 }
 ```
+
+## Encapsulate reader state with small methods
+- Prefer tiny public helpers (e.g. `peek_next`, `advance`) over direct field access.
+- This makes call sites clearer and reduces repeated bounds logic.
+- Use `moon ide find-references Reader` to update sites in one pass.
+
+Example:
+```mbt
+// Before: direct field access
+if r.pos + 1 < r.chars.length() && r.chars[r.pos + 1] == ';' {
+  r.pos = r.pos + 2
+  let _ = read_expr(r)
+  read_expr(r)
+}
+
+// After: encapsulated methods
+match r.peek_next() {
+  Some(';') => {
+    r.advance(2)
+    let _ = read_expr(r)
+    read_expr(r)
+  }
+  _ => ...
+}
+```

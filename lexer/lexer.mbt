@@ -46,6 +46,18 @@ fn Reader::peek_offset(self : Reader, offset : Int) -> Char? {
 }
 
 ///|
+/// Peek the next character after the current position without consuming it.
+pub fn Reader::peek_next(self : Reader) -> Char? {
+  self.peek_offset(1)
+}
+
+///|
+/// Advance the reader by a fixed number of characters.
+pub fn Reader::advance(self : Reader, count : Int) -> Unit {
+  self.pos = self.pos + count
+}
+
+///|
 /// Consume and return the next character.
 ///
 /// # Example

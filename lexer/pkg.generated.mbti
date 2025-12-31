@@ -19,11 +19,13 @@ pub(all) struct Reader {
   mut fold_case : Bool
   labels : Map[Int, Ref[@core.Datum]]
 }
+pub fn Reader::advance(Self, Int) -> Unit
 pub fn Reader::is_bytevector_start(Self) -> Bool
 pub fn Reader::is_ellipsis_start(Self) -> Bool
 pub fn Reader::is_vector_start(Self) -> Bool
 pub fn Reader::next(Self) -> Char?
 pub fn Reader::peek(Self) -> Char?
+pub fn Reader::peek_next(Self) -> Char?
 pub fn Reader::read_string(Self) -> String raise @core.ParseError
 pub fn Reader::read_token(Self) -> String raise @core.ParseError
 pub fn Reader::skip_ws_and_comments(Self) -> Unit raise @core.ParseError
