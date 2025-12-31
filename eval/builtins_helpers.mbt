@@ -1883,6 +1883,13 @@ fn check_index(idx : Int, len : Int) -> Unit raise EvalError {
 }
 
 ///|
+fn check_slice_range(start : Int, end : Int, len : Int) -> Unit raise EvalError {
+  if start < 0 || end < start || end > len {
+    raise @core.EvalError("index out of range")
+  }
+}
+
+///|
 fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
   if case_insensitive { unicode_char(ch).foldcase() } else { ch }
 }

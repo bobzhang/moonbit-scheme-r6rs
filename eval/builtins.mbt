@@ -4044,9 +4044,7 @@ fn apply_primitive(
           } else {
             s.length()
           }
-          if start < 0 || end < start || end > s.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, s.length())
           let view = try? s[start:end]
           match view {
             Ok(slice) =>
@@ -4062,9 +4060,7 @@ fn apply_primitive(
           let s = value_as_string(args[0])
           let start = value_as_int_index(args[1])
           let end = value_as_int_index(args[2])
-          if start < 0 || end < start || end > s.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, s.length())
           let view = try? s[start:end]
           match view {
             Ok(slice) =>
@@ -4090,7 +4086,8 @@ fn apply_primitive(
           } else {
             from_str.length()
           }
-          if start < 0 || end < start || end > from_str.length() || at < 0 {
+          check_slice_range(start, end, from_str.length())
+          if at < 0 {
             raise @core.EvalError("index out of range")
           }
           let count = end - start
@@ -4159,9 +4156,7 @@ fn apply_primitive(
           } else {
             s.length()
           }
-          if start < 0 || end < start || end > s.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, s.length())
           let items : Array[Datum] = []
           for i = start; i < end; {
             // invariant : i >= start && i <= end
@@ -4354,9 +4349,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           for i = start; i < end; {
             // invariant : i >= start && i <= end
             // decreases : end - i
@@ -4382,9 +4375,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           let slice = items.sub(start~, end~).to_array()
           Value::Datum(Datum::Vector(slice))
         }
@@ -4406,7 +4397,8 @@ fn apply_primitive(
           } else {
             from_items.length()
           }
-          if start < 0 || end < start || end > from_items.length() || at < 0 {
+          check_slice_range(start, end, from_items.length())
+          if at < 0 {
             raise @core.EvalError("index out of range")
           }
           let count = end - start
@@ -4462,9 +4454,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           Value::Datum(list_from_array(items.sub(start~, end~).to_array()))
         }
         n => raise @core.EvalError("arity mismatch: expected 1 to 3 got \{n}")
@@ -4581,9 +4571,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           let slice = items.sub(start~, end~).to_array()
           Value::Datum(Datum::ByteVector(slice))
         }
@@ -4605,7 +4593,8 @@ fn apply_primitive(
           } else {
             from_items.length()
           }
-          if start < 0 || end < start || end > from_items.length() || at < 0 {
+          check_slice_range(start, end, from_items.length())
+          if at < 0 {
             raise @core.EvalError("index out of range")
           }
           let count = end - start
@@ -4662,9 +4651,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           for i = start; i < end; {
             // invariant : i >= start && i <= end
             // decreases : end - i
@@ -4690,9 +4677,7 @@ fn apply_primitive(
           } else {
             items.length()
           }
-          if start < 0 || end < start || end > items.length() {
-            raise @core.EvalError("index out of range")
-          }
+          check_slice_range(start, end, items.length())
           let datums : Array[Datum] = []
           for i = start; i < end; {
             // invariant : i >= start && i <= end

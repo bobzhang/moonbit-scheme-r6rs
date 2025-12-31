@@ -154,6 +154,7 @@ pub fn record_type_is_a(actual : RecordType, target : RecordType) -> Bool {
 
 ## Indexing helpers
 - Extract tiny helpers (like "last frame") to avoid repeated index math and keep mutations localized.
+- Centralize slice validation (e.g., `check_slice_range(start, end, len)`) to keep error messages consistent and reduce boilerplate.
 
 ## Constructor helpers
 - Factor repeated "pair of symbol + expr" patterns into a small helper to keep syntax builders consistent.
