@@ -74,17 +74,17 @@ fn apply_record_condition_primitive_core(
         _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeName =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           Value::Datum(Datum::Symbol(desc.record_type.name))
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeParent =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           match desc.record_type.parent {
             Some(parent) =>
               match lookup_record_type_descriptor(parent.name) {
@@ -94,47 +94,47 @@ fn apply_record_condition_primitive_core(
             None => Value::Datum(Datum::Bool(false))
           }
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeUid =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           match desc.record_type.uid {
             Some(uid) => Value::Datum(Datum::Symbol(uid))
             None => Value::Datum(Datum::Bool(false))
           }
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeGenerativeP =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           bool_value(desc.record_type.uid is None)
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeSealedP =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           bool_value(desc.record_type.is_sealed)
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeOpaqueP =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           bool_value(desc.record_type.is_opaque)
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordTypeFieldNames =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           let items : Array[Datum] = []
           for field in desc.record_type.fields {
             // invariant : desc.record_type.fields.length() >= 0
@@ -144,56 +144,56 @@ fn apply_record_condition_primitive_core(
           }
           Value::Datum(list_from_array(items))
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordConstructorDescriptor =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           Value::RecordConstructorDescriptor(desc.constructor_desc)
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordConstructor =>
       raise @core.EvalError("record-constructor requires evaluation context")
     Primitive::RecordTypeFieldMutableP =>
-      match args.length() {
-        2 => {
-          let desc = value_as_record_type_descriptor(args[0])
-          let idx = value_as_int_index(args[1])
+      match args {
+        [desc_value, idx_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
+          let idx = value_as_int_index(idx_value)
           check_index(idx, desc.record_type.fields.length())
           let field = desc.record_type.fields[idx]
           bool_value(field.mutable)
         }
-        n => raise arity_mismatch(2, n)
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive::RecordPredicate =>
-      match args.length() {
-        1 => {
-          let desc = value_as_record_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
           Value::RecordProc(
             make_record_proc(RecordProcKind::Predicate(desc.record_type)),
           )
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::RecordAccessor =>
-      match args.length() {
-        2 => {
-          let desc = value_as_record_type_descriptor(args[0])
-          let idx = value_as_int_index(args[1])
+      match args {
+        [desc_value, idx_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
+          let idx = value_as_int_index(idx_value)
           check_index(idx, desc.record_type.fields.length())
           Value::RecordProc(
             make_record_proc(RecordProcKind::Accessor(desc.record_type, idx)),
           )
         }
-        n => raise arity_mismatch(2, n)
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive::RecordMutator =>
-      match args.length() {
-        2 => {
-          let desc = value_as_record_type_descriptor(args[0])
-          let idx = value_as_int_index(args[1])
+      match args {
+        [desc_value, idx_value] => {
+          let desc = value_as_record_type_descriptor(desc_value)
+          let idx = value_as_int_index(idx_value)
           check_index(idx, desc.record_type.fields.length())
           let field = desc.record_type.fields[idx]
           if !field.mutable {
@@ -203,13 +203,13 @@ fn apply_record_condition_primitive_core(
             make_record_proc(RecordProcKind::Mutator(desc.record_type, idx)),
           )
         }
-        n => raise arity_mismatch(2, n)
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive::MakeRecordTypeDescriptor =>
-      match args.length() {
-        6 => {
-          let name = value_as_symbol(args[0])
-          let parent_desc = match args[1] {
+      match args {
+        [name_value, parent_value, uid_value, sealed_value, opaque_value, fields_value] => {
+          let name = value_as_symbol(name_value)
+          let parent_desc = match parent_value {
             Value::Datum(Datum::Bool(false)) => None
             Value::RecordTypeDescriptor(desc) => Some(desc)
             _ =>
@@ -228,14 +228,14 @@ fn apply_record_condition_primitive_core(
               }
             None => ()
           }
-          let uid = match args[2] {
+          let uid = match uid_value {
             Value::Datum(Datum::Bool(false)) => None
             Value::Datum(Datum::Symbol(uid_name)) => Some(uid_name)
             _ => raise @core.EvalError("type error: symbol expected")
           }
-          let is_sealed = value_as_bool(args[3])
-          let is_opaque = value_as_bool(args[4])
-          let new_fields = parse_field_specs(value_as_vector(args[5]))
+          let is_sealed = value_as_bool(sealed_value)
+          let is_opaque = value_as_bool(opaque_value)
+          let new_fields = parse_field_specs(value_as_vector(fields_value))
           let fields : Array[RecordField] = []
           match parent_type {
             Some(parent) =>
@@ -294,20 +294,20 @@ fn apply_record_condition_primitive_core(
             }
           }
         }
-        n => raise arity_mismatch(6, n)
+        _ => raise arity_mismatch(6, args.length())
       }
     Primitive::MakeRecordConstructorDescriptor =>
-      match args.length() {
-        3 => {
-          let rtd = value_as_record_type_descriptor(args[0])
+      match args {
+        [rtd_value, parent_value, protocol_value] => {
+          let rtd = value_as_record_type_descriptor(rtd_value)
           let record_type = rtd.record_type
-          let parent_desc = match args[1] {
+          let parent_desc = match parent_value {
             Value::Datum(Datum::Bool(false)) =>
               match record_type.parent {
                 Some(parent) => Some(default_constructor_descriptor(parent))
                 None => None
               }
-            _ => Some(value_as_record_constructor_descriptor(args[1]))
+            _ => Some(value_as_record_constructor_descriptor(parent_value))
           }
           match record_type.parent {
             Some(parent) =>
@@ -328,7 +328,7 @@ fn apply_record_condition_primitive_core(
                 None => ()
               }
           }
-          let protocol = match args[2] {
+          let protocol = match protocol_value {
             Value::Datum(Datum::Bool(false)) => None
             value => {
               if !is_procedure_value(value) {
@@ -352,46 +352,48 @@ fn apply_record_condition_primitive_core(
             ),
           )
         }
-        n => raise arity_mismatch(3, n)
+        _ => raise arity_mismatch(3, args.length())
       }
     Primitive::Condition => {
-      if args.length() == 0 {
-        raise arity_mismatch(1, 0)
-      }
-      let base = condition_base_type()
-      let components : Array[Record] = []
-      for arg in args {
-        // invariant : args.length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : args.length() >= 0
-        let parts = condition_components(arg, base)
-        for record in parts {
-          // invariant : parts.length() >= 0
-          // TODO(decreases) : loop index not exposed; possible bug
-          // assert : parts.length() >= 0
-          components.push(record)
+      match args {
+        [] => raise arity_mismatch(1, 0)
+        _ => {
+          let base = condition_base_type()
+          let components : Array[Record] = []
+          for arg in args {
+            // invariant : args.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : args.length() >= 0
+            let parts = condition_components(arg, base)
+            for record in parts {
+              // invariant : parts.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : parts.length() >= 0
+              components.push(record)
+            }
+          }
+          if components.length() == 1 {
+            Value::Record(components[0])
+          } else {
+            Value::Datum(Datum::Condition(make_condition(components)))
+          }
         }
-      }
-      if components.length() == 1 {
-        Value::Record(components[0])
-      } else {
-        Value::Datum(Datum::Condition(make_condition(components)))
       }
     }
     Primitive::ConditionP =>
-      match args.length() {
-        1 => {
+      match args {
+        [condition_value] => {
           let base = condition_base_type()
-          let ok = condition_components_opt(args[0], base) is Some(_)
+          let ok = condition_components_opt(condition_value, base) is Some(_)
           bool_value(ok)
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::SimpleConditions =>
-      match args.length() {
-        1 => {
+      match args {
+        [condition_value] => {
           let base = condition_base_type()
-          let components = condition_components(args[0], base)
+          let components = condition_components(condition_value, base)
           let items : Array[Datum] = []
           for record in components {
             // invariant : components.length() >= 0
@@ -401,23 +403,23 @@ fn apply_record_condition_primitive_core(
           }
           Value::Datum(list_from_array(items))
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::ConditionPredicate =>
-      match args.length() {
-        1 => {
-          let desc = value_as_condition_type_descriptor(args[0])
+      match args {
+        [desc_value] => {
+          let desc = value_as_condition_type_descriptor(desc_value)
           Value::ConditionProc(
             make_condition_proc(ConditionProcKind::Predicate(desc.record_type)),
           )
         }
-        n => raise arity_mismatch(1, n)
+        _ => raise arity_mismatch(1, args.length())
       }
     Primitive::ConditionAccessor =>
-      match args.length() {
-        2 => {
-          let desc = value_as_condition_type_descriptor(args[0])
-          let (accessor_type, idx) = record_accessor_info(args[1])
+      match args {
+        [desc_value, accessor_value] => {
+          let desc = value_as_condition_type_descriptor(desc_value)
+          let (accessor_type, idx) = record_accessor_info(accessor_value)
           if accessor_type.id != desc.record_type.id {
             raise @core.EvalError("type error: record accessor expected")
           }
@@ -427,7 +429,7 @@ fn apply_record_condition_primitive_core(
             ),
           )
         }
-        n => raise arity_mismatch(2, n)
+        _ => raise arity_mismatch(2, args.length())
       }
     _ =>
       raise @core.EvalError("internal error: apply_record_condition_primitive dispatch")
