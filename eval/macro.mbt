@@ -2087,8 +2087,7 @@ fn expand_template_list(
   template_forms : Bool,
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
-  let mut i = 0
-  while i < items.length() {
+  for i = 0; i < items.length(); {
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -2102,8 +2101,7 @@ fn expand_template_list(
         raise @core.EvalError(error_message)
       }
       let count = max_binding_len(repeat_template, bindings, indices)
-      let mut j = 0
-      while j < count {
+      for j = 0; j < count; {
         let next_indices : Array[Int] = []
         for idx in indices {
           next_indices.push(idx)
@@ -2115,9 +2113,9 @@ fn expand_template_list(
             next_indices, env, template_forms,
           ),
         )
-        j = j + 1
+        continue j + 1
       }
-      i = i + 2
+      continue i + 2
     } else {
       expanded.push(
         expand_template_indexed(
@@ -2132,7 +2130,7 @@ fn expand_template_list(
           template_forms,
         ),
       )
-      i = i + 1
+      continue i + 1
     }
   }
   list_from_array(expanded)
