@@ -547,6 +547,9 @@ fn init_env() -> Env {
     "dada", "dadd", "ddaa", "ddad", "ddda", "dddd",
   ]
   for chain in cxr_chains {
+    // invariant : cxr_chains.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : cxr_chains.length() >= 0
     env_define(env, "c\{chain}r", Value::Primitive(Primitive::Cxr(chain)))
   }
   env_define(env, "length", Value::Primitive(Primitive::Length))
@@ -1135,6 +1138,9 @@ pub fn eval_program_all(src : String) -> Array[Value] raise {
   register_builtin_libraries(env)
   let results : Array[Value] = []
   for form in forms {
+    // invariant : forms.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : forms.length() >= 0
     let value = eval_expr(form, env)
     results.push(value)
   }
@@ -1199,9 +1205,15 @@ fn include_forms(
 ) -> Array[Datum] raise EvalError {
   let forms : Array[Datum] = []
   for arg in args {
+    // invariant : args.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : args.length() >= 0
     let path = include_path_from_arg(arg)
     let parsed = include_parse_file(path, fold_case)
     for form in parsed {
+      // invariant : parsed.length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : parsed.length() >= 0
       forms.push(form)
     }
   }
