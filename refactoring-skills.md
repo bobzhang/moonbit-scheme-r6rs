@@ -204,6 +204,7 @@ for i = 0; i < clauses.length(); {
 - Use array patterns to enforce fixed arity and avoid extra indexing or nested length checks.
 - Keep the fallback `_` branch so you can report `arity_mismatch` with `args.length()`.
 - For variadic primitives, capture the first required arguments and iterate the rest to avoid manual index math.
+- Preserve existing error strings by reusing `args.length()` in formatted messages when tests assert exact text.
 
 Example:
 ```mbt
