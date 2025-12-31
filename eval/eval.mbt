@@ -5964,6 +5964,9 @@ fn map_step(
   let args : Array[Value] = []
   let next_lists : Array[Datum] = []
   for list in lists {
+    // invariant : lists.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : lists.length() >= 0
     match list {
       Datum::Nil => {
         if for_each {
@@ -5994,6 +5997,9 @@ fn map_step(
 fn string_to_char_list(s : String) -> Datum raise EvalError {
   let items : Array[Datum] = []
   for i = 0; i < s.length(); {
+    // invariant : i >= 0 && i <= s.length()
+    // decreases : s.length() - i
+    // assert : i <= s.length()
     match s.get_char(i) {
       Some(ch) => items.push(Datum::Char(ch))
       None => raise @core.EvalError("index out of range")
@@ -6084,6 +6090,9 @@ fn apply_proc(
       }
       let env = env_new()
       for arg in args {
+        // invariant : args.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : args.length() >= 0
         let spec = value_as_datum(arg)
         import_set_into_env(spec, env)
       }
@@ -6127,6 +6136,9 @@ fn apply_proc(
         let thunk = args[1]
         let next_handlers : Array[Value] = []
         for item in handlers {
+          // invariant : handlers.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : handlers.length() >= 0
           next_handlers.push(item)
         }
         next_handlers.push(handler)
