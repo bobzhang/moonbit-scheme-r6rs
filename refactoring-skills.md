@@ -236,6 +236,25 @@ let i = for idx = len; idx > 0; {
 ## Unique delimiter lookup
 - Extract a helper like `find_unique_char` when multiple parsers need the same delimiter scan logic.
 
+Example:
+```mbt
+fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
+  let found = for i = 0, found = -1; i < chars.length(); {
+    let ch = chars[i]
+    if ch == target {
+      if found != -1 {
+        return None
+      }
+      continue i + 1, i
+    }
+    continue i + 1, found
+  } else {
+    found
+  }
+  if found == -1 { None } else { Some(found) }
+}
+```
+
 ## Tuple destructuring
 - Replace `mut` temporaries with a single `let (a, b) = match ...` when branching sets both.
 

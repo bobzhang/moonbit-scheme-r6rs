@@ -236,16 +236,19 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> Datum? {
 
 ///|
 fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
-  let mut found : Int? = None
-  for i, ch in chars {
+  let found = for i = 0, found = -1; i < chars.length(); {
+    let ch = chars[i]
     if ch == target {
-      if found is Some(_) {
+      if found != -1 {
         return None
       }
-      found = Some(i)
+      continue i + 1, i
     }
+    continue i + 1, found
+  } else {
+    found
   }
-  found
+  if found == -1 { None } else { Some(found) }
 }
 
 ///|
@@ -675,42 +678,40 @@ fn parse_complex_token(
   allow_rat : Bool,
 ) -> Datum? {
   let chars = string_to_chars(tok)
-  let mut at = -1
-  for i, ch in chars {
-    if ch == '@' {
-      if at != -1 {
+  let at = find_unique_char(chars, '@')
+  if at is None && chars.contains('@') {
+    return None
+  }
+  match at {
+    Some(at) => {
+      if at == 0 || at == chars.length() - 1 {
         return None
       }
-      at = i
+      let left = String::from_array(chars.sub(end=at).to_array())
+      let right = String::from_array(chars.sub(start=at + 1).to_array())
+      let r = match
+        parse_real_token_with_settings(left, radix, exactness, allow_rat) {
+        Some(value) => value
+        None => return None
+      }
+      let theta = match
+        parse_real_token_with_settings(right, radix, exactness, allow_rat) {
+        Some(value) => value
+        None => return None
+      }
+      let rf = match datum_to_float(r) {
+        Some(value) => value
+        None => return None
+      }
+      let tf = match datum_to_float(theta) {
+        Some(value) => value
+        None => return None
+      }
+      let real = Datum::Float(rf * @math.cosf(tf))
+      let imag = Datum::Float(rf * @math.sinf(tf))
+      return Some(make_complex_datum(real, imag))
     }
-  }
-  if at != -1 {
-    if at == 0 || at == chars.length() - 1 {
-      return None
-    }
-    let left = String::from_array(chars.sub(end=at).to_array())
-    let right = String::from_array(chars.sub(start=at + 1).to_array())
-    let r = match
-      parse_real_token_with_settings(left, radix, exactness, allow_rat) {
-      Some(value) => value
-      None => return None
-    }
-    let theta = match
-      parse_real_token_with_settings(right, radix, exactness, allow_rat) {
-      Some(value) => value
-      None => return None
-    }
-    let rf = match datum_to_float(r) {
-      Some(value) => value
-      None => return None
-    }
-    let tf = match datum_to_float(theta) {
-      Some(value) => value
-      None => return None
-    }
-    let real = Datum::Float(rf * @math.cosf(tf))
-    let imag = Datum::Float(rf * @math.sinf(tf))
-    return Some(make_complex_datum(real, imag))
+    None => ()
   }
   if chars.length() == 0 {
     return None

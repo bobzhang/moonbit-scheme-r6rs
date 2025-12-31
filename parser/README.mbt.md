@@ -27,6 +27,14 @@ test "parse basics" {
     Some(@core.Datum::Rat(3, 4)) => ()
     _ => fail("expected 3/4")
   }
+  match parse_number_token("1+2i") {
+    Some(@core.Datum::Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (@core.Datum::Int(1), @core.Datum::Int(2)) => ()
+        _ => fail("expected 1+2i")
+      }
+    _ => fail("expected complex")
+  }
   match parse_number_token_with_radix("ff", 16) {
     Some(@core.Datum::Int(255)) => ()
     _ => fail("expected 255")
