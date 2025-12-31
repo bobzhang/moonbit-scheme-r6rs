@@ -23,6 +23,24 @@ priv struct PrinterState {
 }
 
 ///|
+fn PrinterState::new() -> PrinterState {
+  { labels: {} }
+}
+
+///|
+fn PrinterState::label_flags(self : PrinterState, id : Int) -> Int {
+  match self.labels.get(id) {
+    Some(value) => value
+    None => 0
+  }
+}
+
+///|
+fn PrinterState::set_label_flags(self : PrinterState, id : Int, flags : Int) -> Unit {
+  self.labels[id] = flags
+}
+
+///|
 fn char_to_string(ch : Char) -> String {
   match ch {
     ' ' => "#\\space"
@@ -30,8 +48,7 @@ fn char_to_string(ch : Char) -> String {
     '\t' => "#\\tab"
     _ => {
       let buf = @buffer.new()
-      buf.write_string("#\\")
-      buf.write_char(ch)
+      buf..write_string("#\\")..write_char(ch)
       buf.to_string()
     }
   }
@@ -41,18 +58,15 @@ fn char_to_string(ch : Char) -> String {
 fn datum_to_string_state(datum : Datum, state : PrinterState) -> String {
   match datum {
     Datum::Label(id, cell) => {
-      let flags = match state.labels.get(id) {
-        Some(value) => value
-        None => 0
-      }
+      let flags = state.label_flags(id)
       let defined = (flags & 1) != 0
       let active = (flags & 2) != 0
       if defined || active {
         return "#\{id}#"
       }
-      state.labels[id] = 3
+      state.set_label_flags(id, 3)
       let body = datum_to_string_state(cell.val, state)
-      state.labels[id] = 1
+      state.set_label_flags(id, 1)
       "#\{id}=\{body}"
     }
     Datum::Nil => "()"
@@ -79,7 +93,7 @@ fn datum_to_string_state(datum : Datum, state : PrinterState) -> String {
 
 ///|
 fn datum_to_string(datum : Datum) -> String {
-  let state : PrinterState = { labels: {} }
+  let state = PrinterState::new()
   datum_to_string_state(datum, state)
 }
 

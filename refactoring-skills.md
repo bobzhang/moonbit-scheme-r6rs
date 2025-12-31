@@ -1832,3 +1832,24 @@ match env.get_binding(name) {
   _ => None
 }
 ```
+
+## Small state helpers on private structs
+- Add `State::new()` and tiny accessors to keep state logic focused in one place.
+- Use `..` chaining for short builder-style sequences.
+
+Example:
+```mbt
+fn PrinterState::new() -> PrinterState {
+  { labels: {} }
+}
+
+fn PrinterState::label_flags(self : PrinterState, id : Int) -> Int {
+  match self.labels.get(id) {
+    Some(value) => value
+    None => 0
+  }
+}
+
+let buf = @buffer.new()
+buf..write_string("#\\")..write_char(ch)
+```
