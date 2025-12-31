@@ -70,6 +70,12 @@ test "gensym unique suffix" {
 }
 
 ///|
+test "value predicates" {
+  inspect(is_false(bool_value(false)), content="true")
+  inspect(is_false(bool_value(true)), content="false")
+}
+
+///|
 test "list from array" {
   let list = list_from_array([Int(1), Int(2)])
   let value = @core.Value::Datum(list)
@@ -86,6 +92,15 @@ test "enum set from names" {
 ///|
 test "enum set index" {
   inspect(enum_set_index_of(["a", "b"], "b"), content="Some(1)")
+}
+
+///|
+test "enum set universe equal" {
+  let base = ["a", "b"]
+  let same = make_enum_set(base, enum_set_members_all_false(base))
+  let other = make_enum_set(["b", "a"], enum_set_members_all_false(["b", "a"]))
+  inspect(enum_set_universe_equal(same, same), content="true")
+  inspect(enum_set_universe_equal(same, other), content="false")
 }
 
 ///|

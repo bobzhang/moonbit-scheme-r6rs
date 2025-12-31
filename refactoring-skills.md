@@ -123,6 +123,7 @@ moon check
 - Prefer minimal inputs (short strings, small data) to keep doctests fast.
 - For lexer-style helpers, add `mbt check` examples in the package README instead of testing private helpers directly.
 - For unicode helpers, add a small compatibility-normalization example to widen coverage without changing APIs.
+- For counters like `gensym`, assert prefix/inequality instead of exact suffixes to avoid ordering dependence.
 - Add README tests for refactored primitives (e.g., `map`, `bytevector-copy`) to catch regressions early.
 - Keep the top-level README tests small and end-to-end (e.g., `eval_program` + `value_to_string`).
 - Add spec tests for multi-arity primitives so each branch stays covered after refactors.

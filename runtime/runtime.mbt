@@ -105,6 +105,16 @@ let record_type_id_registry : Ref[Map[Int, RecordTypeDescriptor]] = Ref::new({})
 
 ///|
 /// Generate a fresh symbol name with a gensym suffix.
+///
+/// # Example
+/// ```mbt check
+/// test "gensym prefix" {
+///   let a = gensym("x")
+///   let b = gensym("x")
+///   inspect(a != b, content="true")
+///   guard a is [.."x__gs", .._rest] else { fail("expected gensym prefix") }
+/// }
+/// ```
 pub fn gensym(base : String) -> String {
   let idx = gensym_counter.next()
   "\{base}__gs\{idx}"
@@ -604,6 +614,14 @@ pub fn port_get_output_string(port : Port) -> String {
 
 ///|
 /// Scheme false predicate for values.
+///
+/// # Example
+/// ```mbt check
+/// test "is_false predicate" {
+///   inspect(is_false(bool_value(false)), content="true")
+///   inspect(is_false(bool_value(true)), content="false")
+/// }
+/// ```
 pub fn is_false(value : Value) -> Bool {
   match value {
     Datum(Bool(false)) => true
@@ -613,6 +631,16 @@ pub fn is_false(value : Value) -> Bool {
 
 ///|
 /// Convert a Value into a Datum or raise on type mismatch.
+///
+/// # Example
+/// ```mbt check
+/// test "value_as_datum" {
+///   match value_as_datum(Datum(Int(1))) {
+///     Int(1) => ()
+///     _ => fail("expected int datum")
+///   }
+/// }
+/// ```
 pub fn value_as_datum(value : Value) -> Datum raise EvalError {
   match value {
     Datum(d) => d
