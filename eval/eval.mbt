@@ -1863,8 +1863,7 @@ fn eval_expr_impl(
                   )
                 } else {
                   let bindings_info : Array[ParamBinding] = []
-                  let mut i = 0
-                  while i < params.length() {
+                  for i = 0; i < params.length(); {
                     let current = params[i]
                     let old_value = parameter_get(current)
                     let new_val = next_values[i]
@@ -1874,7 +1873,7 @@ fn eval_expr_impl(
                       new_value: new_val,
                     })
                     parameter_set(current, new_val)
-                    i = i + 1
+                    continue i + 1
                   }
                   let winder = make_param_winder(bindings_info)
                   wind_push(winder)
@@ -1916,8 +1915,7 @@ fn eval_expr_impl(
               )
             } else {
               let bindings_info : Array[ParamBinding] = []
-              let mut i = 0
-              while i < params.length() {
+              for i = 0; i < params.length(); {
                 let current = params[i]
                 let old_value = parameter_get(current)
                 let new_val = next_values[i]
@@ -1927,7 +1925,7 @@ fn eval_expr_impl(
                   new_value: new_val,
                 })
                 parameter_set(current, new_val)
-                i = i + 1
+                continue i + 1
               }
               let winder = make_param_winder(bindings_info)
               wind_push(winder)
