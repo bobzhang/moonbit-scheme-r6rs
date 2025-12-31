@@ -408,9 +408,24 @@ let (acc, frac_len, has_digit) = for i = start,
       continue i + 1, next_acc, next_frac, seen_dot, true
     }
     return None
-  } else {
-    (acc, frac_len, has_digit)
-  }
+} else {
+  (acc, frac_len, has_digit)
+}
+```
+
+## Radix string conversion
+- Build digits by dividing in a functional loop and carrying `(n, chars)` state.
+- Keep sign handling outside the loop to avoid extra `mut` variables.
+
+Example:
+```mbt
+let chars = for n = n, chars = []; n > 0; {
+  let rem = n % radix
+  chars.push(radix_digits[rem])
+  continue n / radix, chars
+} else {
+  chars
+}
 ```
 
 ## Prefix tag scanning

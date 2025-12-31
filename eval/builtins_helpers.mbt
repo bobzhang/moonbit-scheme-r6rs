@@ -980,12 +980,12 @@ fn int_to_string_radix(value : Int, radix : Int) -> String {
   if value == 0 {
     return "0"
   }
-  let mut n = if value < 0 { -value } else { value }
+  let n = if value < 0 { -value } else { value }
   let chars : Array[Char] = []
-  while n > 0 {
+  for n = n; n > 0; {
     let rem = n % radix
     chars.push(radix_digits[rem])
-    n = n / radix
+    continue n / radix
   }
   if value < 0 {
     chars.push('-')
@@ -998,15 +998,16 @@ fn bigint_to_string_radix(value : @bigint.BigInt, radix : Int) -> String {
   if value.is_zero() {
     return "0"
   }
-  let mut n = if value.compare_int(0) < 0 { -value } else { value }
+  let negative = value.compare_int(0) < 0
+  let n = if negative { -value } else { value }
   let radix_big = bigint_from_int(radix)
   let chars : Array[Char] = []
-  while n.compare_int(0) > 0 {
+  for n = n; n.compare_int(0) > 0; {
     let rem = n % radix_big
     chars.push(radix_digits[rem.to_int()])
-    n = n / radix_big
+    continue n / radix_big
   }
-  if value.compare_int(0) < 0 {
+  if negative {
     chars.push('-')
   }
   chars_rev_to_string(chars)
