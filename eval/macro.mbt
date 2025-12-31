@@ -157,14 +157,23 @@ fn parse_identifier_syntax(
   let pattern_vars : Map[String, Bool] = {}
   let pattern_literals = ["set!"]
   for rule in rules {
+    // invariant : rules.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : rules.length() >= 0
     collect_pattern_vars(rule.pattern, pattern_literals, "...", pattern_vars)
   }
   let literal_set : Map[String, Bool] = {}
   for rule in rules {
+    // invariant : rules.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : rules.length() >= 0
     collect_template_symbols(rule.template, literal_set)
   }
   let literals : Array[String] = []
   for key in literal_set.keys() {
+    // invariant : literal_set.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : literal_set.keys().length() >= 0
     if !pattern_vars.contains(key) {
       literals.push(key)
     }
@@ -341,6 +350,9 @@ fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
   let items = datum_list_to_array(expr)
   let literals : Array[String] = []
   for item in items {
+    // invariant : items.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : items.length() >= 0
     match item {
       Datum::Symbol(name) => literals.push(name)
       _ => raise @core.EvalError("invalid syntax-rules")
@@ -428,6 +440,9 @@ fn validate_pattern_list(
   error_message : String,
 ) -> Unit raise EvalError {
   for i = 0; i < items.length(); {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : items.length() - i
+    // assert : i <= items.length()
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -472,6 +487,9 @@ fn binding_equal(left : BindingVal, right : BindingVal) -> Bool {
         false
       } else {
         for i = 0; i < a.length(); {
+          // invariant : i >= 0 && i <= a.length()
+          // decreases : a.length() - i
+          // assert : i <= a.length()
           if !binding_equal(a[i], b[i]) {
             break false
           }
@@ -491,6 +509,9 @@ fn binding_clone(value : BindingVal) -> BindingVal {
     BindingVal::Seq(values) => {
       let cloned : Array[BindingVal] = []
       for item in values {
+        // invariant : values.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : values.length() >= 0
         cloned.push(binding_clone(item))
       }
       BindingVal::Seq(cloned)
@@ -504,6 +525,9 @@ fn bindings_clone(
 ) -> Map[String, BindingVal] {
   let result : Map[String, BindingVal] = {}
   for name in bindings.keys() {
+    // invariant : bindings.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.keys().length() >= 0
     match bindings.get(name) {
       Some(value) => result[name] = binding_clone(value)
       None => ()
@@ -519,6 +543,9 @@ fn bindings_overwrite(
 ) -> Unit {
   dest.clear()
   for name in src.keys() {
+    // invariant : src.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : src.keys().length() >= 0
     match src.get(name) {
       Some(value) => dest[name] = value
       None => ()
@@ -532,6 +559,9 @@ fn merge_bindings(
   src : Map[String, BindingVal],
 ) -> Bool {
   for name in src.keys() {
+    // invariant : src.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : src.keys().length() >= 0
     match src.get(name) {
       Some(value) =>
         match dest.get(name) {
@@ -629,6 +659,9 @@ fn binding_to_datum(value : BindingVal) -> Datum {
     BindingVal::Seq(values) => {
       let items : Array[Datum] = []
       for item in values {
+        // invariant : values.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : values.length() >= 0
         items.push(binding_to_datum(item))
       }
       list_from_array(items)
@@ -644,6 +677,9 @@ fn fender_allows(
 ) -> Bool raise EvalError {
   let fenv = env_extend(env)
   for name in bindings.keys() {
+    // invariant : bindings.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.keys().length() >= 0
     match bindings.get(name) {
       Some(value) =>
         env_define(fenv, name, value_from_datum(binding_to_datum(value)))
@@ -661,6 +697,9 @@ fn template_env_with_bindings(
 ) -> Env {
   let fenv = env_extend(env)
   for name in bindings.keys() {
+    // invariant : bindings.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : bindings.keys().length() >= 0
     match bindings.get(name) {
       Some(value) =>
         env_define(fenv, name, value_from_datum(binding_to_datum(value)))
@@ -692,6 +731,9 @@ fn scopes_equal_macro(left : Array[Int], right : Array[Int]) -> Bool {
     false
   } else {
     for i, item in left {
+      // invariant : i >= 0 && i < left.length()
+      // decreases : left.length() - i - 1
+      // assert : i < left.length()
       if right[i] != item {
         return false
       }
@@ -806,6 +848,9 @@ fn expand_macro_rules(
   }
   let ellipsis_active = !is_literal(rules.literals, rules.ellipsis)
   for i = 0; i < rules.rules.length(); {
+    // invariant : i >= 0 && i <= rules.rules.length()
+    // decreases : rules.rules.length() - i
+    // assert : i <= rules.rules.length()
     let rule = rules.rules[i]
     let bindings : Map[String, BindingVal] = {}
     match (rule.pattern, call) {
@@ -1060,6 +1105,9 @@ fn rewrite_template_expr(
           }
           let rewritten : Array[Datum] = []
           for item in items {
+            // invariant : items.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : items.length() >= 0
             rewritten.push(
               rewrite_template_expr(
                 item, bindings, renames, ellipsis, ellipsis_active, error_message,
@@ -1279,12 +1327,18 @@ fn collect_repeat_bindings(
     let names : Map[String, Bool] = {}
     collect_pattern_vars(repeat_pat, literals, ellipsis, names)
     for name in names.keys() {
+      // invariant : names.keys().length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : names.keys().length() >= 0
       result[name] = BindingVal::Seq([])
     }
     return Some(result)
   }
   let repeated : Map[String, Array[BindingVal]] = {}
   for i = 0; i < count; {
+    // invariant : i >= 0 && i <= count
+    // decreases : count - i
+    // assert : i <= count
     let iter_bindings : Map[String, BindingVal] = {}
     if !match_pattern(
         repeat_pat,
@@ -1299,6 +1353,9 @@ fn collect_repeat_bindings(
       return None
     }
     for name in iter_bindings.keys() {
+      // invariant : iter_bindings.keys().length() >= 0
+      // TODO(decreases) : loop index not exposed; possible bug
+      // assert : iter_bindings.keys().length() >= 0
       match iter_bindings.get(name) {
         Some(value) =>
           match repeated.get(name) {
@@ -1315,6 +1372,9 @@ fn collect_repeat_bindings(
     continue i + 1
   }
   for name in repeated.keys() {
+    // invariant : repeated.keys().length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : repeated.keys().length() >= 0
     match repeated.get(name) {
       Some(values) => result[name] = BindingVal::Seq(values)
       None => ()
@@ -1345,6 +1405,9 @@ fn match_pattern_list_from(
     datum_is_symbol(pats[pat_idx + 1], ellipsis) {
     let max_count = inputs.length() - inp_idx
     for count = max_count; count >= 0; {
+      // invariant : count >= 0 && count <= max_count
+      // decreases : count
+      // assert : count <= max_count
       let base = bindings_clone(bindings)
       match
         collect_repeat_bindings(
@@ -1446,6 +1509,9 @@ fn collect_pattern_vars(
       match datum_list_to_array_opt(pattern) {
         Some(items) =>
           for item in items {
+            // invariant : items.length() >= 0
+            // TODO(decreases) : loop index not exposed; possible bug
+            // assert : items.length() >= 0
             collect_pattern_vars(item, literals, ellipsis, names)
           }
         None =>
@@ -1459,6 +1525,9 @@ fn collect_pattern_vars(
       }
     Datum::Vector(items) =>
       for item in items {
+        // invariant : items.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : items.length() >= 0
         collect_pattern_vars(item, literals, ellipsis, names)
       }
     _ => ()
@@ -1555,6 +1624,9 @@ fn array_datum_equal(left : Array[Datum], right : Array[Datum]) -> Bool {
     false
   } else {
     for i = 0; i < left.length(); {
+      // invariant : i >= 0 && i <= left.length()
+      // decreases : left.length() - i
+      // assert : i <= left.length()
       if !datum_equal(left[i], right[i]) {
         break false
       }
@@ -1571,6 +1643,9 @@ fn array_int_equal(left : Array[Int], right : Array[Int]) -> Bool {
     false
   } else {
     for i = 0; i < left.length(); {
+      // invariant : i >= 0 && i <= left.length()
+      // decreases : left.length() - i
+      // assert : i <= left.length()
       if left[i] != right[i] {
         break false
       }
@@ -1699,6 +1774,9 @@ fn collect_renames(
         Some(items) =>
           if !is_quote_form(items) {
             for item in items {
+              // invariant : items.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : items.length() >= 0
               collect_renames(
                 item, bindings, literals, ellipsis, def_env, env, renames, captures,
               )
@@ -1733,6 +1811,9 @@ fn collect_renames(
       }
     Datum::Vector(items) =>
       for item in items {
+        // invariant : items.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : items.length() >= 0
         collect_renames(
           item, bindings, literals, ellipsis, def_env, env, renames, captures,
         )
@@ -1753,6 +1834,9 @@ fn collect_template_symbols(
         Some(items) =>
           if !is_quote_form(items) {
             for item in items {
+              // invariant : items.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : items.length() >= 0
               collect_template_symbols(item, symbols)
             }
           }
@@ -1767,6 +1851,9 @@ fn collect_template_symbols(
       }
     Datum::Vector(items) =>
       for item in items {
+        // invariant : items.length() >= 0
+        // TODO(decreases) : loop index not exposed; possible bug
+        // assert : items.length() >= 0
         collect_template_symbols(item, symbols)
       }
     _ => ()
@@ -1792,6 +1879,9 @@ fn expand_with_syntax(
   let expanded = bindings_clone(bindings)
   let fenv = template_env_with_bindings(env, bindings)
   for spec in binding_specs {
+    // invariant : binding_specs.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : binding_specs.length() >= 0
     let parts = datum_list_to_array(spec)
     if parts.length() != 2 {
       raise @core.EvalError("invalid with-syntax")
@@ -1832,6 +1922,9 @@ fn expand_with_syntax(
   } else {
     let forms : Array[Datum] = [Datum::Symbol("begin")]
     for i = 2; i < items.length(); {
+      // invariant : i >= 2 && i <= items.length()
+      // decreases : items.length() - i
+      // assert : i <= items.length()
       forms.push(
         expand_template_indexed(
           items[i],
@@ -2100,6 +2193,9 @@ fn expand_template_list(
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   for i = 0; i < items.length(); {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : items.length() - i
+    // assert : i <= items.length()
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -2114,8 +2210,14 @@ fn expand_template_list(
       }
       let count = max_binding_len(repeat_template, bindings, indices)
       for j = 0; j < count; {
+        // invariant : j >= 0 && j <= count
+        // decreases : count - j
+        // assert : j <= count
         let next_indices : Array[Int] = []
         for idx in indices {
+          // invariant : indices.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : indices.length() >= 0
           next_indices.push(idx)
         }
         next_indices.push(j)
@@ -2161,6 +2263,9 @@ fn expand_template_list_quasisyntax(
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   for i = 0; i < items.length(); {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : items.length() - i
+    // assert : i <= items.length()
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -2175,8 +2280,14 @@ fn expand_template_list_quasisyntax(
       }
       let count = max_binding_len(repeat_template, bindings, indices)
       for j = 0; j < count; {
+        // invariant : j >= 0 && j <= count
+        // decreases : count - j
+        // assert : j <= count
         let next_indices : Array[Int] = []
         for idx in indices {
+          // invariant : indices.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : indices.length() >= 0
           next_indices.push(idx)
         }
         next_indices.push(j)
@@ -2222,6 +2333,9 @@ fn expand_template_vector(
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   for i = 0; i < items.length(); {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : items.length() - i
+    // assert : i <= items.length()
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -2236,8 +2350,14 @@ fn expand_template_vector(
       }
       let count = max_binding_len(repeat_template, bindings, indices)
       for j = 0; j < count; {
+        // invariant : j >= 0 && j <= count
+        // decreases : count - j
+        // assert : j <= count
         let next_indices : Array[Int] = []
         for idx in indices {
+          // invariant : indices.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : indices.length() >= 0
           next_indices.push(idx)
         }
         next_indices.push(j)
@@ -2283,6 +2403,9 @@ fn expand_template_vector_quasisyntax(
 ) -> Datum raise EvalError {
   let expanded : Array[Datum] = []
   for i = 0; i < items.length(); {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : items.length() - i
+    // assert : i <= items.length()
     if ellipsis_active && datum_is_symbol(items[i], ellipsis) {
       raise @core.EvalError(error_message)
     }
@@ -2297,8 +2420,14 @@ fn expand_template_vector_quasisyntax(
       }
       let count = max_binding_len(repeat_template, bindings, indices)
       for j = 0; j < count; {
+        // invariant : j >= 0 && j <= count
+        // decreases : count - j
+        // assert : j <= count
         let next_indices : Array[Int] = []
         for idx in indices {
+          // invariant : indices.length() >= 0
+          // TODO(decreases) : loop index not exposed; possible bug
+          // assert : indices.length() >= 0
           next_indices.push(idx)
         }
         next_indices.push(j)
