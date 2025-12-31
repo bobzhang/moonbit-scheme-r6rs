@@ -1,6 +1,9 @@
 ///|
 fn char_in_ranges(ch : Char, ranges : ReadOnlyArray[Char]) -> Bool {
   for left = 0, right = ranges.length() / 2 - 1; left <= right; {
+    // invariant : left >= 0 && right >= 0 && right < ranges.length() / 2
+    // decreases : right - left + 1
+    // assert : left <= right
     let mid = (left + right) / 2
     let start = ranges[mid * 2]
     let end = ranges[mid * 2 + 1]
@@ -135,6 +138,9 @@ let unicode_general_category_order : ReadOnlyArray[String] = [
 pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
   let ch = self.value
   for category in unicode_general_category_order {
+    // invariant : unicode_general_category_order.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : unicode_general_category_order.length() >= 0
     match general_category_ranges.get(category) {
       Some(ranges) => if char_in_ranges(ch, ranges) { return category }
       None => ()
@@ -148,6 +154,9 @@ pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
 fn unicode_case_equivalents(ch : Char) -> Array[Char] {
   let out : Array[Char] = [ch]
   for cur = ch; true; {
+    // invariant : out.length() >= 1
+    // TODO(decreases) : cycle detection uses out; possible bug
+    // assert : out.length() >= 1
     match case_folding.get(cur) {
       Some(next) => {
         if out.contains(next) {
@@ -176,6 +185,9 @@ fn unicode_pick_equivalent_category(
     _ => return None
   }
   for ch in chars {
+    // invariant : chars.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : chars.length() >= 0
     if char_in_ranges(ch, ranges) {
       return Some(ch)
     }
@@ -189,6 +201,9 @@ fn unicode_min_equivalent(chars : Array[Char], fallback : Char) -> Char {
     return fallback
   }
   for i = 1, min = chars[0]; i < chars.length(); {
+    // invariant : i >= 1 && i <= chars.length()
+    // decreases : chars.length() - i
+    // assert : i < chars.length()
     let ch = chars[i]
     if ch < min {
       continue i + 1, ch
