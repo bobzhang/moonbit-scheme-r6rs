@@ -26,6 +26,9 @@ fn parse_int_token(tok : String) -> Int? {
   }
   let (acc, has_digit) = for i = start, acc = 0, has_digit = false;
     i < chars.length(); {
+      // invariant : i >= start && i <= chars.length()
+      // decreases : chars.length() - i
+      // assert : i <= chars.length()
       let ch = chars[i]
       if !ch.is_ascii_digit() {
         return None
@@ -51,6 +54,9 @@ fn parse_label_token(tok : String) -> (Bool, Int)? {
   }
   let end = chars.length() - 1
   let acc = for i = 1, acc = 0; i < end; {
+    // invariant : i >= 1 && i <= end
+    // decreases : end - i
+    // assert : i <= end
     let ch = chars[i]
     if !ch.is_ascii_digit() {
       return None
@@ -74,6 +80,9 @@ fn int_abs(value : Int) -> Int {
 ///|
 fn gcd(a : Int, b : Int) -> Int {
   for x = int_abs(a), y = int_abs(b); y != 0; {
+    // invariant : x >= 0 && y >= 0
+    // decreases : y
+    // assert : y >= 0
     continue y, x % y
   } else {
     x
@@ -132,6 +141,9 @@ fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
 ///|
 fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
   for x = bigint_abs(a), y = bigint_abs(b); !bigint_is_zero(y); {
+    // invariant : x.compare_int(0) >= 0 && y.compare_int(0) >= 0
+    // TODO(decreases) : BigInt measure not explicit; possible bug
+    // assert : y.compare_int(0) >= 0
     continue y, x % y
   } else {
     x
@@ -965,6 +977,9 @@ fn make_unsyntax_splicing(expr : Datum) -> Datum {
 ///|
 fn list_from_items(items : Array[Datum], base : Datum) -> Datum {
   for i = items.length(), tail = base; i > 0; {
+    // invariant : i >= 0 && i <= items.length()
+    // decreases : i
+    // assert : i <= items.length()
     let idx = i - 1
     continue i - 1, pair_new(items[idx], tail)
   } else {
