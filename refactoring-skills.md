@@ -398,6 +398,31 @@ let exp = for exp = 0, value = bigint_from_int(1);
   }
 ```
 
+## Terminator scans
+- Use a functional `for` with a `break` value to scan until a terminator without `mut`.
+- Carry the accumulator and any flags as loop state.
+
+Example:
+```mbt
+for acc = 0, has_digit = false; true; {
+  match self.next() {
+    None => raise @core.ParseError("unterminated string")
+    Some(';') =>
+      match acc.to_char() {
+        Some(ch) => break ch
+        None => raise @core.ParseError("invalid hex escape")
+      }
+    Some(ch) =>
+      match digit_value(ch) {
+        Some(digit) if digit < 16 => continue acc * 16 + digit, true
+        _ => raise @core.ParseError("invalid hex escape")
+      }
+  }
+} else {
+  raise @core.ParseError("invalid hex escape")
+}
+```
+
 ## Min/max accumulation
 - Use a functional `for` to carry the current best value when scanning arrays.
 - Carry extra flags in the loop state (for example, tracking inexact values).

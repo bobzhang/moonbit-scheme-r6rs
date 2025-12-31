@@ -375,9 +375,7 @@ fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
 
 ///|
 fn Reader::read_hex_escape(self : Reader) -> Char raise ParseError {
-  let mut acc = 0
-  let mut has_digit = false
-  while true {
+  for acc = 0, has_digit = false; true; {
     match self.next() {
       None => raise @core.ParseError("unterminated string")
       Some(';') => {
@@ -385,19 +383,17 @@ fn Reader::read_hex_escape(self : Reader) -> Char raise ParseError {
           raise @core.ParseError("invalid hex escape")
         }
         match acc.to_char() {
-          Some(ch) => return ch
+          Some(ch) => break ch
           None => raise @core.ParseError("invalid hex escape")
         }
       }
       Some(ch) =>
         match digit_value(ch) {
-          Some(digit) if digit < 16 => {
-            acc = acc * 16 + digit
-            has_digit = true
-          }
+          Some(digit) if digit < 16 => continue acc * 16 + digit, true
           _ => raise @core.ParseError("invalid hex escape")
         }
     }
+  } else {
+    raise @core.ParseError("invalid hex escape")
   }
-  raise @core.ParseError("invalid hex escape")
 }

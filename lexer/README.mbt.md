@@ -52,6 +52,12 @@ test "reader chaining" {
 }
 
 ///|
+test "bar identifiers" {
+  let r = make_reader("|a b|")
+  inspect(r.read_token(), content="a b")
+}
+
+///|
 test "string escapes" {
   let r = make_reader("\"a\\n\"")
   ignore(r.next())
