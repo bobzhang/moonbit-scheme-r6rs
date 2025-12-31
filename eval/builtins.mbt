@@ -4368,15 +4368,13 @@ fn apply_primitive(
             raise @core.EvalError("index out of range")
           }
           let temp : Array[Int] = []
-          let mut i = 0
-          while i < count {
+          for i = 0; i < count; {
             temp.push(from_items[start + i])
-            i = i + 1
+            continue i + 1
           }
-          let mut j = 0
-          while j < count {
+          for j = 0; j < count; {
             to_items[at + j] = temp[j]
-            j = j + 1
+            continue j + 1
           }
           Value::Void
         }
@@ -4410,10 +4408,9 @@ fn apply_primitive(
           if start < 0 || end < start || end > items.length() {
             raise @core.EvalError("index out of range")
           }
-          let mut i = start
-          while i < end {
+          for i = start; i < end; {
             items[i] = fill
-            i = i + 1
+            continue i + 1
           }
           Value::Void
         }
@@ -4437,10 +4434,9 @@ fn apply_primitive(
             raise @core.EvalError("index out of range")
           }
           let datums : Array[Datum] = []
-          let mut i = start
-          while i < end {
+          for i = start; i < end; {
             datums.push(Datum::Int(items[i]))
-            i = i + 1
+            continue i + 1
           }
           Value::Datum(list_from_array(datums))
         }
