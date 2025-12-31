@@ -216,22 +216,29 @@ fn insert_sorted_by_ccc(segment : Array[Char], ch : Char, ccc : Int) -> Unit {
 ///|
 fn canonical_order(chars : Array[Char]) -> Array[Char] {
   let out : Array[Char] = []
-  let mut segment : Array[Char] = []
-  for ch in chars {
+  let empty_segment : Array[Char] = []
+  let segment = for i = 0, segment = empty_segment; i < chars.length(); {
+    let ch = chars[i]
     let ccc = combining_class(ch)
     if ccc == 0 {
       if segment.length() > 0 {
         for item in segment {
           out.push(item)
         }
-        segment = []
       }
-      segment.push(ch)
+      let next_segment : Array[Char] = []
+      next_segment.push(ch)
+      continue i + 1, next_segment
     } else if segment.length() == 0 {
-      segment.push(ch)
+      let next_segment : Array[Char] = []
+      next_segment.push(ch)
+      continue i + 1, next_segment
     } else {
       insert_sorted_by_ccc(segment, ch, ccc)
+      continue i + 1, segment
     }
+  } else {
+    segment
   }
   for item in segment {
     out.push(item)

@@ -245,6 +245,40 @@ let insert_at = for i = start; i > 0; {
 segment[insert_at] = ch
 ```
 
+## Segment flush loops
+- Use a functional `for` with an array state when you need to flush segments into an output array.
+
+Example:
+```mbt
+let out : Array[Char] = []
+let segment = for i = 0, segment : Array[Char] = []; i < chars.length(); {
+  let ch = chars[i]
+  let ccc = combining_class(ch)
+  if ccc == 0 {
+    if segment.length() > 0 {
+      for item in segment {
+        out.push(item)
+      }
+    }
+    let next_segment : Array[Char] = []
+    next_segment.push(ch)
+    continue i + 1, next_segment
+  } else if segment.length() == 0 {
+    let next_segment : Array[Char] = []
+    next_segment.push(ch)
+    continue i + 1, next_segment
+  } else {
+    insert_sorted_by_ccc(segment, ch, ccc)
+    continue i + 1, segment
+  }
+} else {
+  segment
+}
+for item in segment {
+  out.push(item)
+}
+```
+
 ## Reverse assembly
 - Extract a small helper for reversing `Array[Char]` into a `String` to cut repeated loops.
 
