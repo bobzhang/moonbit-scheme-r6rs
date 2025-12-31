@@ -412,27 +412,26 @@ fn parse_exact_decimal(tok : String) -> Datum? {
     '-' => (-1, 1)
     _ => (1, 0)
   }
-  let mut seen_dot = false
-  let mut frac_len = 0
-  let mut acc = bigint_from_int(0)
-  let mut has_digit = false
   let ten = bigint_from_int(10)
-  for ch in chars.sub(start=start) {
-    if ch == '.' {
-      if seen_dot {
-        return None
+  let (acc, frac_len, has_digit) = for i = start,
+    acc = bigint_from_int(0), frac_len = 0, seen_dot = false, has_digit = false;
+    i < chars.length(); {
+      let ch = chars[i]
+      if ch == '.' {
+        if seen_dot {
+          return None
+        }
+        continue i + 1, acc, frac_len, true, has_digit
       }
-      seen_dot = true
-    } else if ch.is_ascii_digit() {
-      has_digit = true
-      acc = acc * ten + bigint_from_int(ch.to_int() - '0'.to_int())
-      if seen_dot {
-        frac_len = frac_len + 1
+      if ch.is_ascii_digit() {
+        let next_acc = acc * ten + bigint_from_int(ch.to_int() - '0'.to_int())
+        let next_frac = if seen_dot { frac_len + 1 } else { frac_len }
+        continue i + 1, next_acc, next_frac, seen_dot, true
       }
-    } else {
       return None
+    } else {
+      (acc, frac_len, has_digit)
     }
-  }
   if !has_digit {
     return None
   }

@@ -339,6 +339,27 @@ if first && (ch == '+' || ch == '-') {
 ## Streamed digit accumulation
 - Accumulate numeric values during parsing instead of collecting digits into an array first.
 
+Example:
+```mbt
+let (acc, frac_len, has_digit) = for i = start,
+  acc = bigint_from_int(0), frac_len = 0, seen_dot = false, has_digit = false;
+  i < chars.length(); {
+    let ch = chars[i]
+    if ch == '.' {
+      if seen_dot { return None }
+      continue i + 1, acc, frac_len, true, has_digit
+    }
+    if ch.is_ascii_digit() {
+      let next_acc = acc * ten + bigint_from_int(ch.to_int() - '0'.to_int())
+      let next_frac = if seen_dot { frac_len + 1 } else { frac_len }
+      continue i + 1, next_acc, next_frac, seen_dot, true
+    }
+    return None
+  } else {
+    (acc, frac_len, has_digit)
+  }
+```
+
 ## Prefix tag scanning
 - Use functional `for` with `continue` to advance by fixed steps (like `#`-prefixed numeric tags).
 
