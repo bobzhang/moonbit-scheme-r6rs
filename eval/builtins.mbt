@@ -1324,15 +1324,13 @@ fn apply_primitive(
         bool_value(true)
       } else {
         let first = value_as_fixnum_int(args[0])
-        let mut ok = true
-        let mut i = 1
-        while i < args.length() {
+        let ok = for i = 1; i < args.length(); {
           if value_as_fixnum_int(args[i]) != first {
-            ok = false
-            break
-          } else {
-            i = i + 1
+            break false
           }
+          continue i + 1
+        } else {
+          true
         }
         bool_value(ok)
       }
@@ -1340,18 +1338,15 @@ fn apply_primitive(
       if args.length() <= 1 {
         bool_value(true)
       } else {
-        let mut ok = true
-        let mut prev = value_as_fixnum_int(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let prev = value_as_fixnum_int(args[0])
+        let ok = for i = 1, prev = prev; i < args.length(); {
           let cur = value_as_fixnum_int(args[i])
           if prev >= cur {
-            ok = false
-            break
-          } else {
-            prev = cur
-            i = i + 1
+            break false
           }
+          continue i + 1, cur
+        } else {
+          true
         }
         bool_value(ok)
       }
@@ -1359,18 +1354,15 @@ fn apply_primitive(
       if args.length() <= 1 {
         bool_value(true)
       } else {
-        let mut ok = true
-        let mut prev = value_as_fixnum_int(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let prev = value_as_fixnum_int(args[0])
+        let ok = for i = 1, prev = prev; i < args.length(); {
           let cur = value_as_fixnum_int(args[i])
           if prev <= cur {
-            ok = false
-            break
-          } else {
-            prev = cur
-            i = i + 1
+            break false
           }
+          continue i + 1, cur
+        } else {
+          true
         }
         bool_value(ok)
       }
@@ -1378,18 +1370,15 @@ fn apply_primitive(
       if args.length() <= 1 {
         bool_value(true)
       } else {
-        let mut ok = true
-        let mut prev = value_as_fixnum_int(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let prev = value_as_fixnum_int(args[0])
+        let ok = for i = 1, prev = prev; i < args.length(); {
           let cur = value_as_fixnum_int(args[i])
           if prev > cur {
-            ok = false
-            break
-          } else {
-            prev = cur
-            i = i + 1
+            break false
           }
+          continue i + 1, cur
+        } else {
+          true
         }
         bool_value(ok)
       }
@@ -1397,18 +1386,15 @@ fn apply_primitive(
       if args.length() <= 1 {
         bool_value(true)
       } else {
-        let mut ok = true
-        let mut prev = value_as_fixnum_int(args[0])
-        let mut i = 1
-        while i < args.length() {
+        let prev = value_as_fixnum_int(args[0])
+        let ok = for i = 1, prev = prev; i < args.length(); {
           let cur = value_as_fixnum_int(args[i])
           if prev < cur {
-            ok = false
-            break
-          } else {
-            prev = cur
-            i = i + 1
+            break false
           }
+          continue i + 1, cur
+        } else {
+          true
         }
         bool_value(ok)
       }

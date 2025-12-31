@@ -52,6 +52,12 @@ test "numeric comparisons" {
 }
 
 ///|
+test "fixnum comparisons" {
+  let value = eval_program("(and (fx=? 1 1 1) (fx<? 1 2 3) (fx>=? 3 2 1))")
+  inspect(@runtime.value_to_string(value), content="#t")
+}
+
+///|
 test "syntax-rules macro" {
   let program =
     "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
