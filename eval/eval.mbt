@@ -4735,24 +4735,24 @@ fn version_ref_matches(version : Array[Int], reference : VersionRef) -> Bool {
     VersionRef::Lt(expected) => compare_versions(version, expected) < 0
     VersionRef::Le(expected) => compare_versions(version, expected) <= 0
     VersionRef::And(items) => {
-      let mut i = 0
-      while i < items.length() {
+      for i = 0; i < items.length(); {
         if !version_ref_matches(version, items[i]) {
-          return false
+          break false
         }
-        i = i + 1
+        continue i + 1
+      } else {
+        true
       }
-      true
     }
     VersionRef::Or(items) => {
-      let mut i = 0
-      while i < items.length() {
+      for i = 0; i < items.length(); {
         if version_ref_matches(version, items[i]) {
-          return true
+          break true
         }
-        i = i + 1
+        continue i + 1
+      } else {
+        false
       }
-      false
     }
     VersionRef::Not(item) => !version_ref_matches(version, item.val)
   }
@@ -4817,8 +4817,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
   match items[0] {
     Datum::Symbol("export") => {
       let exports : Array[(String, String)] = []
-      let mut i = 1
-      while i < items.length() {
+      for i = 1; i < items.length(); {
         match items[i] {
           Datum::Symbol(name) => exports.push((name, name))
           Datum::Pair(_, _) => {
@@ -4828,8 +4827,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
             }
             match spec_items[0] {
               Datum::Symbol("rename") => {
-                let mut j = 1
-                while j < spec_items.length() {
+                for j = 1; j < spec_items.length(); {
                   let rename_parts = datum_list_to_array(spec_items[j])
                   if rename_parts.length() != 2 {
                     raise @core.EvalError("invalid library")
@@ -4837,7 +4835,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
                   let internal = parse_symbol(rename_parts[0])
                   let external = parse_symbol(rename_parts[1])
                   exports.push((external, internal))
-                  j = j + 1
+                  continue j + 1
                 }
               }
               _ => raise @core.EvalError("invalid library")
@@ -4845,7 +4843,7 @@ fn parse_export_clause(expr : Datum) -> Array[(String, String)] raise EvalError 
           }
           _ => raise @core.EvalError("invalid library")
         }
-        i = i + 1
+        continue i + 1
       }
       exports
     }

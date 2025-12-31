@@ -464,6 +464,21 @@ for i = 0; i < left.length(); {
 }
 ```
 
+## Any/All scans
+- Use `break false` for all-of checks and `break true` for any-of checks.
+
+Example:
+```mbt
+let ok = for i = 0; i < items.length(); {
+  if !pred(items[i]) {
+    break false
+  }
+  continue i + 1
+} else {
+  true
+}
+```
+
 ## Predicate-driven loops
 - Move `while true` + `match` exit checks into the `for` predicate when possible.
 - Use `else` to return the final state cleanly.
