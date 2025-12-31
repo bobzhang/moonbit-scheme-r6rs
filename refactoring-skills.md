@@ -1410,3 +1410,41 @@ fn flonum_increasing(args : Array[Value]) -> Bool {
   }
 }
 ```
+
+## Stateful scanner loops
+- When a scanner tracks multiple flags, carry them through a `for` state tuple and `break` with the current flags for post-loop validation.
+- Use a tuple return to preserve `in_bar`/`started` semantics while removing `mut` variables.
+
+Example:
+```mbt
+let (in_bar, started) =
+  for in_bar = false, started = false, fold_case = self.fold_case; true; {
+    match self.peek() {
+      Some(ch) => {
+        if !in_bar && is_delim(ch) {
+          break (in_bar, started)
+        }
+        let started = true
+        ignore(self.next())
+        let fold_case = if !in_bar && chars.is_empty() && ch == '#' {
+          if self.peek() == Some('\\') { false } else { fold_case }
+        } else {
+          fold_case
+        }
+        if in_bar && ch == '|' {
+          continue false, started, fold_case
+        }
+        continue in_bar, started, fold_case
+      }
+      _ => break (in_bar, started)
+    }
+  } else {
+    (false, false)
+  }
+if in_bar {
+  raise @core.ParseError("unterminated identifier")
+}
+if !started {
+  raise @core.ParseError("expected token")
+}
+```

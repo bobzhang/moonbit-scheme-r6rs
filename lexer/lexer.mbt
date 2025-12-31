@@ -229,54 +229,57 @@ pub fn Reader::is_bytevector_start(self : Reader) -> Bool {
 /// ```
 pub fn Reader::read_token(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
-  let mut in_bar = false
-  let mut started = false
-  let mut fold_case = self.fold_case
-  while true {
-    match self.peek() {
-      Some(ch) => {
-        if !in_bar && is_delim(ch) {
-          break
-        }
-        started = true
-        ignore(self.next())
-        if !in_bar && chars.is_empty() && ch == '#' {
-          if self.peek() == Some('\\') {
-            fold_case = false
+  let (in_bar, started) =
+    for in_bar = false, started = false, fold_case = self.fold_case; true; {
+      match self.peek() {
+        Some(ch) => {
+          if !in_bar && is_delim(ch) {
+            break (in_bar, started)
           }
-        }
-        if in_bar {
-          if ch == '|' {
-            in_bar = false
+          let started = true
+          ignore(self.next())
+          let fold_case = if !in_bar && chars.is_empty() && ch == '#' {
+            if self.peek() == Some('\\') { false } else { fold_case }
+          } else {
+            fold_case
+          }
+          if in_bar {
+            if ch == '|' {
+              continue false, started, fold_case
+            } else if ch == '\\' {
+              chars.push(self.read_identifier_escape())
+              continue in_bar, started, fold_case
+            } else {
+              chars.push(ch)
+              continue in_bar, started, fold_case
+            }
+          } else if ch == '|' {
+            continue true, started, fold_case
           } else if ch == '\\' {
-            chars.push(self.read_identifier_escape())
+            if chars.length() == 1 && chars[0] == '#' {
+              chars.push(ch)
+            } else {
+              let escaped = self.read_identifier_escape()
+              chars.push(
+                if fold_case {
+                  unicode_char(escaped).foldcase()
+                } else {
+                  escaped
+                },
+              )
+            }
+            continue in_bar, started, fold_case
           } else {
-            chars.push(ch)
+            let next_char = if fold_case { unicode_char(ch).foldcase() } else { ch }
+            chars.push(next_char)
+            continue in_bar, started, fold_case
           }
-        } else if ch == '|' {
-          in_bar = true
-        } else if ch == '\\' {
-          if chars.length() == 1 && chars[0] == '#' {
-            chars.push(ch)
-          } else {
-            let escaped = self.read_identifier_escape()
-            chars.push(
-              if fold_case {
-                unicode_char(escaped).foldcase()
-              } else {
-                escaped
-              },
-            )
-          }
-        } else {
-          let next_char = if fold_case { unicode_char(ch).foldcase() } else { ch }
-          chars.push(next_char)
         }
-        continue
+        _ => break (in_bar, started)
       }
-      _ => break
+    } else {
+      (false, false)
     }
-  }
   if in_bar {
     raise @core.ParseError("unterminated identifier")
   }
