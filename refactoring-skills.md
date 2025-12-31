@@ -121,7 +121,8 @@ moon check
 ## Docstring tests for stateful APIs
 - Keep examples self-contained so they do not rely on shared state between tests.
 - Prefer minimal inputs (short strings, small data) to keep doctests fast.
- - For lexer-style helpers, add `mbt check` examples in the package README instead of testing private helpers directly.
+- For lexer-style helpers, add `mbt check` examples in the package README instead of testing private helpers directly.
+- For unicode helpers, add a small compatibility-normalization example to widen coverage without changing APIs.
 
 ## Facade-level docs
 - Add small examples on re-exported APIs so module users see usage without diving into subpackages.

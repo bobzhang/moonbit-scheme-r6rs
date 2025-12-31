@@ -38,6 +38,10 @@ test "unicode helpers" {
     unicode_string("e\u{301}").normalize_nfc().foldcase().into_string(),
     content="\u{00e9}",
   )
+  inspect(
+    unicode_string("e\u{301}").normalize_nfkd().into_string(),
+    content="e\u{301}",
+  )
 }
 
 ///|
