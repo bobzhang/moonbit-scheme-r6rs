@@ -2120,6 +2120,9 @@ fn eval_expr_impl(
             }
             let parent_values : Array[Value] = []
             for field in record.fields {
+              // invariant : record.fields.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : record.fields.length() >= 0
               parent_values.push(field.val)
             }
             let proc = Value::RecordProc(
@@ -2150,6 +2153,9 @@ fn eval_expr_impl(
               ),
             )
             for binding in bindings {
+              // invariant : bindings.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : bindings.length() >= 0
               env_define(
                 env,
                 binding.accessor,
@@ -2196,6 +2202,9 @@ fn eval_expr_impl(
               ),
             )
             for binding in bindings {
+              // invariant : bindings.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : bindings.length() >= 0
               env_define(
                 env,
                 binding.accessor,
