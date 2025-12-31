@@ -5272,12 +5272,13 @@ fn parse_import_clause(expr : Datum) -> Array[Datum] raise EvalError {
 fn library_exports(name : String) -> Map[String, Binding] raise EvalError {
   match lookup_library(name) {
     Some(lib) => {
+      let exports_map = lib.exports()
       let exports : Map[String, Binding] = {}
-      for key in lib.exports.keys() {
-        // invariant : lib.exports.keys().length() >= 0
+      for key in exports_map.keys() {
+        // invariant : exports_map.keys().length() >= 0
         // TODO(decreases) : loop index not exposed; possible bug
-        // assert : lib.exports.keys().length() >= 0
-        match lib.exports.get(key) {
+        // assert : exports_map.keys().length() >= 0
+        match exports_map.get(key) {
           Some(binding) => exports[key] = binding
           None => ()
         }

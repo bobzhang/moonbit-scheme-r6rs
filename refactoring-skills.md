@@ -1824,6 +1824,19 @@ pub fn make_reader(src : String) -> Reader {
 }
 ```
 
+Example:
+```mbt
+pub struct Library {
+  exports : Map[String, Binding]
+}
+
+pub fn Library::exports(self : Library) -> Map[String, Binding] {
+  self.exports
+}
+
+let exports_map = lib.exports()
+```
+
 ## Internal methods on type aliases
 - Use private `Type::method` helpers to encapsulate repeated logic without changing the public API.
 - Chaining with `..` keeps small constructors readable.

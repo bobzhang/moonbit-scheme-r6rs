@@ -170,9 +170,10 @@ pub fn value_to_string(@core.Value) -> String
 // Errors
 
 // Types and methods
-pub(all) struct Library {
+pub struct Library {
   exports : Map[String, @core.Binding]
 }
+pub fn Library::exports(Self) -> Map[String, @core.Binding]
 
 // Type aliases
 
