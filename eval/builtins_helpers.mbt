@@ -1589,6 +1589,9 @@ fn bigint_bit_length_nonneg(value : @bigint.BigInt) -> Int {
   }
   let two = bigint_from_int(2)
   for n = value, count = 0; n.compare_int(0) > 0; {
+    // invariant : n.compare_int(0) >= 0
+    // TODO(decreases) : BigInt measure not explicit; possible bug
+    // assert : n.compare_int(0) >= 0
     continue n / two, count + 1
   } else {
     count
@@ -1599,6 +1602,9 @@ fn bigint_bit_length_nonneg(value : @bigint.BigInt) -> Int {
 fn bigint_bit_count_nonneg(value : @bigint.BigInt) -> Int {
   let two = bigint_from_int(2)
   for n = value, count = 0; n.compare_int(0) > 0; {
+    // invariant : n.compare_int(0) >= 0
+    // TODO(decreases) : BigInt measure not explicit; possible bug
+    // assert : n.compare_int(0) >= 0
     let bit = n % two
     let next = if bigint_is_zero(bit) { count } else { count + 1 }
     continue n / two, next
