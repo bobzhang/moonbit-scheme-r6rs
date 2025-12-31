@@ -1876,6 +1876,9 @@ fn eval_expr_impl(
             let param = value_as_parameter(param_value)
             let next_params : Array[Parameter] = []
             for item in params {
+              // invariant : params.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : params.length() >= 0
               next_params.push(item)
             }
             next_params.push(param)
@@ -1913,6 +1916,9 @@ fn eval_expr_impl(
               None => {
                 let next_values : Array[Value] = []
                 for item in values {
+                  // invariant : values.length() >= 0
+                  // TODO(decreases) : loop index not exposed; possible bug
+                  // assert : values.length() >= 0
                   next_values.push(item)
                 }
                 next_values.push(new_value)
@@ -1930,6 +1936,9 @@ fn eval_expr_impl(
                 } else {
                   let bindings_info : Array[ParamBinding] = []
                   for i = 0; i < params.length(); {
+                    // invariant : i >= 0 && i <= params.length()
+                    // decreases : params.length() - i
+                    // assert : i <= params.length()
                     let current = params[i]
                     let old_value = parameter_get(current)
                     let new_val = next_values[i]
@@ -1965,6 +1974,9 @@ fn eval_expr_impl(
             let converted = expect_single(value)
             let next_values : Array[Value] = []
             for item in values {
+              // invariant : values.length() >= 0
+              // TODO(decreases) : loop index not exposed; possible bug
+              // assert : values.length() >= 0
               next_values.push(item)
             }
             next_values.push(converted)
@@ -1982,6 +1994,9 @@ fn eval_expr_impl(
             } else {
               let bindings_info : Array[ParamBinding] = []
               for i = 0; i < params.length(); {
+                // invariant : i >= 0 && i <= params.length()
+                // decreases : params.length() - i
+                // assert : i <= params.length()
                 let current = params[i]
                 let old_value = parameter_get(current)
                 let new_val = next_values[i]
