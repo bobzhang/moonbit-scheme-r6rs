@@ -2192,8 +2192,7 @@ fn utf8_decode_to_string(
     raise @core.EvalError("index out of range")
   }
   let buf = @buffer.new()
-  let mut i = start
-  while i < end {
+  let result = for i = start; i < end; {
     let b0 = items[i]
     if b0 < 0 || b0 > 255 {
       utf8_raise_invalid()
@@ -2261,9 +2260,11 @@ fn utf8_decode_to_string(
       Some(ch) => buf.write_char(ch)
       None => utf8_raise_invalid()
     }
-    i = i + size
+    continue i + size
+  } else {
+    buf.to_string()
   }
-  buf.to_string()
+  result
 }
 
 ///|
