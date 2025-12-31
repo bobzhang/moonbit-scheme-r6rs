@@ -127,6 +127,23 @@ moon check
 - Keep the top-level README tests small and end-to-end (e.g., `eval_program` + `value_to_string`).
 - Add spec tests for multi-arity primitives so each branch stays covered after refactors.
 
+## Wrapper roundtrip doctests
+- When a public wrapper has an `into_*` method, add a tiny roundtrip doctest so the API is documented and exercised.
+
+Example:
+```mbt
+///|
+/// ```mbt check
+/// test "unicode string into_string" {
+///   let wrapped = unicode_string("Hi")
+///   inspect(wrapped.into_string(), content="Hi")
+/// }
+/// ```
+pub fn UnicodeString::into_string(self : UnicodeString) -> String {
+  self.value
+}
+```
+
 ## Facade-level docs
 - Add small examples on re-exported APIs so module users see usage without diving into subpackages.
 

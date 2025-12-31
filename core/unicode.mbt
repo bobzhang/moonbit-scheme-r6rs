@@ -72,6 +72,14 @@ pub fn unicode_string(s : String) -> UnicodeString {
 
 ///|
 /// Unwrap a Unicode string wrapper back into a `String`.
+///
+/// # Example
+/// ```mbt check
+/// test "unicode string into_string" {
+///   let wrapped = unicode_string("Hi")
+///   inspect(wrapped.into_string(), content="Hi")
+/// }
+/// ```
 pub fn UnicodeString::into_string(self : UnicodeString) -> String {
   self.value
 }

@@ -42,6 +42,11 @@ test "unicode helpers" {
     unicode_string("e\u{301}").normalize_nfkd().into_string(),
     content="e\u{301}",
   )
+  inspect(
+    unicode_string("\u{212b}").normalize_nfkc().into_string(),
+    content="\u{00c5}",
+  )
+  inspect(unicode_string("Hi").into_string(), content="Hi")
 }
 
 ///|
