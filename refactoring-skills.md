@@ -1448,3 +1448,27 @@ if !started {
   raise @core.ParseError("expected token")
 }
 ```
+
+## Peek-driven skip loops
+- Hold the latest `peek()` value in the `for` state and update it with `continue self.peek()` to avoid `while true`.
+- Keep the branch logic identical; only the loop mechanics change.
+
+Example:
+```mbt
+for cur = self.peek(); true; {
+  match cur {
+    Some(ch) if ch.is_ascii_whitespace() => {
+      ignore(self.next())
+      continue self.peek()
+    }
+    Some(';') => {
+      ignore(self.next())
+      self.skip_line_comment()
+      continue self.peek()
+    }
+    _ => break
+  }
+} else {
+  ()
+}
+```

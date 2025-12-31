@@ -92,27 +92,29 @@ fn is_delim(ch : Char) -> Bool {
 /// }
 /// ```
 pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
-  while true {
-    match self.peek() {
+  for cur = self.peek(); true; {
+    match cur {
       Some(ch) if ch.is_ascii_whitespace() => {
         ignore(self.next())
-        continue
+        continue self.peek()
       }
       Some(';') => {
         // Line comment
         ignore(self.next())
         self.skip_line_comment()
-        continue
+        continue self.peek()
       }
       Some('#') =>
         if self.peek_offset(1) == Some('|') {
           self.skip_block_comment()
-          continue
+          continue self.peek()
         } else {
           break
         }
       _ => break
     }
+  } else {
+    ()
   }
 }
 
@@ -333,11 +335,11 @@ pub fn digit_value(ch : Char) -> Int? {
 /// ```
 pub fn Reader::read_string(self : Reader) -> String raise ParseError {
   let chars : Array[Char] = []
-  while true {
-    match self.next() {
+  for cur = self.next(); true; {
+    match cur {
       None => raise @core.ParseError("unterminated string")
       Some('"') => break
-      Some('\\') =>
+      Some('\\') => {
         match self.next() {
           Some('\n') => self.skip_string_line_continuation()
           Some('\r') => {
@@ -359,22 +361,31 @@ pub fn Reader::read_string(self : Reader) -> String raise ParseError {
           Some(ch) => chars.push(ch)
           None => raise @core.ParseError("unterminated string")
         }
-      Some(ch) => chars.push(ch)
+        continue self.next()
+      }
+      Some(ch) => {
+        chars.push(ch)
+        continue self.next()
+      }
     }
+  } else {
+    ()
   }
   String::from_array(chars)
 }
 
 ///|
 fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
-  while true {
-    match self.peek() {
+  for cur = self.peek(); true; {
+    match cur {
       Some(ch) if ch.is_ascii_whitespace() => {
         ignore(self.next())
-        continue
+        continue self.peek()
       }
       _ => break
     }
+  } else {
+    ()
   }
 }
 

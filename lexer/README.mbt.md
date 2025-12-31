@@ -66,4 +66,11 @@ test "string escapes" {
   ignore(r2.next())
   inspect(r2.read_string(), content="A")
 }
+
+///|
+test "string line continuation" {
+  let r = make_reader("\"a\\\n   b\"")
+  ignore(r.next())
+  inspect(r.read_string(), content="ab")
+}
 ```
