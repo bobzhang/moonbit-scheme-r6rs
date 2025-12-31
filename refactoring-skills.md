@@ -144,6 +144,18 @@ moon check
 ## Map iteration simplification
 - Iterate with `for key, value in map` to avoid extra `get`/`keys` loops.
 
+## Deep clone with map
+- Combine `Array::map` and `Map::map` to copy nested env frames without manual `mut` loops.
+
+Example:
+```mbt
+pub fn env_clone(env : Env) -> Env {
+  env.map((frame) =>
+    frame.map((_, binding) => Binding::{ id: binding.id, value: binding.value })
+  )
+}
+```
+
 ## Functional loops
 - Prefer `for i, v in array` over manual `while` counters when possible to reduce `mut`.
   - Useful for delimiter scans like `@` or `/` in numeric tokens.

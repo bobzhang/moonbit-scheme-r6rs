@@ -28,16 +28,24 @@ pub fn env_extend(env : Env) -> Env {
 
 ///|
 /// Deep-clone environment frames and bindings.
+///
+/// # Example
+/// ```mbt check
+/// test "env clone isolates frames" {
+///   let env = env_new()
+///   env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
+///   let cloned = env_clone(env)
+///   env_set(env, "x", @core.Value::Datum(@core.Datum::Int(2)))
+///   match env_lookup_optional(cloned, "x") {
+///     Some(@core.Value::Datum(@core.Datum::Int(1))) => ()
+///     _ => fail("expected cloned value to stay 1")
+///   }
+/// }
+/// ```
 pub fn env_clone(env : Env) -> Env {
-  let new_env : Env = []
-  for frame in env {
-    let new_frame : Map[String, Binding] = {}
-    for key, binding in frame {
-      new_frame[key] = Binding::{ id: binding.id, value: binding.value }
-    }
-    new_env.push(new_frame)
-  }
-  new_env
+  env.map((frame) =>
+    frame.map((_, binding) => Binding::{ id: binding.id, value: binding.value })
+  )
 }
 
 ///|

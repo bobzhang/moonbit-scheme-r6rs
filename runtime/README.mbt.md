@@ -50,6 +50,18 @@ test "env set" {
 }
 
 ///|
+test "env clone" {
+  let env = env_new()
+  env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
+  let cloned = env_clone(env)
+  env_set(env, "x", @core.Value::Datum(@core.Datum::Int(2)))
+  match env_lookup_optional(cloned, "x") {
+    Some(@core.Value::Datum(@core.Datum::Int(1))) => ()
+    _ => fail("expected cloned value to stay 1")
+  }
+}
+
+///|
 test "enum set from names" {
   let set = enum_set_from_names(["a", "b"], ["b"])
   inspect(enum_set_member_by_name(set, "b"), content="true")
