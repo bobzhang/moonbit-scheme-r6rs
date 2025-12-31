@@ -4577,6 +4577,9 @@ fn hashtable_found_state(
       }
       let next_entries : Array[HashtableEntry] = []
       for i = 0; i < entries.length(); {
+        // invariant : i >= 0 && i <= entries.length()
+        // decreases : entries.length() - i
+        // assert : i <= entries.length()
         if i != idx {
           next_entries.push(entries[i])
         }
@@ -4775,6 +4778,9 @@ fn reset_library_version_registry() -> Unit {
 fn format_version_suffix(version : Array[Int]) -> String {
   let versions : Array[String] = []
   for part in version {
+    // invariant : version.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : version.length() >= 0
     versions.push(part.to_string())
   }
   let joined = versions.join(".")
@@ -4822,6 +4828,9 @@ fn parse_version_items(items : Array[Datum]) -> Array[Int] raise EvalError {
   }
   let versions : Array[Int] = []
   for part in items {
+    // invariant : items.length() >= 0
+    // TODO(decreases) : loop index not exposed; possible bug
+    // assert : items.length() >= 0
     match part {
       Datum::Int(n) =>
         if n < 0 {
@@ -4870,6 +4879,9 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
       }
       let refs : Array[VersionRef] = []
       for i = 1; i < items.length(); {
+        // invariant : i >= 1 && i <= items.length()
+        // decreases : items.length() - i
+        // assert : i <= items.length()
         refs.push(parse_version_ref(items[i]))
         continue i + 1
       }
@@ -4881,6 +4893,9 @@ fn parse_version_ref(expr : Datum) -> VersionRef raise EvalError {
       }
       let refs : Array[VersionRef] = []
       for i = 1; i < items.length(); {
+        // invariant : i >= 1 && i <= items.length()
+        // decreases : items.length() - i
+        // assert : i <= items.length()
         refs.push(parse_version_ref(items[i]))
         continue i + 1
       }
@@ -4914,6 +4929,9 @@ fn parse_library_name_spec(expr : Datum) -> LibraryNameSpec raise EvalError {
   let names : Array[String] = []
   let version : Array[Int]? =
     for i = 0, version = None; i < parts.length(); {
+      // invariant : i >= 0 && i <= parts.length()
+      // decreases : parts.length() - i
+      // assert : i <= parts.length()
       match parts[i] {
         Datum::Symbol(name) => {
           if version is Some(_) {
