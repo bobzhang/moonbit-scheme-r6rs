@@ -2370,6 +2370,9 @@ fn bytevector_uint_ref(
   match endian {
     Endian::Big =>
       for i = 0, result = bigint_from_int(0); i < size; {
+        // invariant : i >= 0 && i <= size
+        // decreases : size - i
+        // assert : i < size
         let next = result * base + bigint_from_int(items[start + i])
         continue i + 1, next
       } else {
@@ -2380,6 +2383,9 @@ fn bytevector_uint_ref(
         result = bigint_from_int(0),
         factor = bigint_from_int(1);
         i < size; {
+          // invariant : i >= 0 && i <= size
+          // decreases : size - i
+          // assert : i < size
           let next = result + bigint_from_int(items[start + i]) * factor
           continue i + 1, next, factor * base
         } else {
@@ -2403,6 +2409,9 @@ fn bytevector_uint_set(
   let base = bigint_from_int(256)
   let bytes : Array[Int] = []
   for i = 0, v = value; i < size; {
+    // invariant : i >= 0 && i <= size
+    // decreases : size - i
+    // assert : i < size
     let byte = v % base
     let byte_int = match bigint_to_int_option(byte) {
       Some(n) => n
@@ -2414,12 +2423,18 @@ fn bytevector_uint_set(
   match endian {
     Endian::Big => {
       for j = 0; j < size; {
+        // invariant : j >= 0 && j <= size
+        // decreases : size - j
+        // assert : j < size
         items[start + j] = bytes[size - 1 - j]
         continue j + 1
       }
     }
     Endian::Little => {
       for j = 0; j < size; {
+        // invariant : j >= 0 && j <= size
+        // decreases : size - j
+        // assert : j < size
         items[start + j] = bytes[j]
         continue j + 1
       }
