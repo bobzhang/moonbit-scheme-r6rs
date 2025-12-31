@@ -975,13 +975,10 @@ fn syntax_add_scope_with_env(datum : Datum, scope : Int, env : Env) -> Datum {
         syntax_add_scope_with_env(a.val, scope, env),
         syntax_add_scope_with_env(b.val, scope, env),
       )
-    Datum::Vector(items) => {
-      let wrapped : Array[Datum] = []
-      for item in items {
-        wrapped.push(syntax_add_scope_with_env(item, scope, env))
-      }
-      Datum::Vector(wrapped)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(
+        items.map((item) => syntax_add_scope_with_env(item, scope, env)),
+      )
     Datum::Complex(real, imag) =>
       Datum::Complex(
         Ref::new(syntax_add_scope_with_env(real.val, scope, env)),
@@ -1872,13 +1869,8 @@ fn rename_datum(datum : Datum, renames : Map[String, String]) -> Datum {
       }
     Datum::Pair(a, b) =>
       pair_new(rename_datum(a.val, renames), rename_datum(b.val, renames))
-    Datum::Vector(items) => {
-      let renamed : Array[Datum] = []
-      for item in items {
-        renamed.push(rename_datum(item, renames))
-      }
-      Datum::Vector(renamed)
-    }
+    Datum::Vector(items) =>
+      Datum::Vector(items.map((item) => rename_datum(item, renames)))
     Datum::Label(tag, value) =>
       Datum::Label(tag, Ref::new(rename_datum(value.val, renames)))
     _ => datum
