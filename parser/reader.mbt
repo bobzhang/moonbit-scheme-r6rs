@@ -891,6 +891,10 @@ pub fn parse_number_token_with_radix(tok : String, radix : Int) -> Datum? {
 fn parse_hex_digits(chars : Array[Char]) -> Int? {
   let (acc, has_digit) = for i = 0, acc = 0, has_digit = false;
     i < chars.length(); {
+      // invariant : i >= 0 && i <= chars.length()
+      // invariant : acc >= 0
+      // decreases : chars.length() - i
+      // assert : i <= chars.length()
       match digit_value(chars[i]) {
         Some(digit) if digit < 16 =>
           continue i + 1, acc * 16 + digit, true

@@ -264,6 +264,7 @@ match args {
 ## Loop specs as comments
 - Write formal, type-checkable expressions in `// invariant : ...`, `// decreases : ...`, and `// assert : ...`.
 - When the loop index is not exposed, add a TODO for decreases to flag potential issues.
+ - For helper scanners (like hex digit accumulators), include both index bounds and accumulator non-negativity.
 
 Example:
 ```mbt

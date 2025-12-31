@@ -55,6 +55,14 @@ test "parse basics" {
     [@core.Datum::Char('A'), @core.Datum::Char(' '), ..] => ()
     _ => fail("expected char literals")
   }
+  match parse_program("#t #f") {
+    [@core.Datum::Bool(true), @core.Datum::Bool(false), ..] => ()
+    _ => fail("expected booleans")
+  }
+  match parse_program("\"hi\"") {
+    [@core.Datum::String(text), ..] => inspect(text.val, content="hi")
+    _ => fail("expected string")
+  }
   match parse_program("#vu8(1 2)") {
     [@core.Datum::ByteVector(items), ..] =>
       inspect(items.length(), content="2")
