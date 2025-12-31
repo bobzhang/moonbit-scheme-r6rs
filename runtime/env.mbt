@@ -142,6 +142,19 @@ pub fn env_lookup_optional(env : Env, name : String) -> Value? {
 
 ///|
 /// Update an existing binding or raise if it is unbound.
+///
+/// # Example
+/// ```mbt check
+/// test "env set" {
+///   let env = env_new()
+///   env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
+///   env_set(env, "x", @core.Value::Datum(@core.Datum::Int(2)))
+///   match env_lookup_optional(env, "x") {
+///     Some(@core.Value::Datum(@core.Datum::Int(2))) => ()
+///     _ => fail("expected updated value")
+///   }
+/// }
+/// ```
 pub fn env_set(env : Env, name : String, value : Value) -> Unit raise EvalError {
   if env.is_empty() {
     raise @core.EvalError("unbound variable: \{name}")
