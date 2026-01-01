@@ -155,6 +155,7 @@ let v = @core.Value::Datum(Symbol("x"))
 ## Batch remove Datum constructor prefixes safely
 - Use a file-local replacement for `@core.Datum::` when the file already has strong type context.
 - Re-run `moon check` to catch any ambiguous constructor sites immediately.
+- For large files, only touch pattern lines (before `=>` or `|` continuations) so constructor expressions keep their explicit qualifiers.
 
 Example:
 ```bash
@@ -164,6 +165,22 @@ path = Path('eval/macro.mbt')
 path.write_text(path.read_text().replace('@core.Datum::', ''))
 PY
 moon check
+```
+
+Pattern-only example:
+```bash
+python3 - <<'PY'
+from pathlib import Path
+path = Path('eval/builtins_numeric.mbt')
+lines = path.read_text().splitlines()
+for i, line in enumerate(lines):
+    if '=>' in line:
+        before, after = line.split('=>', 1)
+        lines[i] = before.replace('@core.Value::', '').replace('@core.Datum::', '') + '=>' + after
+    elif line.lstrip().startswith('|'):
+        lines[i] = line.replace('@core.Value::', '').replace('@core.Datum::', '')
+path.write_text('\\n'.join(lines) + '\\n')
+PY
 ```
 
 ## When to keep Datum prefixes
