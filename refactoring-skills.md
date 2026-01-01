@@ -2385,3 +2385,23 @@ ignore(r.next())
 ignore(r.next())
 fn Reader::advance(self : Reader, count : Int) -> Unit { ... }
 ```
+
+## Drop redundant TypePath::Constr
+- Prefer unqualified constructors in patterns when the scrutinee type is known; keep qualifiers in expressions unless the constructor is in scope (same package or explicitly imported).
+
+Example:
+```mbt
+// before
+match datum {
+  Datum::Int(n) => n
+  Datum::Rat(n, d) => n / d
+  _ => 0
+}
+
+// after
+match datum {
+  Int(n) => n
+  Rat(n, d) => n / d
+  _ => 0
+}
+```
