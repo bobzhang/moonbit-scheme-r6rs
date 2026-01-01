@@ -1862,6 +1862,7 @@ for cur = list; true; {
 - Prefer tiny public helpers (e.g. `peek_next`, `advance`) over direct field access.
 - This makes call sites clearer and reduces repeated bounds logic.
 - Use `moon ide find-references Reader` to update sites in one pass.
+- When you need to return the receiver, wrap `..` chains in a block (`{ r..set_*(); r }`) to avoid deprecated `x..f()` value usage.
 
 Example:
 ```mbt
