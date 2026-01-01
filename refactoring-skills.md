@@ -2158,6 +2158,19 @@ let appended = items.join("")
 let repeated = String::from_array([fill]).repeat(len)
 ```
 
+## Prefer array literals for singletons
+- Use `[value]` instead of allocating and pushing manually.
+
+Example:
+```mbt
+fn value_to_values(value : Value) -> Array[Value] {
+  match value {
+    Values(values) => values
+    _ => [value]
+  }
+}
+```
+
 ## Small state helpers on private structs
 - Add `State::new()` and tiny accessors to keep state logic focused in one place.
 - Use `..` chaining for short builder-style sequences.
