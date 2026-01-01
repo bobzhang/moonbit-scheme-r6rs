@@ -247,18 +247,16 @@ fn integer_datum_from_bigint(value : @bigint.BigInt) -> Datum {
 
 ///|
 fn parse_integer_token(tok : String) -> Datum? {
-  match parse_bigint_token_radix(tok, 10) {
-    Some(value) => Some(integer_datum_from_bigint(value))
-    None => None
-  }
+  parse_bigint_token_radix(tok, 10).map((value) =>
+    integer_datum_from_bigint(value)
+  )
 }
 
 ///|
 fn parse_integer_token_radix(tok : String, radix : Int) -> Datum? {
-  match parse_bigint_token_radix(tok, radix) {
-    Some(value) => Some(integer_datum_from_bigint(value))
-    None => None
-  }
+  parse_bigint_token_radix(tok, radix).map((value) =>
+    integer_datum_from_bigint(value)
+  )
 }
 
 ///|
