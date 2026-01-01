@@ -1282,12 +1282,7 @@ fn collect_repeat_bindings(
   if count == 0 {
     let names : Map[String, Bool] = {}
     collect_pattern_vars(repeat_pat, literals, ellipsis, names)
-    for name in names.keys() {
-      // invariant : names.keys().length() >= 0
-      // TODO(decreases) : loop index not exposed; possible bug
-      // assert : names.keys().length() >= 0
-      result[name] = Seq([])
-    }
+    names.keys().each((name) => result[name] = Seq([]))
     return Some(result)
   }
   let repeated : Map[String, Array[BindingVal]] = {}
@@ -1308,34 +1303,19 @@ fn collect_repeat_bindings(
       ) {
       return None
     }
-    for name in iter_bindings.keys() {
-      // invariant : iter_bindings.keys().length() >= 0
-      // TODO(decreases) : loop index not exposed; possible bug
-      // assert : iter_bindings.keys().length() >= 0
-      match iter_bindings.get(name) {
-        Some(value) =>
-          match repeated.get(name) {
-            Some(values) => values.push(value)
-            None => {
-              let values : Array[BindingVal] = []
-              values.push(value)
-              repeated[name] = values
-            }
-          }
-        None => ()
+    iter_bindings.iter2().each((name, value) =>
+      match repeated.get(name) {
+        Some(values) => values.push(value)
+        None => {
+          let values : Array[BindingVal] = []
+          values.push(value)
+          repeated[name] = values
+        }
       }
-    }
+    )
     continue i + 1
   }
-  for name in repeated.keys() {
-    // invariant : repeated.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : repeated.keys().length() >= 0
-    match repeated.get(name) {
-      Some(values) => result[name] = Seq(values)
-      None => ()
-    }
-  }
+  repeated.iter2().each((name, values) => result[name] = Seq(values))
   Some(result)
 }
 
