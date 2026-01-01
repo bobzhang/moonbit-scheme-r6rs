@@ -641,13 +641,8 @@ fn binding_to_datum(value : BindingVal) -> Datum {
   match value {
     Leaf(datum) => datum
     Seq(values) => {
-      let items : Array[Datum] = []
-      for item in values {
-        // invariant : values.length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : values.length() >= 0
-        items.push(binding_to_datum(item))
-      }
+      let items : Array[Datum] =
+        values.map((item) => binding_to_datum(item))
       list_from_array(items)
     }
   }
