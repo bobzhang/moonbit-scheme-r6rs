@@ -2052,6 +2052,14 @@ let value = Datum::Int(1)
 let typed : Datum = Int(1)
 ```
 
+Example:
+```mbt
+let base : Datum = match datum_unlabel(base) {
+  Symbol(name) => Symbol(name)
+  _ => base
+}
+```
+
 ## Minimize public helpers
 - Use `moon ide find-references` to confirm a helper is package-internal.
 - Move any public README examples to docstring tests before making the helper private.
