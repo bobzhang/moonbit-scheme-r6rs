@@ -2370,3 +2370,18 @@ let cloned = make_hashtable(table.equiv, table.hash, mutable)
 cloned.entries.val = clone_hashtable_entries(table.entries.val)
 Hashtable(cloned)
 ```
+
+## Shrink reader APIs after checking references
+- Use `moon ide find-references` to confirm a public method is only used internally, then replace call sites and make it private.
+
+Example:
+```mbt
+// before
+moon ide find-references "Reader::advance"
+r.advance(2)
+
+// after
+ignore(r.next())
+ignore(r.next())
+fn Reader::advance(self : Reader, count : Int) -> Unit { ... }
+```

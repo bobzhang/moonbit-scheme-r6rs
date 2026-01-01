@@ -16,7 +16,6 @@ pub struct Reader {
   mut fold_case : Bool
   labels : Map[Int, Ref[@core.Datum]]
 }
-pub fn Reader::advance(Self, Int) -> Unit
 pub fn Reader::is_bytevector_start(Self) -> Bool
 pub fn Reader::is_ellipsis_start(Self) -> Bool
 pub fn Reader::is_vector_start(Self) -> Bool

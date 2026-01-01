@@ -62,7 +62,7 @@ pub fn Reader::peek_next(self : Reader) -> Char? {
 
 ///|
 /// Advance the reader by a fixed number of characters.
-pub fn Reader::advance(self : Reader, count : Int) -> Unit {
+fn Reader::advance(self : Reader, count : Int) -> Unit {
   self.pos = self.pos + count
 }
 

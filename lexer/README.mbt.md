@@ -23,7 +23,7 @@ let tok = reader.read_token()
 test "reader helpers" {
   let peek = Reader::new("ab")
   guard peek.peek_next() is Some('b') else { fail("expected b") }
-  peek.advance(1)
+  ignore(peek.next())
   guard peek.peek() is Some('b') else { fail("expected b") }
   let labeled = Reader::new("x")
   let cell = Ref::new(@core.Datum::Nil)

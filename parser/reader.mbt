@@ -1195,22 +1195,26 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
           }
         }
         Some(';') => {
-          r.advance(2)
+          ignore(r.next())
+          ignore(r.next())
           let _ = read_expr(r)
           read_expr(r)
         }
         Some('\'') => {
-          r.advance(2)
+          ignore(r.next())
+          ignore(r.next())
           let expr = read_expr(r)
           make_syntax(expr)
         }
         Some('`') => {
-          r.advance(2)
+          ignore(r.next())
+          ignore(r.next())
           let expr = read_expr(r)
           make_quasisyntax(expr)
         }
         Some(',') => {
-          r.advance(2)
+          ignore(r.next())
+          ignore(r.next())
           let splicing = match r.peek() {
             Some('@') => {
               ignore(r.next())
@@ -1224,17 +1228,22 @@ fn read_expr(r : Reader) -> Datum raise ParseError {
           } else {
             make_unsyntax(expr)
           }
-        }
-        _ =>
-          if r.is_vector_start() {
-            r.advance(2)
-            read_vector_literal(r)
-          } else if r.is_bytevector_start() {
-            r.advance(5)
-            read_bytevector_literal(r)
-          } else {
-            let tok = r.read_token()
-            token_to_datum(tok)
+      }
+    _ =>
+      if r.is_vector_start() {
+        ignore(r.next())
+        ignore(r.next())
+        read_vector_literal(r)
+      } else if r.is_bytevector_start() {
+        ignore(r.next())
+        ignore(r.next())
+        ignore(r.next())
+        ignore(r.next())
+        ignore(r.next())
+        read_bytevector_literal(r)
+      } else {
+        let tok = r.read_token()
+        token_to_datum(tok)
           }
       }
     Some('"') => {
