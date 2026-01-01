@@ -655,16 +655,9 @@ fn fender_allows(
   env : Env,
 ) -> Bool raise EvalError {
   let fenv = env_extend(env)
-  for name in bindings.keys() {
-    // invariant : bindings.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : bindings.keys().length() >= 0
-    match bindings.get(name) {
-      Some(value) =>
-        env_define(fenv, name, value_from_datum(binding_to_datum(value)))
-      None => ()
-    }
-  }
+  bindings.iter2().each((name, value) =>
+    env_define(fenv, name, value_from_datum(binding_to_datum(value)))
+  )
   let result = eval_expr(expr, fenv)
   !is_false(result)
 }
@@ -675,16 +668,9 @@ fn template_env_with_bindings(
   bindings : Map[String, BindingVal],
 ) -> Env {
   let fenv = env_extend(env)
-  for name in bindings.keys() {
-    // invariant : bindings.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : bindings.keys().length() >= 0
-    match bindings.get(name) {
-      Some(value) =>
-        env_define(fenv, name, value_from_datum(binding_to_datum(value)))
-      None => ()
-    }
-  }
+  bindings.iter2().each((name, value) =>
+    env_define(fenv, name, value_from_datum(binding_to_datum(value)))
+  )
   fenv
 }
 
