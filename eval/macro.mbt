@@ -522,15 +522,7 @@ fn bindings_overwrite(
   src : Map[String, BindingVal],
 ) -> Unit {
   dest.clear()
-  for name in src.keys() {
-    // invariant : src.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : src.keys().length() >= 0
-    match src.get(name) {
-      Some(value) => dest[name] = value
-      None => ()
-    }
-  }
+  src.iter2().each((name, value) => dest[name] = value)
 }
 
 ///|
