@@ -6,13 +6,7 @@ fn apply_bytevector_primitive(
 ) -> Value? raise EvalError {
   match prim {
     ByteVector => {
-      let items : Array[Int] = []
-      for arg in args {
-        // invariant : args.length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : args.length() >= 0
-        items.push(value_as_byte(arg))
-      }
+      let items : Array[Int] = args.map((arg) => value_as_byte(arg))
       Some(Datum(ByteVector(items)))
     }
     MakeByteVector =>
@@ -253,12 +247,7 @@ fn apply_bytevector_primitive(
         // TODO(decreases) : loop index not exposed; possible bug
         // assert : args.length() >= 0
         let vec = value_as_bytevector(arg)
-        for item in vec {
-          // invariant : vec.length() >= 0
-          // TODO(decreases) : loop index not exposed; possible bug
-          // assert : vec.length() >= 0
-          items.push(item)
-        }
+        items.push_iter(vec.iter())
       }
       Some(Datum(ByteVector(items)))
     }
