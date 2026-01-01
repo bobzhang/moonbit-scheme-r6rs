@@ -2213,6 +2213,21 @@ Example:
 names.keys().each((name) => result[name] = Seq([]))
 ```
 
+## Declare error types in raising lambdas
+- When a closure can raise, use `fn (...) raise ErrorType { ... }` instead of `(...) =>`.
+
+Example:
+```mbt
+let renames : Array[(String, String)] =
+  items.map(fn (item) raise EvalError {
+    let parts = datum_list_to_array(item)
+    if parts.length() != 2 {
+      raise @core.EvalError("invalid import set")
+    }
+    (parse_symbol(parts[0]), parse_symbol(parts[1]))
+  })
+```
+
 ## Small state helpers on private structs
 - Add `State::new()` and tiny accessors to keep state logic focused in one place.
 - Use `..` chaining for short builder-style sequences.
