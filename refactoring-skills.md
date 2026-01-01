@@ -2446,6 +2446,8 @@ match datum {
 ## Add specs only for functional `for` loops
 - Skip invariant/decreases/assert comments for `for item in items { ... }` loops; keep specs for state-update `for i = 0, ...; ... { ... }` loops.
 - If a decreases clause cannot be expressed for a functional loop, leave a `TODO(decreases)` note there only.
+- For token scans, keep index-bound invariants (`i >= 0 && i <= len`) plus `decreases : len - i`.
+- For loops driven by a growing measure (e.g., BigInt until out-of-range), add `TODO(decreases)` and assert monotonic growth instead.
 
 Example:
 ```mbt
@@ -2469,6 +2471,25 @@ for i = 0, j = xs.length(); i < j; {
   // assert : i <= j
   ...
 } else {
+  ...
+}
+```
+
+Example:
+```mbt
+for i = 0, has_dot = false; i < tok.length(); {
+  // invariant : i >= 0 && i <= tok.length()
+  // decreases : tok.length() - i
+  // assert : i <= tok.length()
+  ...
+}
+
+for exp = 0, value = bigint_from_int(1);
+  bigint_to_int_option(value) is Some(_); {
+  // invariant : exp >= 0
+  // invariant : value.compare_int(1) >= 0
+  // TODO(decreases) : value grows; bound to Int range not explicit
+  // assert : exp >= 0
   ...
 }
 ```

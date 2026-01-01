@@ -1110,17 +1110,17 @@ fn apply_numeric_primitive_core(
           }
         }
         _ => raise arity_mismatch(2, args.length())
-      }
+    }
     @core.Primitive::Gcd => {
-      // invariant : i >= 0 && i <= args.length()
-      // decreases : args.length() - i
-      // assert : use_big || acc_big == bigint_from_int(0)
       let (use_big, acc_int, acc_big) =
         for i = 0,
           use_big = false,
           acc_int = 0,
           acc_big = bigint_from_int(0);
           i < args.length(); {
+          // invariant : i >= 0 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : use_big || acc_big == bigint_from_int(0)
           let value = value_as_exact_integer(args[i])
           match value {
             @core.Datum::Int(n) =>
@@ -1153,15 +1153,15 @@ fn apply_numeric_primitive_core(
       }
     }
     @core.Primitive::Lcm => {
-      // invariant : i >= 0 && i <= args.length()
-      // decreases : args.length() - i
-      // assert : use_big || acc_big == bigint_from_int(1)
       let (use_big, acc_int, acc_big) =
         for i = 0,
           use_big = false,
           acc_int = 1,
           acc_big = bigint_from_int(1);
           i < args.length(); {
+          // invariant : i >= 0 && i <= args.length()
+          // decreases : args.length() - i
+          // assert : use_big || acc_big == bigint_from_int(1)
           let value = value_as_exact_integer(args[i])
           match value {
             @core.Datum::Int(n) =>
@@ -1737,6 +1737,9 @@ fn apply_numeric_primitive_core(
         _ => {
           let result = for i = 1, result = value_as_fixnum_bigint(args[0]);
             i < args.length(); {
+              // invariant : i >= 1 && i <= args.length()
+              // decreases : args.length() - i
+              // assert : i <= args.length()
               continue i + 1, result - value_as_fixnum_bigint(args[i])
             } else {
               result

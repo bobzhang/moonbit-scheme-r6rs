@@ -1572,6 +1572,10 @@ fn fixnum_width_value() -> Int {
   let two = bigint_from_int(2)
   let exp = for exp = 0, value = bigint_from_int(1);
     bigint_to_int_option(value) is Some(_); {
+      // invariant : exp >= 0
+      // invariant : value.compare_int(1) >= 0
+      // TODO(decreases) : value grows; bound to Int range not explicit
+      // assert : exp >= 0
       continue exp + 1, value * two
     } else {
       exp

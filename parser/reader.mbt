@@ -443,6 +443,11 @@ fn parse_exact_decimal(tok : String) -> @core.Datum? {
   let (acc, frac_len, has_digit) = for i = start,
     acc = bigint_from_int(0), frac_len = 0, seen_dot = false, has_digit = false;
     i < chars.length(); {
+      // invariant : i >= start && i <= chars.length()
+      // invariant : frac_len >= 0 && frac_len <= i - start
+      // invariant : acc.compare_int(0) >= 0
+      // decreases : chars.length() - i
+      // assert : i <= chars.length()
       let ch = chars[i]
       if ch == '.' {
         if seen_dot {
@@ -607,6 +612,9 @@ fn parse_real_token_with_settings(
   }
   let (has_dot, has_exp, has_slash) = for i = 0, has_dot = false, has_exp = false,
     has_slash = false; i < tok.length(); {
+      // invariant : i >= 0 && i <= tok.length()
+      // decreases : tok.length() - i
+      // assert : i <= tok.length()
       match tok.get_char(i) {
         Some(ch) =>
           continue i + 1, has_dot || ch == '.',
@@ -813,6 +821,9 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> @core.Dat
   let default_exactness : Char? = None
   let (start, radix, exactness) = for i = 0, radix = base_radix,
     exactness = default_exactness; i + 1 < len && chars[i] == '#'; {
+    // invariant : i >= 0 && i <= len
+    // decreases : len - i
+    // assert : i + 1 <= len
     let tag = chars[i + 1]
     match tag {
       'b' | 'B' | 'o' | 'O' | 'd' | 'D' | 'x' | 'X' =>

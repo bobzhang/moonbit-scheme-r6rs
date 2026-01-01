@@ -120,7 +120,7 @@ test "library exports" {
     Some(exports) =>
       match exports.get("x") {
         Some(exported) =>
-          match exported.value {
+          match exported.value() {
             @core.Value::Datum(@core.Datum::Int(1)) => ()
             _ => fail("expected datum export")
           }
