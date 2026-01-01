@@ -42,6 +42,18 @@ fn apply_hashtable_enumset_primitive(
 }
 
 ///|
+fn clone_hashtable_entries(
+  entries : Array[HashtableEntry],
+) -> Array[HashtableEntry] {
+  entries.map((entry) =>
+    HashtableEntry::{
+      key: entry.key,
+      value: Ref::new(entry.value.val),
+    }
+  )
+}
+
+///|
 /// Apply hashtable and enumset primitives (core match).
 fn apply_hashtable_enumset_primitive_core(
   prim : Primitive,
@@ -124,16 +136,7 @@ fn apply_hashtable_enumset_primitive_core(
         [table_value] => {
           let table = value_as_hashtable(table_value)
           let mutable = table.mutable
-          let entries : Array[HashtableEntry] = []
-          for entry in table.entries.val {
-            // invariant : table.entries.val.length() >= 0
-            // TODO(decreases) : loop index not exposed; possible bug
-            // assert : table.entries.val.length() >= 0
-            entries.push(HashtableEntry::{
-              key: entry.key,
-              value: Ref::new(entry.value.val),
-            })
-          }
+          let entries = clone_hashtable_entries(table.entries.val)
           Hashtable(Hashtable::{
             id: next_hashtable_id(),
             mutable,
@@ -145,16 +148,7 @@ fn apply_hashtable_enumset_primitive_core(
         [table_value, mutable_value] => {
           let table = value_as_hashtable(table_value)
           let mutable = value_as_bool(mutable_value)
-          let entries : Array[HashtableEntry] = []
-          for entry in table.entries.val {
-            // invariant : table.entries.val.length() >= 0
-            // TODO(decreases) : loop index not exposed; possible bug
-            // assert : table.entries.val.length() >= 0
-            entries.push(HashtableEntry::{
-              key: entry.key,
-              value: Ref::new(entry.value.val),
-            })
-          }
+          let entries = clone_hashtable_entries(table.entries.val)
           Hashtable(Hashtable::{
             id: next_hashtable_id(),
             mutable,
@@ -190,13 +184,10 @@ fn apply_hashtable_enumset_primitive_core(
       match args {
         [table_value] => {
           let table = value_as_hashtable(table_value)
-          let items : Array[Datum] = []
-          for entry in table.entries.val {
-            // invariant : table.entries.val.length() >= 0
-            // TODO(decreases) : loop index not exposed; possible bug
-            // assert : table.entries.val.length() >= 0
-            items.push(value_to_datum_element(entry.key))
-          }
+          let items : Array[Datum] =
+            table.entries.val.map((entry) =>
+              value_to_datum_element(entry.key)
+            )
           Datum(Vector(items))
         }
         _ => raise arity_mismatch(1, args.length())
@@ -205,15 +196,14 @@ fn apply_hashtable_enumset_primitive_core(
       match args {
         [table_value] => {
           let table = value_as_hashtable(table_value)
-          let key_items : Array[Datum] = []
-          let value_items : Array[Datum] = []
-          for entry in table.entries.val {
-            // invariant : table.entries.val.length() >= 0
-            // TODO(decreases) : loop index not exposed; possible bug
-            // assert : table.entries.val.length() >= 0
-            key_items.push(value_to_datum_element(entry.key))
-            value_items.push(value_to_datum_element(entry.value.val))
-          }
+          let key_items : Array[Datum] =
+            table.entries.val.map((entry) =>
+              value_to_datum_element(entry.key)
+            )
+          let value_items : Array[Datum] =
+            table.entries.val.map((entry) =>
+              value_to_datum_element(entry.value.val)
+            )
           Values([
             Datum(Vector(key_items)),
             Datum(Vector(value_items)),

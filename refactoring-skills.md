@@ -2089,6 +2089,7 @@ let forms = parse_program("ABC", fold_case=true)
 ## Replace nested loops with push_iter/map
 - Use `Array::push_iter` to append a whole array in one call.
 - Use `Array::map` to build new arrays without a mutable accumulator.
+- Extract a tiny helper when multiple branches repeat the same map.
 
 Example:
 ```mbt
@@ -2100,6 +2101,20 @@ for arg in args {
 
 let items : Array[Datum] =
   components.map((record) => Datum::Record(record))
+```
+
+Example:
+```mbt
+fn clone_hashtable_entries(
+  entries : Array[HashtableEntry],
+) -> Array[HashtableEntry] {
+  entries.map((entry) =>
+    HashtableEntry::{
+      key: entry.key,
+      value: Ref::new(entry.value.val),
+    }
+  )
+}
 ```
 
 ## Small state helpers on private structs
