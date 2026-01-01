@@ -94,7 +94,7 @@ pub fn next_syntax_context() -> Int {
 
 ///|
 /// Allocate a new binding id.
-pub fn next_binding_id() -> Int {
+fn next_binding_id() -> Int {
   binding_counter.next()
 }
 
@@ -140,7 +140,7 @@ fn next_condition_proc_id() -> Int {
 
 ///|
 /// Allocate a new hashtable id.
-pub fn next_hashtable_id() -> Int {
+fn next_hashtable_id() -> Int {
   hashtable_counter.next()
 }
 

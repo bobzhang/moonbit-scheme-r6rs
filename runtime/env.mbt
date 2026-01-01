@@ -90,7 +90,24 @@ pub fn env_get_macro(env : Env, name : String) -> MacroTransformer? {
 /// Define a new binding in the current frame.
 pub fn env_define(env : Env, name : String, value : Value) -> Unit {
   let frame = env.last_frame()
-  frame[name] = Binding::{ id: next_binding_id(), value }
+  frame[name] = make_binding(value)
+}
+
+///|
+/// Create a new binding with a fresh id.
+///
+/// # Example
+/// ```mbt check
+/// test "make binding" {
+///   let binding = make_binding(Datum(Int(1)))
+///   match binding.value {
+///     Datum(Int(1)) => ()
+///     _ => fail("expected datum binding")
+///   }
+/// }
+/// ```
+pub fn make_binding(value : Value) -> Binding {
+  Binding::{ id: next_binding_id(), value }
 }
 
 ///|

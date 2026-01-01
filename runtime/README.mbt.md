@@ -114,10 +114,7 @@ test "value from datum" {
 
 ///|
 test "library exports" {
-  let binding = @core.Binding::{
-    id: next_binding_id(),
-    value: Datum(Int(1)),
-  }
+  let binding = make_binding(Datum(Int(1)))
   register_library("doc/runtime-lib", { "x": binding })
   match lookup_library("doc/runtime-lib") {
     Some(exports) =>

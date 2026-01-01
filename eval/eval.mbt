@@ -5,21 +5,12 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     // invariant : base_syntax_keywords().length() >= 0
     // TODO(decreases) : loop index not exposed; possible bug
     // assert : base_syntax_keywords().length() >= 0
-    exports[name] = Binding::{
-      id: next_binding_id(),
-      value: SyntaxKeyword(name),
-    }
+    exports[name] = make_binding(SyntaxKeyword(name))
   }
   register_library_entry("rnrs.base", Some([6]), exports)
   let eval_exports : Map[String, Binding] = {}
-  eval_exports["eval"] = Binding::{
-    id: next_binding_id(),
-    value: Primitive(Eval),
-  }
-  eval_exports["environment"] = Binding::{
-    id: next_binding_id(),
-    value: Primitive(Environment),
-  }
+  eval_exports["eval"] = make_binding(Primitive(Eval))
+  eval_exports["environment"] = make_binding(Primitive(Environment))
   register_library_entry("rnrs.eval", Some([6]), eval_exports)
   let condition_exports : Map[String, Binding] = {}
   let condition_names : Array[String] = [
@@ -42,10 +33,8 @@ fn register_builtin_libraries(env : Env) -> Unit raise EvalError {
     // assert : condition_names.length() >= 0
     condition_exports[name] = env_lookup_binding(env, name)
   }
-  condition_exports["define-condition-type"] = Binding::{
-    id: next_binding_id(),
-    value: SyntaxKeyword("define-condition-type"),
-  }
+  condition_exports["define-condition-type"] =
+    make_binding(SyntaxKeyword("define-condition-type"))
   register_library_entry("rnrs.conditions", Some([6]), condition_exports)
   let flonum_exports : Map[String, Binding] = {}
   let flonum_names : Array[String] = [
@@ -4333,10 +4322,7 @@ fn eval_library_state(
     // assert : exports.length() >= 0
     let (external, internal) = export_spec
     if is_syntax_keyword(internal) {
-      export_map[external] = Binding::{
-        id: next_binding_id(),
-        value: SyntaxKeyword(external),
-      }
+      export_map[external] = make_binding(SyntaxKeyword(external))
     } else {
       export_map[external] = env_lookup_binding(lib_env, internal)
     }

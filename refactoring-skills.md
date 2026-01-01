@@ -2354,3 +2354,19 @@ using @runtime { gcd, normalize_rat, bigint_from_int, ... }
 fn gcd(a : Int, b : Int) -> Int { ... }
 fn normalize_rat(num : Int, den : Int) -> Datum? { ... }
 ```
+
+## Hide id counters behind constructors
+- Keep `next_*_id` private; expose semantic constructors and reuse existing helpers like `make_hashtable` for copies.
+
+Example:
+```mbt
+// before
+export_map[name] = Binding::{ id: next_binding_id(), value: SyntaxKeyword(name) }
+Hashtable(Hashtable::{ id: next_hashtable_id(), mutable, equiv, hash, entries })
+
+// after
+export_map[name] = make_binding(SyntaxKeyword(name))
+let cloned = make_hashtable(table.equiv, table.hash, mutable)
+cloned.entries.val = clone_hashtable_entries(table.entries.val)
+Hashtable(cloned)
+```

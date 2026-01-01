@@ -64,6 +64,8 @@ pub fn lookup_record_type_descriptor_by_id(Int) -> @core.RecordTypeDescriptor?
 
 pub fn lookup_record_type_descriptor_by_uid(String) -> @core.RecordTypeDescriptor?
 
+pub fn make_binding(@core.Value) -> @core.Binding
+
 pub fn make_condition(Array[@core.Record]) -> @core.Condition
 
 pub fn make_condition_proc(@core.ConditionProcKind) -> @core.ConditionProc
@@ -85,10 +87,6 @@ pub fn make_record_type(String, @core.RecordType?, Bool, Bool, String?, Array[@c
 pub fn make_record_type_descriptor(@core.RecordType, @core.RecordConstructorDescriptor) -> @core.RecordTypeDescriptor
 
 pub fn new_output_string_port() -> @core.Port
-
-pub fn next_binding_id() -> Int
-
-pub fn next_hashtable_id() -> Int
 
 pub fn next_syntax_context() -> Int
 

@@ -54,6 +54,14 @@ fn clone_hashtable_entries(
 }
 
 ///|
+fn hashtable_clone(table : Hashtable, mutable : Bool) -> Value {
+  let entries = clone_hashtable_entries(table.entries.val)
+  let cloned = make_hashtable(table.equiv, table.hash, mutable)
+  cloned.entries.val = entries
+  Hashtable(cloned)
+}
+
+///|
 fn enum_set_members_fill(
   universe : Array[String],
   value : Bool,
@@ -153,27 +161,12 @@ fn apply_hashtable_enumset_primitive_core(
       match args {
         [table_value] => {
           let table = value_as_hashtable(table_value)
-          let mutable = table.mutable
-          let entries = clone_hashtable_entries(table.entries.val)
-          Hashtable(Hashtable::{
-            id: next_hashtable_id(),
-            mutable,
-            equiv: table.equiv,
-            hash: table.hash,
-            entries: Ref::new(entries),
-          })
+          hashtable_clone(table, table.mutable)
         }
         [table_value, mutable_value] => {
           let table = value_as_hashtable(table_value)
           let mutable = value_as_bool(mutable_value)
-          let entries = clone_hashtable_entries(table.entries.val)
-          Hashtable(Hashtable::{
-            id: next_hashtable_id(),
-            mutable,
-            equiv: table.equiv,
-            hash: table.hash,
-            entries: Ref::new(entries),
-          })
+          hashtable_clone(table, mutable)
         }
         _ => raise arity_mismatch(1, args.length())
       }
