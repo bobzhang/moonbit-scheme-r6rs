@@ -2127,6 +2127,21 @@ fn clone_hashtable_entries(
 }
 ```
 
+## Build strings via map/join/repeat
+- Map `args` to `Char` or `String` arrays and use `String::from_array` or `Array::join`.
+- For repeated chars, create a single-char string and `repeat`.
+
+Example:
+```mbt
+let chars : Array[Char] = args.map((arg) => value_as_char(arg))
+let s = String::from_array(chars)
+
+let items : Array[String] = args.map((arg) => value_as_string(arg))
+let appended = items.join("")
+
+let repeated = String::from_array([fill]).repeat(len)
+```
+
 ## Small state helpers on private structs
 - Add `State::new()` and tiny accessors to keep state logic focused in one place.
 - Use `..` chaining for short builder-style sequences.

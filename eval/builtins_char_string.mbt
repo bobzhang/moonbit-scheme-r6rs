@@ -152,14 +152,8 @@ fn apply_char_string_primitive(
     StringCiGreaterEq =>
       Some(bool_value(compare_chain_string(args, Ge, true)))
     String => {
-      let buf = @buffer.new()
-      for arg in args {
-        // invariant : args.length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : args.length() >= 0
-        buf.write_char(value_as_char(arg))
-      }
-      Some(Datum(String(Ref::new(buf.to_string()))))
+      let chars : Array[Char] = args.map((arg) => value_as_char(arg))
+      Some(Datum(String(Ref::new(String::from_array(chars)))))
     }
     MakeString =>
       match args {
@@ -171,29 +165,15 @@ fn apply_char_string_primitive(
               Some(ch) => ch
               None => raise @core.EvalError("internal error: invalid default char")
             }
-            let buf = @buffer.new()
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
-              buf.write_char(fill)
-              continue i + 1
-            }
-            Datum(String(Ref::new(buf.to_string())))
+            let repeated = String::from_array([fill]).repeat(len)
+            Datum(String(Ref::new(repeated)))
           })
         [len_value, fill_value] =>
           Some({
             let len = value_as_nonnegative_int(len_value)
             let fill = value_as_char(fill_value)
-            let buf = @buffer.new()
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
-              buf.write_char(fill)
-              continue i + 1
-            }
-            Datum(String(Ref::new(buf.to_string())))
+            let repeated = String::from_array([fill]).repeat(len)
+            Datum(String(Ref::new(repeated)))
           })
         _ =>
           raise @core.EvalError(
@@ -216,14 +196,8 @@ fn apply_char_string_primitive(
         _ => raise arity_mismatch(1, args.length())
       }
     StringAppend => {
-      let buf = @buffer.new()
-      for arg in args {
-        // invariant : args.length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : args.length() >= 0
-        buf.write_string(value_as_string(arg))
-      }
-      Some(Datum(String(Ref::new(buf.to_string()))))
+      let items : Array[String] = args.map((arg) => value_as_string(arg))
+      Some(Datum(String(Ref::new(items.join("")))))
     }
     StringRef =>
       match args {
