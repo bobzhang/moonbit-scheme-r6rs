@@ -500,11 +500,11 @@ fn parse_rat_token_radix(tok : String, radix : Int) -> @core.Datum? {
 ///|
 fn normalize_rat_datum(num : @core.Datum, den : @core.Datum) -> @core.Datum? {
   match (num, den) {
-    (@core.Datum::Int(n), @core.Datum::Int(d)) => normalize_rat(n, d)
-    (@core.Datum::BigInt(n), @core.Datum::BigInt(d)) => normalize_big_rat(n, d)
-    (@core.Datum::Int(n), @core.Datum::BigInt(d)) =>
+    (Int(n), Int(d)) => normalize_rat(n, d)
+    (BigInt(n), BigInt(d)) => normalize_big_rat(n, d)
+    (Int(n), BigInt(d)) =>
       normalize_big_rat(bigint_from_int(n), d)
-    (@core.Datum::BigInt(n), @core.Datum::Int(d)) =>
+    (BigInt(n), Int(d)) =>
       normalize_big_rat(n, bigint_from_int(d))
     _ => None
   }
@@ -513,15 +513,15 @@ fn normalize_rat_datum(num : @core.Datum, den : @core.Datum) -> @core.Datum? {
 ///|
 fn datum_to_float(value : @core.Datum) -> Float? {
   match value {
-    @core.Datum::Int(n) => Some(Float::from_int(n))
-    @core.Datum::BigInt(n) =>
+    Int(n) => Some(Float::from_int(n))
+    BigInt(n) =>
       try @strconv.parse_double(n.to_string()) catch {
         _ => None
       } noraise {
         v => Some(Float::from_double(v))
       }
-    @core.Datum::Rat(n, d) => Some(Float::from_int(n) / Float::from_int(d))
-    @core.Datum::BigRat(n, d) =>
+    Rat(n, d) => Some(Float::from_int(n) / Float::from_int(d))
+    BigRat(n, d) =>
       match
         (
           try? @strconv.parse_double(n.to_string()),
@@ -530,7 +530,7 @@ fn datum_to_float(value : @core.Datum) -> Float? {
         (Ok(nn), Ok(dd)) => Some(Float::from_double(nn / dd))
         _ => None
       }
-    @core.Datum::Float(f) => Some(f)
+    Float(f) => Some(f)
     _ => None
   }
 }
@@ -538,11 +538,11 @@ fn datum_to_float(value : @core.Datum) -> Float? {
 ///|
 fn reader_datum_is_zero(value : @core.Datum) -> Bool {
   match value {
-    @core.Datum::Int(n) => n == 0
-    @core.Datum::BigInt(n) => n.is_zero()
-    @core.Datum::Rat(n, _) => n == 0
-    @core.Datum::BigRat(n, _) => n.is_zero()
-    @core.Datum::Float(f) => f == 0.0
+    Int(n) => n == 0
+    BigInt(n) => n.is_zero()
+    Rat(n, _) => n == 0
+    BigRat(n, _) => n.is_zero()
+    Float(f) => f == 0.0
     _ => false
   }
 }
@@ -550,7 +550,7 @@ fn reader_datum_is_zero(value : @core.Datum) -> Bool {
 ///|
 fn reader_datum_is_inexact(value : @core.Datum) -> Bool {
   match value {
-    @core.Datum::Float(_) => true
+    Float(_) => true
     _ => false
   }
 }
@@ -871,11 +871,11 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> @core.Dat
 /// ```mbt check
 /// test "parse number token" {
 ///   match parse_number_token("10") {
-///     Some(@core.Datum::Int(10)) => ()
+///     Some(Int(10)) => ()
 ///     _ => fail("expected integer")
 ///   }
 ///   match parse_number_token("ff", radix=16) {
-///     Some(@core.Datum::Int(255)) => ()
+///     Some(Int(255)) => ()
 ///     _ => fail("expected 255")
 ///   }
 /// }
@@ -1069,8 +1069,8 @@ fn datum_list_to_array_parse(list : @core.Datum) -> Array[@core.Datum] raise @co
     //     _ => false
     //   }
     match cur {
-      @core.Datum::Nil => break
-      @core.Datum::Pair(a, b) => {
+      Nil => break
+      Pair(a, b) => {
         items.push(a.val)
         continue b.val
       }
@@ -1095,7 +1095,7 @@ fn read_bytevector_literal(r : @lexer.Reader) -> @core.Datum raise @core.ParseEr
   let items = datum_list_to_array_parse(list)
   let bytes = items.map((item) =>
     match item {
-      @core.Datum::Int(n) => {
+      Int(n) => {
         if n < 0 || n > 255 {
           raise @core.ParseError("bytevector element out of range")
         }
@@ -1268,7 +1268,7 @@ fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
 /// test "parse program" {
 ///   let forms = parse_program("#\\a")
 ///   match forms {
-///     [@core.Datum::Char('a'), ..] => ()
+///     [Char('a'), ..] => ()
 ///     _ => fail("expected char datum")
 ///   }
 /// }
@@ -1279,7 +1279,7 @@ fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
 /// test "parse program fold case" {
 ///   let forms = parse_program("ABC", fold_case=true)
 ///   match forms {
-///     [@core.Datum::Symbol("abc"), ..] => ()
+///     [Symbol("abc"), ..] => ()
 ///     _ => fail("expected folded symbol")
 ///   }
 /// }

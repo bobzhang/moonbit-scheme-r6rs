@@ -161,6 +161,7 @@ moon check
 ## When to keep Datum prefixes
 - Constructors that share names with built-in types (`Int`, `Float`, `Bool`, `String`, `Char`) often need `@core.Datum::` in expressions.
 - Patterns on a known `@core.Datum` can still drop the prefix for readability.
+- In parser/runtime code, prefer a targeted pattern-only edit instead of a full-file replace.
 
 Example:
 ```mbt
