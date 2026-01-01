@@ -1551,6 +1551,33 @@ fn gcd(a : Int, b : Int) -> Int {
 }
 ```
 
+## Use Option loop state instead of sentinels
+- Keep loop state in `Option` (`Int?`, `String?`) instead of sentinel values to avoid extra checks.
+- Match on the `Option` state inside the loop to handle duplicates or early exits.
+
+Example:
+```mbt
+fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
+  let found : Int? =
+    for i = 0, found = None; i < chars.length(); {
+      // invariant : i >= 0 && i <= chars.length()
+      // invariant : found is None || (found is Some(idx) && idx < i)
+      // decreases : chars.length() - i
+      let ch = chars[i]
+      if ch == target {
+        match found {
+          Some(_) => return None
+          None => continue i + 1, Some(i)
+        }
+      }
+      continue i + 1, found
+    } else {
+      found
+    }
+  found
+}
+```
+
 ## Binary search with loop state
 - Track `(low, high, best)` in a functional `for` loop to avoid mutable bounds.
 

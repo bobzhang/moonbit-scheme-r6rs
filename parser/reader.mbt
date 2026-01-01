@@ -260,22 +260,24 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> Datum? {
 
 ///|
 fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
-  let found = for i = 0, found = -1; i < chars.length(); {
-    // invariant : i >= 0 && i <= chars.length()
-    // decreases : chars.length() - i
-    // assert : i <= chars.length()
-    let ch = chars[i]
-    if ch == target {
-      if found != -1 {
-        return None
+  let found : Int? =
+    for i = 0, found = None; i < chars.length(); {
+      // invariant : i >= 0 && i <= chars.length()
+      // invariant : found is None || (found is Some(idx) && idx < i)
+      // decreases : chars.length() - i
+      // assert : i <= chars.length()
+      let ch = chars[i]
+      if ch == target {
+        match found {
+          Some(_) => return None
+          None => continue i + 1, Some(i)
+        }
       }
-      continue i + 1, i
+      continue i + 1, found
+    } else {
+      found
     }
-    continue i + 1, found
-  } else {
-    found
-  }
-  if found == -1 { None } else { Some(found) }
+  found
 }
 
 ///|
