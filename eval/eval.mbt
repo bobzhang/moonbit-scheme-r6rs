@@ -954,21 +954,21 @@ fn eval_expr_impl(
             for binding in bindings {
               @runtime.env_define(
                 env,
-                binding.accessor,
+                binding.accessor(),
                 @core.Value::RecordProc(
                   @runtime.make_record_proc(
-                   @core.RecordProcKind::Accessor(record_type, binding.index),
+                   @core.RecordProcKind::Accessor(record_type, binding.index()),
                   ),
                 ),
               )
-              match binding.mutator {
+              match binding.mutator() {
                 Some(mut_name) =>
                   @runtime.env_define(
                     env,
                     mut_name,
                     @core.Value::RecordProc(
                       @runtime.make_record_proc(
-                       @core.RecordProcKind::Mutator(record_type, binding.index),
+                       @core.RecordProcKind::Mutator(record_type, binding.index()),
                       ),
                     ),
                   )
@@ -1000,10 +1000,10 @@ fn eval_expr_impl(
             for binding in bindings {
               @runtime.env_define(
                 env,
-                binding.accessor,
+                binding.accessor(),
                 @core.Value::ConditionProc(
                   @runtime.make_condition_proc(
-                   @core.ConditionProcKind::Accessor(record_type, binding.index),
+                   @core.ConditionProcKind::Accessor(record_type, binding.index()),
                   ),
                 ),
               )
@@ -2640,11 +2640,7 @@ fn eval_define_record_type_state(
       None => raise @core.EvalError("invalid define-record-type")
     }
     let mutator_name = mutators.get(field_name)
-   @core.RecordFieldBinding::{
-      accessor: accessor_name,
-      index: idx,
-      mutator: mutator_name,
-    }
+    @core.RecordFieldBinding::new(accessor_name, idx, mutator_name)
   })
   let existing_desc = match uid {
     Some(uid_name) => @runtime.lookup_record_type_descriptor_by_uid(uid_name)
@@ -2772,11 +2768,7 @@ fn eval_define_condition_type_state(
       Some(name) => name
       None => raise @core.EvalError("invalid define-condition-type")
     }
-    bindings.push(@core.RecordFieldBinding::{
-      accessor: accessor_name,
-      index: parent_count + i,
-      mutator: None,
-    })
+    bindings.push(@core.RecordFieldBinding::new(accessor_name, parent_count + i, None))
     continue i + 1
   }
   let record_type = @runtime.make_record_type(

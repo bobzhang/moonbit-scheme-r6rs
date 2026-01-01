@@ -649,11 +649,15 @@ pub(all) struct RecordField {
   mutable : Bool
 }
 
-pub(all) struct RecordFieldBinding {
+pub struct RecordFieldBinding {
   accessor : String
   index : Int
   mutator : String?
 }
+pub fn RecordFieldBinding::accessor(Self) -> String
+pub fn RecordFieldBinding::index(Self) -> Int
+pub fn RecordFieldBinding::mutator(Self) -> String?
+pub fn RecordFieldBinding::new(String, Int, String?) -> Self
 
 pub(all) struct RecordProc {
   id : Int

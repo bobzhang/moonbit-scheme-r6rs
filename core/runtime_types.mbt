@@ -147,10 +147,39 @@ pub(all) struct ParamBinding {
 }
 
 ///|
-pub(all) struct RecordFieldBinding {
+/// Record field binding details for generated accessors.
+pub struct RecordFieldBinding {
   accessor : String
   index : Int
   mutator : String?
+}
+
+///|
+/// Create a record field binding.
+pub fn RecordFieldBinding::new(
+  accessor : String,
+  index : Int,
+  mutator : String?,
+) -> RecordFieldBinding {
+  { accessor, index, mutator }
+}
+
+///|
+/// Return the accessor name.
+pub fn RecordFieldBinding::accessor(self : RecordFieldBinding) -> String {
+  self.accessor
+}
+
+///|
+/// Return the field index.
+pub fn RecordFieldBinding::index(self : RecordFieldBinding) -> Int {
+  self.index
+}
+
+///|
+/// Return the mutator name, if any.
+pub fn RecordFieldBinding::mutator(self : RecordFieldBinding) -> String? {
+  self.mutator
 }
 
 ///|

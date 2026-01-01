@@ -1960,6 +1960,7 @@ let r = {
 - Use `pub struct` (instead of `pub(all)`) when callers should not construct or mutate fields directly.
 - Provide a constructor helper like `Reader::new` and methods for the allowed operations.
 - For core bindings, add accessors (`Binding::id`, `Binding::value`) and update env helpers before switching to `pub struct`.
+- For record field bindings, expose `RecordFieldBinding::new` plus accessors and update eval call sites to avoid direct field reads.
 
 Example:
 ```mbt
@@ -1984,6 +1985,21 @@ match binding.value { ... }
 // After
 frame[name] = Binding::new(binding.id(), value)
 match binding.value() { ... }
+```
+
+Example:
+```mbt
+// Before
+bindings.push(@core.RecordFieldBinding::{
+  accessor: accessor_name,
+  index: idx,
+  mutator: mutator_name,
+})
+@runtime.env_define(env, binding.accessor, ...)
+
+// After
+bindings.push(@core.RecordFieldBinding::new(accessor_name, idx, mutator_name))
+@runtime.env_define(env, binding.accessor(), ...)
 ```
 
 Example:
