@@ -2171,6 +2171,18 @@ fn value_to_values(value : Value) -> Array[Value] {
 }
 ```
 
+## Use Map::map for key-preserving transforms
+- `Map::map` keeps keys and rewrites values in one pass.
+
+Example:
+```mbt
+fn bindings_clone(
+  bindings : Map[String, BindingVal],
+) -> Map[String, BindingVal] {
+  bindings.map((_, value) => binding_clone(value))
+}
+```
+
 ## Small state helpers on private structs
 - Add `State::new()` and tiny accessors to keep state logic focused in one place.
 - Use `..` chaining for short builder-style sequences.
