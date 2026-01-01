@@ -1,12 +1,9 @@
 ///|
-using @core {type Datum, type ParseError, unicode_char}
-
-///|
 pub struct Reader {
   chars : Array[Char]
   mut pos : Int
   mut fold_case : Bool
-  labels : Map[Int, Ref[Datum]]
+  labels : Map[Int, Ref[@core.Datum]]
 }
 
 ///|
@@ -74,7 +71,7 @@ pub fn Reader::set_fold_case(self : Reader, value : Bool) -> Unit {
 
 ///|
 /// Look up a label cell by id.
-pub fn Reader::label_get(self : Reader, label : Int) -> Ref[Datum]? {
+pub fn Reader::label_get(self : Reader, label : Int) -> Ref[@core.Datum]? {
   self.labels.get(label)
 }
 
@@ -91,7 +88,7 @@ pub fn Reader::label_get(self : Reader, label : Int) -> Ref[Datum]? {
 ///   guard r.label_get(2) is None else { fail("expected missing label") }
 /// }
 /// ```
-pub fn Reader::label_set(self : Reader, label : Int, cell : Ref[Datum]) -> Unit {
+pub fn Reader::label_set(self : Reader, label : Int, cell : Ref[@core.Datum]) -> Unit {
   self.labels[label] = cell
 }
 
@@ -143,7 +140,7 @@ fn is_delim(ch : Char) -> Bool {
 ///   guard r.peek() is Some('f') else { fail("expected f") }
 /// }
 /// ```
-pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise ParseError {
+pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise @core.ParseError {
   for cur = self.peek(); true; {
     // invariant : self.pos >= 0 && self.pos <= self.chars.length()
     // decreases : self.chars.length() - self.pos
@@ -192,7 +189,7 @@ fn Reader::skip_line_comment(self : Reader) -> Unit {
 
 ///|
 /// Consume a nested block comment starting with `#|`.
-fn Reader::skip_block_comment(self : Reader) -> Unit raise ParseError {
+fn Reader::skip_block_comment(self : Reader) -> Unit raise @core.ParseError {
   ignore(self.next())
   ignore(self.next())
   for depth = 1; depth > 0; {
@@ -292,7 +289,7 @@ pub fn Reader::is_bytevector_start(self : Reader) -> Bool {
 ///   inspect(r.read_token(), content="alpha")
 /// }
 /// ```
-pub fn Reader::read_token(self : Reader) -> String raise ParseError {
+pub fn Reader::read_token(self : Reader) -> String raise @core.ParseError {
   let chars : Array[Char] = []
   let (in_bar, started) =
     for in_bar = false, started = false, fold_case = self.fold_case; true; {
@@ -330,7 +327,7 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
               let escaped = self.read_identifier_escape()
               chars.push(
                 if fold_case {
-                  unicode_char(escaped).foldcase()
+                  @core.unicode_char(escaped).foldcase()
                 } else {
                   escaped
                 },
@@ -338,7 +335,7 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
             }
             continue in_bar, started, fold_case
           } else {
-            let next_char = if fold_case { unicode_char(ch).foldcase() } else { ch }
+            let next_char = if fold_case { @core.unicode_char(ch).foldcase() } else { ch }
             chars.push(next_char)
             continue in_bar, started, fold_case
           }
@@ -359,7 +356,7 @@ pub fn Reader::read_token(self : Reader) -> String raise ParseError {
 
 ///|
 /// Read an escaped identifier character (supports `\x..;`).
-fn Reader::read_identifier_escape(self : Reader) -> Char raise ParseError {
+fn Reader::read_identifier_escape(self : Reader) -> Char raise @core.ParseError {
   match self.next() {
     Some('x') | Some('X') => self.read_hex_escape()
     Some(ch) => ch
@@ -389,7 +386,7 @@ fn digit_value(ch : Char) -> Int? {
 ///   inspect(r.read_string(), content="hi")
 /// }
 /// ```
-pub fn Reader::read_string(self : Reader) -> String raise ParseError {
+pub fn Reader::read_string(self : Reader) -> String raise @core.ParseError {
   let chars : Array[Char] = []
   for cur = self.next(); true; {
     // invariant : self.pos >= 0 && self.pos <= self.chars.length()
@@ -454,7 +451,7 @@ fn Reader::skip_string_line_continuation(self : Reader) -> Unit {
 
 ///|
 /// Read a `\x..;` hex escape, requiring at least one hex digit.
-fn Reader::read_hex_escape(self : Reader) -> Char raise ParseError {
+fn Reader::read_hex_escape(self : Reader) -> Char raise @core.ParseError {
   for acc = 0, has_digit = false; true; {
     // invariant : acc >= 0
     // decreases : self.chars.length() - self.pos

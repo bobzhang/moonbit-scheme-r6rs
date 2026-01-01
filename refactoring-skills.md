@@ -2456,3 +2456,12 @@ match parse_number_token("10") {
   _ => fail("expected integer")
 }
 ```
+
+## Audit public API before narrowing
+- Use `moon ide find-references` on each `pub` symbol to confirm whether it is used outside the package before making it private.
+
+Example:
+```bash
+moon ide find-references "Reader::peek_next"
+moon ide find-references "Reader::label_get"
+```

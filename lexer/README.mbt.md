@@ -65,6 +65,13 @@ test "reader chaining" {
 }
 
 ///|
+test "token stops at delimiter" {
+  let r = Reader::new("foo)")
+  inspect(r.read_token(), content="foo")
+  guard r.peek() is Some(')') else { fail("expected delimiter") }
+}
+
+///|
 test "bar identifiers" {
   let r = Reader::new("|a b|")
   inspect(r.read_token(), content="a b")
