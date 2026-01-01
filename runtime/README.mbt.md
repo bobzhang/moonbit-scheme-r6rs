@@ -104,14 +104,6 @@ test "value to string" {
 }
 
 ///|
-test "normalize rat" {
-  match normalize_rat(4, 6) {
-    Some(Rat(2, 3)) => ()
-    _ => fail("expected reduced ratio")
-  }
-}
-
-///|
 test "value from datum" {
   let value = value_from_datum(Int(3))
   match value {

@@ -3,20 +3,9 @@ package "dii/scheme-r6rs/runtime"
 
 import(
   "dii/scheme-r6rs/core"
-  "moonbitlang/core/bigint"
 )
 
 // Values
-pub fn bigint_abs(@bigint.BigInt) -> @bigint.BigInt
-
-pub fn bigint_from_int(Int) -> @bigint.BigInt
-
-pub fn bigint_gcd(@bigint.BigInt, @bigint.BigInt) -> @bigint.BigInt
-
-pub fn bigint_is_zero(@bigint.BigInt) -> Bool
-
-pub fn bigint_to_int_option(@bigint.BigInt) -> Int?
-
 pub fn condition_base_type() -> @core.RecordType raise @core.EvalError
 
 pub fn condition_components(@core.Value, @core.RecordType) -> Array[@core.Record] raise @core.EvalError
@@ -59,13 +48,9 @@ pub fn env_new() -> Array[Map[String, @core.Binding]]
 
 pub fn env_set(Array[Map[String, @core.Binding]], String, @core.Value) -> Unit raise @core.EvalError
 
-pub fn gcd(Int, Int) -> Int
-
 pub fn gensym(String) -> String
 
 pub fn get_current_output_port() -> @core.Port
-
-pub fn int_abs(Int) -> Int
 
 pub fn is_procedure_value(@core.Value) -> Bool
 
@@ -106,10 +91,6 @@ pub fn next_binding_id() -> Int
 pub fn next_hashtable_id() -> Int
 
 pub fn next_syntax_context() -> Int
-
-pub fn normalize_big_rat(@bigint.BigInt, @bigint.BigInt) -> @core.Datum?
-
-pub fn normalize_rat(Int, Int) -> @core.Datum?
 
 pub fn pair_new(@core.Datum, @core.Datum) -> @core.Datum
 

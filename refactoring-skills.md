@@ -2341,3 +2341,16 @@ let r = make_reader("foo")
 pub fn Reader::new(src : String) -> Reader { ... }
 let r = Reader::new("foo")
 ```
+
+## Pull numeric helpers into eval to slim runtime
+- If a runtime helper is only used by eval, move it into `eval/builtins_helpers.mbt`, drop it from `using @runtime`, and remove the exported function.
+
+Example:
+```mbt
+// before (eval/imports.mbt)
+using @runtime { gcd, normalize_rat, bigint_from_int, ... }
+
+// after (eval/builtins_helpers.mbt)
+fn gcd(a : Int, b : Int) -> Int { ... }
+fn normalize_rat(num : Int, den : Int) -> Datum? { ... }
+```

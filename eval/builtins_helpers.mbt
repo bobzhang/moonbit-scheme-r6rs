@@ -330,6 +330,145 @@ fn number_to_bigrat(
 }
 
 ///|
+/// Absolute value for Int.
+fn int_abs(value : Int) -> Int {
+  if value < 0 {
+    -value
+  } else {
+    value
+  }
+}
+
+///|
+/// Compute the greatest common divisor.
+///
+/// # Example
+/// ```mbt nocheck
+/// test "gcd" {
+///   inspect(gcd(48, 18), content="6")
+/// }
+/// ```
+fn gcd(a : Int, b : Int) -> Int {
+  for x = int_abs(a), y = int_abs(b); y != 0; {
+    // invariant : x >= 0 && y >= 0
+    // decreases : y
+    // assert : y >= 0
+    continue y, x % y
+  } else {
+    x
+  }
+}
+
+///|
+/// Convert an Int into a BigInt.
+fn bigint_from_int(value : Int) -> @bigint.BigInt {
+  @bigint.BigInt::from_int(value)
+}
+
+///|
+/// Return true if the BigInt is zero.
+fn bigint_is_zero(value : @bigint.BigInt) -> Bool {
+  value.is_zero()
+}
+
+///|
+/// Absolute value for BigInt.
+fn bigint_abs(value : @bigint.BigInt) -> @bigint.BigInt {
+  if value.compare_int(0) < 0 {
+    -value
+  } else {
+    value
+  }
+}
+
+///|
+/// Convert a BigInt into Int if it fits.
+fn bigint_to_int_option(value : @bigint.BigInt) -> Int? {
+  let int_max = 2147483647
+  let int_min = -2147483648
+  if value.compare_int(int_max) > 0 || value.compare_int(int_min) < 0 {
+    None
+  } else {
+    Some(value.to_int())
+  }
+}
+
+///|
+/// Compute the greatest common divisor for BigInt.
+fn bigint_gcd(a : @bigint.BigInt, b : @bigint.BigInt) -> @bigint.BigInt {
+  for x = bigint_abs(a), y = bigint_abs(b); !bigint_is_zero(y); {
+    // invariant : x.compare_int(0) >= 0 && y.compare_int(0) >= 0
+    // TODO(decreases) : BigInt measure not explicit; possible bug
+    // assert : y.compare_int(0) >= 0
+    continue y, x % y
+  } else {
+    x
+  }
+}
+
+///|
+/// Normalize an Int rational into a Datum.
+///
+/// # Example
+/// ```mbt nocheck
+/// test "normalize rat" {
+///   match normalize_rat(2, 4) {
+///     Some(Rat(1, 2)) => ()
+///     _ => fail("expected reduced ratio")
+///   }
+/// }
+/// ```
+fn normalize_rat(num : Int, den : Int) -> Datum? {
+  if den == 0 {
+    None
+  } else if num == 0 {
+    Some(Int(0))
+  } else {
+    let (n, d) = if den < 0 { (-num, -den) } else { (num, den) }
+    let g = gcd(n, d)
+    let nn = n / g
+    let dd = d / g
+    if dd == 1 {
+      Some(Int(nn))
+    } else {
+      Some(Rat(nn, dd))
+    }
+  }
+}
+
+///|
+/// Normalize a BigInt rational into a Datum.
+fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> Datum? {
+  if bigint_is_zero(den) {
+    None
+  } else if bigint_is_zero(num) {
+    Some(Int(0))
+  } else {
+    let (n, d) = if den.compare_int(0) < 0 {
+      (-num, -den)
+    } else {
+      (num, den)
+    }
+    let g = bigint_gcd(n, d)
+    let nn = n / g
+    let dd = d / g
+    if dd.compare_int(1) == 0 {
+      Some(
+        match bigint_to_int_option(nn) {
+          Some(v) => Int(v)
+          None => BigInt(nn)
+        },
+      )
+    } else {
+      match (bigint_to_int_option(nn), bigint_to_int_option(dd)) {
+        (Some(nv), Some(dv)) => Some(Rat(nv, dv))
+        _ => Some(BigRat(nn, dd))
+      }
+    }
+  }
+}
+
+///|
 /// Convert a finite float into an exact rational Datum.
 fn float_to_exact_datum(value : Float) -> Datum raise EvalError {
   if !float_is_finite(value) {

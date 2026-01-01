@@ -49,11 +49,6 @@ using @core {
 
 ///|
 using @runtime {
-  bigint_abs,
-  bigint_from_int,
-  bigint_gcd,
-  bigint_is_zero,
-  bigint_to_int_option,
   condition_base_type,
   condition_components,
   condition_components_opt,
@@ -75,10 +70,8 @@ using @runtime {
   env_lookup_binding,
   env_new,
   env_set,
-  gcd,
   gensym,
   get_current_output_port,
-  int_abs,
   is_procedure_value,
   list_from_array,
   lookup_library,
@@ -99,8 +92,6 @@ using @runtime {
   next_binding_id,
   next_hashtable_id,
   next_syntax_context,
-  normalize_big_rat,
-  normalize_rat,
   pair_new,
   port_get_output_string,
   port_write,
