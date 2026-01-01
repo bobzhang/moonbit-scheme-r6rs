@@ -2343,7 +2343,7 @@ fn value_as_symbol(value : @core.Value) -> String raise @core.EvalError {
 
 ///|
 fn parse_field_spec(item : @core.Datum) -> @core.RecordField raise @core.EvalError {
-  match datum_list_to_array(item)[:] {
+  match datum_list_to_array(item) {
     [mutability, name_datum] =>
       match (@runtime.symbol_name(mutability), @runtime.symbol_name(name_datum)) {
         (Some("mutable"), Some(field_name)) =>

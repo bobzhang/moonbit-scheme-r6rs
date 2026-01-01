@@ -1577,7 +1577,7 @@ fn parse_syntax_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(String,@core.MacroTransformer)] = []
   for binding in bindings {
-    match datum_list_to_array(binding)[:] {
+    match datum_list_to_array(binding) {
       [name_expr, transformer_expr] => {
         let name = parse_symbol(name_expr)
         let transformer = parse_transformer(transformer_expr, name, env)
@@ -1594,7 +1594,7 @@ fn parse_bindings(expr : @core.Datum) -> Array[(String,@core.Datum)] raise @core
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(String,@core.Datum)] = []
   for binding in bindings {
-    match datum_list_to_array(binding)[:] {
+    match datum_list_to_array(binding) {
       [name_expr, value_expr] => {
         let name = parse_symbol(name_expr)
         parsed.push((name, value_expr))
@@ -1612,7 +1612,7 @@ fn parse_value_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(@core.Formals,@core.Datum)] = []
   for binding in bindings {
-    match datum_list_to_array(binding)[:] {
+    match datum_list_to_array(binding) {
       [formals_expr, body_expr] => {
         let formals = parse_formals(formals_expr)
         parsed.push((formals, body_expr))
@@ -1630,7 +1630,7 @@ fn parse_parameterize_bindings(
   let bindings = datum_list_to_array(expr)
   let parsed : Array[(@core.Datum,@core.Datum)] = []
   for binding in bindings {
-    match datum_list_to_array(binding)[:] {
+    match datum_list_to_array(binding) {
       [param_expr, value_expr] => parsed.push((param_expr, value_expr))
       _ => raise @core.EvalError("invalid parameterize")
     }

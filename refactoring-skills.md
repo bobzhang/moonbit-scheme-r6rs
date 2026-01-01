@@ -2713,8 +2713,8 @@ fn read_comma_form(r : @lexer.Reader, kind : CommaKind) -> @core.Datum raise @co
 }
 ```
 
-## Prefer array-view pattern matches over length and index checks
-- Use `array[:]` to pattern-match on `ArrayView` when you only need shape/arity.
+## Prefer array pattern matches over length and index checks
+- Match on `Array` directly; the compiler will treat it as an `ArrayView` for pattern matching.
 - This keeps parsing helpers concise and removes manual `length()`/index logic.
 
 Example:
@@ -2728,7 +2728,7 @@ let name = parse_symbol(parts[0])
 let value = parts[1]
 
 // after
-match datum_list_to_array(binding)[:] {
+match datum_list_to_array(binding) {
   [name_expr, value_expr] => {
     let name = parse_symbol(name_expr)
     let value = value_expr
