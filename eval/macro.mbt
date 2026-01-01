@@ -653,8 +653,8 @@ fn template_env_with_bindings(
 ///|
 fn value_to_syntax_datum(value : @core.Value) -> @core.Datum raise @core.EvalError {
   match value {
-    @core.Value::SyntaxObject(_) | @core.Value::Record(_) => value_to_datum_element(value)
-    @core.Value::Datum(d) => d
+    SyntaxObject(_) | Record(_) => value_to_datum_element(value)
+    Datum(d) => d
     _ => raise @core.EvalError("type error: datum expected")
   }
 }
@@ -739,7 +739,7 @@ fn rename_proc_datum(
           rename_proc_datum(imag.val, def_env, call_ctx, renames, captures),
         ),
       )
-    Value(@core.Value::SyntaxObject(obj)) =>
+    Value(SyntaxObject(obj)) =>
       if obj.scopes.contains(call_ctx) {
         datum
       } else {
@@ -876,7 +876,7 @@ fn expand_macro_proc(
   let call_ctx = @runtime.next_syntax_context()
   let marked_call = @runtime.syntax_add_scope(call, call_ctx)
   let stx = match marked_call {
-    Value(@core.Value::SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
+    Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
     _ =>
       @core.Value::SyntaxObject(@core.SyntaxObject::{
         datum: marked_call,
@@ -928,7 +928,7 @@ fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) 
           binding_id: @runtime.env_binding_id_optional(env, name),
         }),
       )
-    Value(@core.Value::SyntaxObject(obj)) => {
+    Value(SyntaxObject(obj)) => {
       let next_scopes = scopes_with_added(obj.scopes, scope)
       let inner = match obj.datum {
         Symbol(_) => obj.datum
@@ -974,7 +974,7 @@ fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @co
     Some(call_scope) => {
       let marked = syntax_add_scope_with_env(value, call_scope, env)
       match marked {
-        Value(@core.Value::SyntaxObject(_)) => marked
+        Value(SyntaxObject(_)) => marked
         _ =>
           Value(
             @core.Value::SyntaxObject(@core.SyntaxObject::{
@@ -987,7 +987,7 @@ fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @co
     }
     None =>
       match value {
-        Value(@core.Value::SyntaxObject(_)) => value
+        Value(SyntaxObject(_)) => value
         _ => {
           let binding_id = match @runtime.datum_unlabel(value) {
             Symbol(name) => @runtime.env_binding_id_optional(env, name)
@@ -1032,7 +1032,7 @@ fn rewrite_template_expr(
                 indices, env, true,
               )
               match expanded {
-                Value(@core.Value::SyntaxObject(obj)) =>
+                Value(SyntaxObject(obj)) =>
                   return Value(@core.Value::SyntaxObject(obj))
                 _ => {
                   let scope = @runtime.next_syntax_context()
@@ -1474,7 +1474,7 @@ fn datum_list_to_array_opt(list : @core.Datum) -> Array[@core.Datum]? {
 ///|
 fn datum_unwrap_syntax(value : @core.Datum) -> @core.Datum {
   match value {
-    Value(@core.Value::SyntaxObject(obj)) => obj.datum
+    Value(SyntaxObject(obj)) => obj.datum
     _ => value
   }
 }
@@ -1496,7 +1496,7 @@ fn literal_matches(
 ) -> Bool {
   let unlabel = @runtime.datum_unlabel(input)
   match unlabel {
-    Value(@core.Value::SyntaxObject(obj)) =>
+    Value(SyntaxObject(obj)) =>
       match @runtime.datum_unlabel(obj.datum) {
         Symbol(other) => {
           if other != name {
@@ -1635,8 +1635,8 @@ fn should_rename(
 ///|
 fn captured_value(def_env : @core.Env, name : String) -> @core.Value? {
   match @runtime.env_lookup_optional(def_env, name) {
-    Some(@core.Value::Macro(_)) => None
-    Some(@core.Value::SyntaxKeyword(_)) => None
+    Some(Macro(_)) => None
+    Some(SyntaxKeyword(_)) => None
     Some(value) => Some(value)
     None => None
   }

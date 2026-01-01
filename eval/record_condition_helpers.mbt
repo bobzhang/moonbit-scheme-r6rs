@@ -62,7 +62,7 @@ fn value_as_condition_record(
   base : @core.RecordType,
 ) -> @core.Record? {
   match value {
-    @core.Value::Record(record) | @core.Value::Datum(Record(record)) =>
+    Record(record) | Datum(Record(record)) =>
       if @runtime.record_type_is_a(record.record_type, base) {
         Some(record)
       } else {
@@ -79,7 +79,7 @@ fn condition_components_opt(
   base : @core.RecordType,
 ) -> Array[@core.Record]? {
   match value {
-    @core.Value::Datum(Condition(cond)) => Some(cond.components)
+    Datum(Condition(cond)) => Some(cond.components)
     _ =>
       value_as_condition_record(value, base).map((record) => [record])
   }

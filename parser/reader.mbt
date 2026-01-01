@@ -1065,7 +1065,7 @@ fn datum_list_to_array_parse(list : @core.Datum) -> Array[@core.Datum] raise @co
     // TODO(decreases) : list length not explicit; possible bug
     // assert :
     //   match cur {
-    //     @core.Datum::Pair(_, _) | @core.Datum::Nil => true
+    //     Pair(_, _) | Nil => true
     //     _ => false
     //   }
     match cur {

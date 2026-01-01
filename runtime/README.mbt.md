@@ -33,7 +33,7 @@ test "env basics" {
   let env = env_new()
   env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
   match env_lookup_optional(env, "x") {
-    Some(@core.Value::Datum(Int(1))) => ()
+    Some(Datum(Int(1))) => ()
     _ => fail("expected bound value")
   }
 }
@@ -44,7 +44,7 @@ test "env set" {
   env_define(env, "x", @core.Value::Datum(@core.Datum::Int(1)))
   env_set(env, "x", @core.Value::Datum(@core.Datum::Int(2)))
   match env_lookup_optional(env, "x") {
-    Some(@core.Value::Datum(Int(2))) => ()
+    Some(Datum(Int(2))) => ()
     _ => fail("expected updated value")
   }
 }
@@ -56,7 +56,7 @@ test "env clone" {
   let cloned = env_clone(env)
   env_set(env, "x", @core.Value::Datum(@core.Datum::Int(2)))
   match env_lookup_optional(cloned, "x") {
-    Some(@core.Value::Datum(Int(1))) => ()
+    Some(Datum(Int(1))) => ()
     _ => fail("expected cloned value to stay 1")
   }
 }
@@ -138,7 +138,7 @@ test "library exports" {
       match exports.get("x") {
         Some(exported) =>
           match exported.value() {
-            @core.Value::Datum(Int(1)) => ()
+            Datum(Int(1)) => ()
             _ => fail("expected datum export")
           }
         None => fail("expected export")

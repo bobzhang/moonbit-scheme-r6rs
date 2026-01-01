@@ -98,7 +98,7 @@ fn make_parameter(value : @core.Value) -> @core.Parameter {
 ///|
 fn value_as_parameter(value : @core.Value) -> @core.Parameter raise @core.EvalError {
   match value {
-    @core.Value::Parameter(param) => param
+    Parameter(param) => param
     _ => raise @core.EvalError("type error: parameter expected")
   }
 }
@@ -151,7 +151,7 @@ fn make_eval_env(env : @core.Env) -> @core.EvalEnv {
 ///|
 fn value_as_eval_env(value : @core.Value) -> @core.EvalEnv raise @core.EvalError {
   match value {
-    @core.Value::EvalEnv(env) => env
+    EvalEnv(env) => env
     _ => raise @core.EvalError("type error: environment expected")
   }
 }
@@ -324,7 +324,7 @@ fn eval_expr_impl(
         match current_expr {
           Label(_, cell) =>
             state = MachineState::Eval(cell.val, current_env, kont, handlers)
-          Value(@core.Value::SyntaxObject(obj)) =>
+          Value(SyntaxObject(obj)) =>
             if unwrap_syntax {
               state = MachineState::Eval(obj.datum, current_env, kont, handlers)
             } else {
@@ -679,7 +679,7 @@ fn eval_expr_impl(
               env,
             )
             let result = match expansion.datum {
-              Value(@core.Value::SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
+              Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
               _ => @core.Value::Datum(expansion.datum)
             }
             state = MachineState::Apply(result, next, handlers)
@@ -1145,10 +1145,10 @@ fn eval_syntax(args : Array[@core.Datum], env : @core.Env) -> @core.Value raise 
       let binding_id = match @runtime.datum_unlabel(arg) {
         Symbol(name) =>
           match @runtime.env_lookup_optional(env, name) {
-            Some(@core.Value::SyntaxObject(obj)) => obj.binding_id
+            Some(SyntaxObject(obj)) => obj.binding_id
             _ => @runtime.env_binding_id_optional(env, name)
           }
-        Value(@core.Value::SyntaxObject(obj)) => obj.binding_id
+        Value(SyntaxObject(obj)) => obj.binding_id
         _ => None
       }
       let datum = @runtime.syntax_wrap_root(arg, scopes)
@@ -1173,14 +1173,14 @@ fn eval_quasisyntax(args : Array[@core.Datum], env : @core.Env) -> @core.Value r
     [arg] => {
       let expanded = quasisyntax_expand(arg, env, 1)
       match expanded {
-        Value(@core.Value::SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
+        Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
         _ => {
           let scope = @runtime.next_syntax_context()
           let scopes = [scope]
           let binding_id = match @runtime.datum_unlabel(expanded) {
             Symbol(name) =>
               match @runtime.env_lookup_optional(env, name) {
-                Some(@core.Value::SyntaxObject(obj)) => obj.binding_id
+                Some(SyntaxObject(obj)) => obj.binding_id
                 _ => @runtime.env_binding_id_optional(env, name)
               }
             _ => None
@@ -1374,7 +1374,7 @@ fn quasisyntax_expand(
           Some(arg) => {
             let value = eval_expr(arg, env)
             let datum = match value {
-              @core.Value::SyntaxObject(obj) => obj.datum
+              SyntaxObject(obj) => obj.datum
               _ => value_as_datum(value)
             }
             let items = datum_list_to_array(datum)
@@ -1397,7 +1397,7 @@ fn quasisyntax_expand(
             Some(arg) => {
               let value = eval_expr(arg, env)
               let datum = match value {
-                @core.Value::SyntaxObject(obj) => obj.datum
+                SyntaxObject(obj) => obj.datum
                 _ => value_as_datum(value)
               }
               let list_items = datum_list_to_array(datum)
@@ -1666,7 +1666,7 @@ fn parse_symbol_list(items : Array[@core.Datum]) -> Array[String] raise @core.Ev
 ///|
 fn expect_single(value : @core.Value) -> @core.Value raise @core.EvalError {
   match value {
-    @core.Value::Values(values) =>
+    Values(values) =>
       if values.length() == 1 {
         values[0]
       } else {
@@ -1679,7 +1679,7 @@ fn expect_single(value : @core.Value) -> @core.Value raise @core.EvalError {
 ///|
 fn value_to_values(value : @core.Value) -> Array[@core.Value] {
   match value {
-    @core.Value::Values(values) => values
+    Values(values) => values
     _ => [value]
   }
 }
@@ -1897,7 +1897,7 @@ fn eval_begin_for_syntax_state(
   let frame = syntax_env[syntax_env.length() - 1]
   frame.iter2().each((key, binding) =>
     match binding.value() {
-      @core.Value::Macro(rules) => @runtime.env_define(env, key, @core.Value::Macro(rules))
+      Macro(rules) => @runtime.env_define(env, key, @core.Value::Macro(rules))
       _ => ()
     }
   )
@@ -2843,7 +2843,7 @@ fn array_contains_name(items : Array[String], name : String) -> Bool {
 ///|
 fn value_as_record(value : @core.Value) -> @core.Record raise @core.EvalError {
   match value {
-    @core.Value::Record(record) => record
+    Record(record) => record
     _ => raise @core.EvalError("type error: record expected")
   }
 }
@@ -2918,7 +2918,7 @@ fn apply_record_proc(
         raise arity_mismatch(1, args.length())
       } else {
         let result = match args[0] {
-          @core.Value::Record(record) =>
+          Record(record) =>
             @runtime.record_type_is_a(record.record_type, record_type)
           _ => false
         }
@@ -4074,8 +4074,8 @@ fn filter_exports_by_phase(
   let result : Map[String,@core.Binding] = {}
   exports.iter2().each((key, binding) =>
     match binding.value() {
-      @core.Value::Macro(_) => if phases.expand { result[key] = binding }
-      @core.Value::SyntaxKeyword(_) => if phases.expand { result[key] = binding }
+      Macro(_) => if phases.expand { result[key] = binding }
+      SyntaxKeyword(_) => if phases.expand { result[key] = binding }
       _ => if phases.run { result[key] = binding }
     }
   )
@@ -4587,8 +4587,8 @@ fn apply_proc(
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
   match proc {
-    @core.Value::Primitive(@core.Primitive::Apply) => apply_apply(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::CallWithValues) =>
+    Primitive(@core.Primitive::Apply) => apply_apply(args, kont, handlers)
+    Primitive(@core.Primitive::CallWithValues) =>
       match args {
         [producer, consumer] =>
           apply_proc(
@@ -4599,7 +4599,7 @@ fn apply_proc(
           )
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::RecordConstructor) =>
+    Primitive(@core.Primitive::RecordConstructor) =>
       match args {
         [desc_value] => {
           let desc = value_as_record_constructor_descriptor(desc_value)
@@ -4607,17 +4607,17 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::HashtableRef) =>
+    Primitive(@core.Primitive::HashtableRef) =>
       apply_hashtable_ref(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::HashtableSet) =>
+    Primitive(@core.Primitive::HashtableSet) =>
       apply_hashtable_set(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::HashtableDelete) =>
+    Primitive(@core.Primitive::HashtableDelete) =>
       apply_hashtable_delete(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::HashtableContainsP) =>
+    Primitive(@core.Primitive::HashtableContainsP) =>
       apply_hashtable_contains(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::HashtableUpdate) =>
+    Primitive(@core.Primitive::HashtableUpdate) =>
       apply_hashtable_update(args, kont, handlers)
-    @core.Value::Primitive(@core.Primitive::MakeParameter) =>
+    Primitive(@core.Primitive::MakeParameter) =>
       match args {
         [value] =>
           MachineState::Apply(
@@ -4637,7 +4637,7 @@ fn apply_proc(
             "arity mismatch: expected 1 or 2 got \{args.length()}",
           )
       }
-    @core.Value::Primitive(@core.Primitive::DynamicWind) =>
+    Primitive(@core.Primitive::DynamicWind) =>
       match args {
         [before, thunk, after] => {
           let winder = make_proc_winder(before, after)
@@ -4649,7 +4649,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(3, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::Eval) =>
+    Primitive(@core.Primitive::Eval) =>
       match args {
         [expr_value, env_value] => {
           let expr = value_as_datum(expr_value)
@@ -4658,7 +4658,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::Environment) => {
+    Primitive(@core.Primitive::Environment) => {
       match args {
         [] => raise arity_mismatch(1, 0)
         _ => {
@@ -4671,7 +4671,7 @@ fn apply_proc(
         }
       }
     }
-    @core.Value::Primitive(@core.Primitive::MakePromise) =>
+    Primitive(@core.Primitive::MakePromise) =>
       match args {
         [thunk] => {
           if !@runtime.is_procedure_value(thunk) {
@@ -4681,11 +4681,11 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::Force) =>
+    Primitive(@core.Primitive::Force) =>
       match args {
         [promise_value] =>
           match promise_value {
-            @core.Value::Promise(promise) =>
+            Promise(promise) =>
               match promise.state.val {
                 @core.PromiseState::Value(result) =>
                   MachineState::Apply(result, kont, handlers)
@@ -4701,7 +4701,7 @@ fn apply_proc(
           }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::WithExceptionHandler) =>
+    Primitive(@core.Primitive::WithExceptionHandler) =>
       match args {
         [handler, thunk] => {
           let next_handlers : Array[@core.Value] = []
@@ -4714,7 +4714,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::Error) =>
+    Primitive(@core.Primitive::Error) =>
       if args.length() < 2 {
         raise arity_mismatch(2, args.length())
       } else {
@@ -4730,7 +4730,7 @@ fn apply_proc(
         )
         raise_condition(components, kont, handlers)
       }
-    @core.Value::Primitive(@core.Primitive::AssertionViolation) =>
+    Primitive(@core.Primitive::AssertionViolation) =>
       if args.length() < 2 {
         raise arity_mismatch(2, args.length())
       } else {
@@ -4746,7 +4746,7 @@ fn apply_proc(
         )
         raise_condition(components, kont, handlers)
       }
-    @core.Value::Primitive(@core.Primitive::ImplementationRestrictionViolation) =>
+    Primitive(@core.Primitive::ImplementationRestrictionViolation) =>
       if args.length() < 2 {
         raise arity_mismatch(2, args.length())
       } else {
@@ -4764,7 +4764,7 @@ fn apply_proc(
         )
         raise_condition(components, kont, handlers)
       }
-    @core.Value::Primitive(@core.Primitive::UndefinedViolation) =>
+    Primitive(@core.Primitive::UndefinedViolation) =>
       if args.length() < 2 {
         raise arity_mismatch(2, args.length())
       } else {
@@ -4780,7 +4780,7 @@ fn apply_proc(
         )
         raise_condition(components, kont, handlers)
       }
-    @core.Value::Primitive(@core.Primitive::SyntaxViolation) =>
+    Primitive(@core.Primitive::SyntaxViolation) =>
       if args.length() < 3 {
         raise arity_mismatch(3, args.length())
       } else {
@@ -4806,7 +4806,7 @@ fn apply_proc(
         )
         raise_condition(components, kont, handlers)
       }
-    @core.Value::Primitive(@core.Primitive::Raise) =>
+    Primitive(@core.Primitive::Raise) =>
       match args {
         [condition] =>
           if handlers.is_empty() {
@@ -4814,7 +4814,7 @@ fn apply_proc(
           } else {
             let handler = handlers[handlers.length() - 1]
             match handler {
-              @core.Value::GuardHandler(guard_handler) =>
+              GuardHandler(guard_handler) =>
                 handle_guard(guard_handler, condition, kont, false)
               _ =>
                 apply_proc(handler, [condition], @core.Kont::RaiseNonCont, handlers)
@@ -4822,7 +4822,7 @@ fn apply_proc(
           }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::RaiseContinuable) =>
+    Primitive(@core.Primitive::RaiseContinuable) =>
       match args {
         [condition] =>
           if handlers.is_empty() {
@@ -4830,14 +4830,14 @@ fn apply_proc(
           } else {
             let handler = handlers[handlers.length() - 1]
             match handler {
-              @core.Value::GuardHandler(guard_handler) =>
+              GuardHandler(guard_handler) =>
                 handle_guard(guard_handler, condition, kont, true)
               _ => apply_proc(handler, [condition], @core.Kont::RaiseCont(kont), handlers)
             }
           }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::CallCC) =>
+    Primitive(@core.Primitive::CallCC) =>
       match args {
         [proc_value] => {
           let cont = capture_continuation(kont, handlers)
@@ -4845,7 +4845,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::Map) =>
+    Primitive(@core.Primitive::Map) =>
       match args {
         [proc_value, first_list, ..rest] => {
           let lists : Array[@core.Datum] = []
@@ -4857,7 +4857,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::ForEach) =>
+    Primitive(@core.Primitive::ForEach) =>
       match args {
         [proc_value, first_list, ..rest] => {
           let lists : Array[@core.Datum] = []
@@ -4869,7 +4869,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::VectorMap) =>
+    Primitive(@core.Primitive::VectorMap) =>
       match args {
         [proc_value, first_vector, ..rest] => {
           let vectors : Array[Array[@core.Datum]] = []
@@ -4906,7 +4906,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::VectorForEach) =>
+    Primitive(@core.Primitive::VectorForEach) =>
       match args {
         [proc_value, first_vector, ..rest] => {
           let vectors : Array[Array[@core.Datum]] = []
@@ -4936,7 +4936,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::StringMap) =>
+    Primitive(@core.Primitive::StringMap) =>
       match args {
         [proc_value, first_value, ..rest] => {
           let first = value_as_string(first_value)
@@ -4961,7 +4961,7 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(@core.Primitive::StringForEach) =>
+    Primitive(@core.Primitive::StringForEach) =>
       match args {
         [proc_value, first_value, ..rest] => {
           let first = value_as_string(first_value)
@@ -4979,9 +4979,9 @@ fn apply_proc(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Value::Primitive(prim) =>
+    Primitive(prim) =>
       MachineState::Apply(apply_primitive(prim, args), kont, handlers)
-    @core.Value::Closure(cl) => {
+    Closure(cl) => {
       let formals =@core.Formals::{ params: cl.params, rest: cl.rest }
       let bindings = formals_bindings(formals, args)
       let new_env = @runtime.env_extend(cl.env)
@@ -4991,7 +4991,7 @@ fn apply_proc(
       }
       eval_sequence_state(cl.body, new_env, kont, handlers)
     }
-    @core.Value::CaseClosure(cl) => {
+    CaseClosure(cl) => {
       let matched =
         for i = 0; i < cl.clauses.length(); {
           // invariant : i >= 0 && i <= cl.clauses.length()
@@ -5047,7 +5047,7 @@ fn apply_proc(
         }
       }
     }
-    @core.Value::Parameter(param) =>
+    Parameter(param) =>
       match args {
         [] => MachineState::Apply(parameter_get(param), kont, handlers)
         [value] =>
@@ -5069,7 +5069,7 @@ fn apply_proc(
             "arity mismatch: expected 0 or 1 got \{args.length()}",
           )
       }
-    @core.Value::Continuation(cont) => {
+    Continuation(cont) => {
       let resume_value = if args.length() == 1 {
         args[0]
       } else {
@@ -5103,10 +5103,10 @@ fn apply_proc(
         handlers,
       )
     }
-    @core.Value::RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)
-    @core.Value::ConditionProc(proc) =>
+    RecordProc(proc) => apply_record_proc(proc, args, kont, handlers)
+    ConditionProc(proc) =>
       apply_condition_proc(proc, args, kont, handlers)
-    @core.Value::EnumSetProc(proc) => apply_enum_set_proc(proc, args, kont, handlers)
+    EnumSetProc(proc) => apply_enum_set_proc(proc, args, kont, handlers)
     _ => raise @core.EvalError("type error: procedure expected")
   }
 }

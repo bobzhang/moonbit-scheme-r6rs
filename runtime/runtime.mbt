@@ -564,7 +564,7 @@ fn pair_new(car : @core.Datum, cdr : @core.Datum) -> @core.Datum {
 pub fn symbol_name(expr : @core.Datum) -> String? {
   match expr {
     Symbol(name) => Some(name)
-    Value(@core.Value::SyntaxObject(obj)) => symbol_name(obj.datum)
+    Value(SyntaxObject(obj)) => symbol_name(obj.datum)
     _ => None
   }
 }
@@ -585,7 +585,7 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
 /// Remove syntax wrappers from a datum tree.
 pub fn strip_syntax_datum(datum : @core.Datum) -> @core.Datum {
   match datum {
-    Value(@core.Value::SyntaxObject(obj)) => strip_syntax_datum(obj.datum)
+    Value(SyntaxObject(obj)) => strip_syntax_datum(obj.datum)
     Pair(a, b) =>
       pair_new(strip_syntax_datum(a.val), strip_syntax_datum(b.val))
     Vector(items) =>
@@ -623,7 +623,7 @@ fn syntax_wrap_datum(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
         Ref::new(syntax_wrap_datum(real.val, scopes)),
         Ref::new(syntax_wrap_datum(imag.val, scopes)),
       )
-    Value(@core.Value::SyntaxObject(_)) => datum
+    Value(SyntaxObject(_)) => datum
     _ => datum
   }
 }
@@ -633,7 +633,7 @@ fn syntax_wrap_datum(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
 pub fn syntax_wrap_root(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
   match datum {
     Symbol(_) => datum
-    Value(@core.Value::SyntaxObject(_)) => datum
+    Value(SyntaxObject(_)) => datum
     _ => syntax_wrap_datum(datum, scopes)
   }
 }
@@ -650,7 +650,7 @@ pub fn syntax_add_scope(datum : @core.Datum, scope : Int) -> @core.Datum {
           binding_id: None,
         }),
       )
-    Value(@core.Value::SyntaxObject(obj)) => {
+    Value(SyntaxObject(obj)) => {
       let next_scopes = scopes_with_added(obj.scopes, scope)
       let inner = match obj.datum {
         Symbol(_) => obj.datum

@@ -204,7 +204,7 @@ fn apply_primitive_core(
           for item in items {
             let (name, scopes, binding_id) = match @runtime.datum_unlabel(item) {
               Symbol(name) => (name, [], None)
-              Value(@core.Value::SyntaxObject(obj)) =>
+              Value(SyntaxObject(obj)) =>
                 match @runtime.datum_unlabel(obj.datum) {
                   Symbol(name) => {
                     let copied : Array[Int] = []
@@ -253,7 +253,7 @@ fn apply_primitive_core(
       match args {
         [value] =>
           match value {
-            @core.Value::Promise(_) => bool_value(true)
+            Promise(_) => bool_value(true)
             _ => bool_value(false)
           }
         _ => raise arity_mismatch(1, args.length())

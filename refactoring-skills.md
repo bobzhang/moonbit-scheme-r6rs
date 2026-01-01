@@ -137,6 +137,7 @@ moon info
 - Keep explicit qualifiers in expressions where the constructor type is not obvious.
 - For value predicates over `Array[@core.Value]`, switch `[@core.Value::Datum(...)]` to `[Datum(...)]` and keep `@core.Value::Datum(...)` in constructors.
 - Use a quick scan to list pattern-only `@core.Value::Datum` hits before editing a whole package.
+- Apply the same pattern-only replacement in `*.mbt.md` so doc tests match the new style.
 
 Example:
 ```mbt
