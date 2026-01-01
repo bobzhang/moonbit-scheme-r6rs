@@ -4050,15 +4050,7 @@ fn library_exports(name : String) -> Map[String, Binding] raise EvalError {
   match lookup_library(name) {
     Some(exports_map) => {
       let exports : Map[String, Binding] = {}
-      for key in exports_map.keys() {
-        // invariant : exports_map.keys().length() >= 0
-        // TODO(decreases) : loop index not exposed; possible bug
-        // assert : exports_map.keys().length() >= 0
-        match exports_map.get(key) {
-          Some(binding) => exports[key] = binding
-          None => ()
-        }
-      }
+      exports_map.iter2().each((key, binding) => exports[key] = binding)
       exports
     }
     None => raise @core.EvalError("unknown library: \{name}")
