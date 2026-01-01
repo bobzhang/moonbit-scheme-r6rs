@@ -51,6 +51,10 @@ test "parse basics" {
     Some(@core.Datum::Int(255)) => ()
     _ => fail("expected 255")
   }
+  match parse_number_token("not-a-number") {
+    None => ()
+    _ => fail("expected None")
+  }
   match parse_program("#\\x41 #\\space") {
     [@core.Datum::Char('A'), @core.Datum::Char(' '), ..] => ()
     _ => fail("expected char literals")

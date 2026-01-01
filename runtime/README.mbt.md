@@ -113,6 +113,23 @@ test "datum unlabel" {
 }
 
 ///|
+test "strip syntax datum" {
+  let wrapped = @core.Datum::Value(
+    @core.Value::SyntaxObject(
+      @core.SyntaxObject::{
+        datum: @core.Datum::Symbol("x"),
+        scopes: [],
+        binding_id: None,
+      },
+    ),
+  )
+  match strip_syntax_datum(wrapped) {
+    @core.Datum::Symbol("x") => ()
+    _ => fail("expected symbol")
+  }
+}
+
+///|
 test "library exports" {
   let binding = make_binding(@core.Value::Datum(@core.Datum::Int(1)))
   register_library("doc/runtime-lib", { "x": binding })

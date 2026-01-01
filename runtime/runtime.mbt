@@ -512,6 +512,18 @@ pub fn port_get_output_string(port : @core.Port) -> String {
 
 ///|
 /// Strip a datum label wrapper if present.
+///
+/// # Example
+/// ```mbt check
+/// test "datum_unlabel unwraps label" {
+///   let cell = Ref::new(@core.Datum::Int(1))
+///   let labeled = @core.Datum::Label(1, cell)
+///   match datum_unlabel(labeled) {
+///     @core.Datum::Int(1) => ()
+///     _ => fail("expected int datum")
+///   }
+/// }
+/// ```
 pub fn datum_unlabel(value : @core.Datum) -> @core.Datum {
   let seen : Array[Int] = []
   for cur = value; true; {
@@ -541,6 +553,14 @@ fn pair_new(car : @core.Datum, cdr : @core.Datum) -> @core.Datum {
 
 ///|
 /// Extract a symbol name from a datum when possible.
+///
+/// # Example
+/// ```mbt check
+/// test "symbol_name" {
+///   inspect(symbol_name(@core.Datum::Symbol("x")), content="Some(\"x\")")
+///   inspect(symbol_name(@core.Datum::Int(1)), content="None")
+/// }
+/// ```
 pub fn symbol_name(expr : @core.Datum) -> String? {
   match expr {
     Symbol(name) => Some(name)
