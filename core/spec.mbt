@@ -497,7 +497,7 @@ pub(all) enum Primitive {
 /// The implementation treats this as an internal detail.
 
 ///|
-pub(all) struct Binding {
+pub struct Binding {
   id : Int
   value : Value
 }

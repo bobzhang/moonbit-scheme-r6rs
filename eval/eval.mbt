@@ -1896,7 +1896,7 @@ fn eval_begin_for_syntax_state(
   }
   let frame = syntax_env[syntax_env.length() - 1]
   frame.iter2().each((key, binding) =>
-    match binding.value {
+    match binding.value() {
       @core.Value::Macro(rules) => @runtime.env_define(env, key, @core.Value::Macro(rules))
       _ => ()
     }
@@ -4081,7 +4081,7 @@ fn filter_exports_by_phase(
   }
   let result : Map[String,@core.Binding] = {}
   exports.iter2().each((key, binding) =>
-    match binding.value {
+    match binding.value() {
       @core.Value::Macro(_) => if phases.expand { result[key] = binding }
       @core.Value::SyntaxKeyword(_) => if phases.expand { result[key] = binding }
       _ => if phases.run { result[key] = binding }

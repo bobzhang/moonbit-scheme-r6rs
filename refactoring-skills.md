@@ -275,7 +275,7 @@ Example:
 ```mbt
 pub fn env_clone(env : Env) -> Env {
   env.map((frame) =>
-    frame.map((_, binding) => Binding::{ id: binding.id, value: binding.value })
+    frame.map((_, binding) => Binding::new(binding.id(), binding.value()))
   )
 }
 ```
@@ -1959,6 +1959,7 @@ let r = {
 ## Make struct fields opaque
 - Use `pub struct` (instead of `pub(all)`) when callers should not construct or mutate fields directly.
 - Provide a constructor helper like `Reader::new` and methods for the allowed operations.
+- For core bindings, add accessors (`Binding::id`, `Binding::value`) and update env helpers before switching to `pub struct`.
 
 Example:
 ```mbt
@@ -1972,6 +1973,17 @@ pub struct Reader {
 pub fn Reader::new(src : String) -> Reader {
   ...
 }
+```
+
+Example:
+```mbt
+// Before
+frame[name] = Binding::{ id: binding.id, value }
+match binding.value { ... }
+
+// After
+frame[name] = Binding::new(binding.id(), value)
+match binding.value() { ... }
 ```
 
 Example:
@@ -2016,10 +2028,10 @@ inspect(r.read_token(), content="abc")
 
 Example:
 ```mbt
-let binding = Binding::{
-  id: next_binding_id(),
-  value: @core.Value::Datum(@core.Datum::Int(1)),
-}
+let binding = Binding::new(
+  next_binding_id(),
+  @core.Value::Datum(@core.Datum::Int(1)),
+)
 register_library("doc/runtime-lib", { "x": binding })
 ```
 
@@ -2035,7 +2047,7 @@ fn Env::last_frame(self : Env) -> Map[String, Binding] {
 
 pub fn env_define(env : Env, name : String, value : Value) -> Unit {
   let frame = env.last_frame()
-  frame[name] = Binding::{ id: next_binding_id(), value }
+  frame[name] = Binding::new(next_binding_id(), value)
 }
 
 pub fn env_new() -> Env {
@@ -2053,7 +2065,7 @@ Example:
 ```mbt
 match env.get_binding(name) {
   Some(binding) =>
-    match binding.value {
+    match binding.value() {
       Macro(transformer) => Some(transformer)
       _ => None
     }
@@ -2084,7 +2096,7 @@ match value {
 Example:
 ```mbt
 pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
-  env.get_binding(name).map((binding) => binding.id)
+  env.get_binding(name).map((binding) => binding.id())
 }
 ```
 
@@ -2386,7 +2398,7 @@ fn normalize_rat(num : Int, den : Int) -> Datum? { ... }
 Example:
 ```mbt
 // before
-export_map[name] = Binding::{ id: next_binding_id(), value: SyntaxKeyword(name) }
+export_map[name] = Binding::new(next_binding_id(), SyntaxKeyword(name))
 Hashtable(Hashtable::{ id: next_hashtable_id(), mutable, equiv, hash, entries })
 
 // after

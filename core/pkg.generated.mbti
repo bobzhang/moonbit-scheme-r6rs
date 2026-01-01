@@ -17,10 +17,13 @@ pub impl Eq for ParseError
 pub impl Show for ParseError
 
 // Types and methods
-pub(all) struct Binding {
+pub struct Binding {
   id : Int
   value : Value
 }
+pub fn Binding::id(Self) -> Int
+pub fn Binding::new(Int, Value) -> Self
+pub fn Binding::value(Self) -> Value
 
 pub(all) struct CaseClause {
   params : Array[String]
