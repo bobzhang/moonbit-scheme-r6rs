@@ -432,10 +432,8 @@ pub fn lookup_record_type_descriptor_by_id(id : Int) -> RecordTypeDescriptor? {
 pub fn default_constructor_descriptor(
   record_type : RecordType,
 ) -> RecordConstructorDescriptor {
-  let parent_desc = match record_type.parent {
-    Some(parent) => Some(default_constructor_descriptor(parent))
-    None => None
-  }
+  let parent_desc =
+    record_type.parent.map((parent) => default_constructor_descriptor(parent))
   make_record_constructor_descriptor(record_type, parent_desc, None)
 }
 
