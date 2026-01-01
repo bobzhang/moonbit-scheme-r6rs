@@ -173,7 +173,7 @@ Example:
 ///|
 /// ```mbt check
 /// test "unicode string into_string" {
-///   let wrapped = unicode_string("Hi")
+///   let wrapped = @core.UnicodeString::new("Hi")
 ///   inspect(wrapped.into_string(), content="Hi")
 /// }
 /// ```
@@ -1224,7 +1224,8 @@ pub fn next_binding_id() -> Int {
 ## Wrapper methods for foreign types
 - Use wrapper types (`UnicodeChar`, `UnicodeString`) when you need chaining on foreign types.
 - Convert free functions to wrapper methods and update call sites to chaining style, then trim old imports.
-- Use `moon ide find-references @core.unicode_string_foldcase` to enumerate call sites before swapping to wrappers.
+- Use `moon ide find-references "@core.UnicodeString::new"` to enumerate call sites before swapping to wrappers.
+- Prefer `@core.UnicodeChar::new` and `@core.UnicodeString::new` at call sites to avoid `using` for constructors.
 - Regenerate public API summaries with `moon info` after API conversions.
 
 Example:
@@ -1233,7 +1234,7 @@ pub struct UnicodeString {
   value : String
 }
 
-pub fn unicode_string(s : String) -> UnicodeString {
+pub fn UnicodeString::new(s : String) -> UnicodeString {
   { value: s }
 }
 
@@ -1242,12 +1243,12 @@ pub fn UnicodeString::foldcase(self : UnicodeString) -> UnicodeString {
 }
 
 let folded =
-  unicode_string("e\u{301}").normalize_nfc().foldcase().into_string()
+  @core.UnicodeString::new("e\u{301}").normalize_nfc().foldcase().into_string()
 ```
 
 Quick checks:
 ```bash
-moon ide find-references @core.unicode_string_foldcase
+moon ide find-references "@core.UnicodeString::new"
 moon info
 ```
 
@@ -1258,7 +1259,7 @@ moon info
 Example:
 ```mbt
 fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
-  if case_insensitive { unicode_char(ch).foldcase() } else { ch }
+  if case_insensitive { @core.UnicodeChar::new(ch).foldcase() } else { ch }
 }
 
 fn compare_chain_char(args : Array[Value], mode : CompareMode, case_insensitive : Bool) -> Bool raise EvalError {

@@ -42,10 +42,10 @@ pub struct UnicodeChar {
 /// # Example
 /// ```mbt check
 /// test "unicode char wrapper" {
-///   inspect(unicode_char('A').is_uppercase(), content="true")
+///   inspect(UnicodeChar::new('A').is_uppercase(), content="true")
 /// }
 /// ```
-pub fn unicode_char(ch : Char) -> UnicodeChar {
+pub fn UnicodeChar::new(ch : Char) -> UnicodeChar {
   { value: ch }
 }
 
@@ -61,12 +61,12 @@ pub struct UnicodeString {
 /// ```mbt check
 /// test "unicode string wrapper" {
 ///   inspect(
-///     unicode_string("e\u{301}").normalize_nfc().foldcase().into_string(),
+///     UnicodeString::new("e\u{301}").normalize_nfc().foldcase().into_string(),
 ///     content="\u{00e9}",
 ///   )
 /// }
 /// ```
-pub fn unicode_string(s : String) -> UnicodeString {
+pub fn UnicodeString::new(s : String) -> UnicodeString {
   { value: s }
 }
 
@@ -76,7 +76,7 @@ pub fn unicode_string(s : String) -> UnicodeString {
 /// # Example
 /// ```mbt check
 /// test "unicode string into_string" {
-///   let wrapped = unicode_string("Hi")
+///   let wrapped = UnicodeString::new("Hi")
 ///   inspect(wrapped.into_string(), content="Hi")
 /// }
 /// ```
@@ -90,8 +90,8 @@ pub fn UnicodeString::into_string(self : UnicodeString) -> String {
 /// # Example
 /// ```mbt check
 /// test "alphabetic predicate" {
-///   inspect(unicode_char('A').is_alphabetic(), content="true")
-///   inspect(unicode_char('1').is_alphabetic(), content="false")
+///   inspect(UnicodeChar::new('A').is_alphabetic(), content="true")
+///   inspect(UnicodeChar::new('1').is_alphabetic(), content="false")
 /// }
 /// ```
 pub fn UnicodeChar::is_alphabetic(self : UnicodeChar) -> Bool {
@@ -105,8 +105,8 @@ pub fn UnicodeChar::is_alphabetic(self : UnicodeChar) -> Bool {
 /// # Example
 /// ```mbt check
 /// test "uppercase predicate" {
-///   inspect(unicode_char('A').is_uppercase(), content="true")
-///   inspect(unicode_char('a').is_uppercase(), content="false")
+///   inspect(UnicodeChar::new('A').is_uppercase(), content="true")
+///   inspect(UnicodeChar::new('a').is_uppercase(), content="false")
 /// }
 /// ```
 pub fn UnicodeChar::is_uppercase(self : UnicodeChar) -> Bool {
@@ -119,8 +119,8 @@ pub fn UnicodeChar::is_uppercase(self : UnicodeChar) -> Bool {
 /// # Example
 /// ```mbt check
 /// test "lowercase predicate" {
-///   inspect(unicode_char('a').is_lowercase(), content="true")
-///   inspect(unicode_char('A').is_lowercase(), content="false")
+///   inspect(UnicodeChar::new('a').is_lowercase(), content="true")
+///   inspect(UnicodeChar::new('A').is_lowercase(), content="false")
 /// }
 /// ```
 pub fn UnicodeChar::is_lowercase(self : UnicodeChar) -> Bool {
@@ -140,7 +140,7 @@ let unicode_general_category_order : ReadOnlyArray[String] = [
 /// # Example
 /// ```mbt check
 /// test "general category" {
-///   inspect(unicode_char('A').general_category(), content="Lu")
+///   inspect(UnicodeChar::new('A').general_category(), content="Lu")
 /// }
 /// ```
 pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
@@ -222,7 +222,7 @@ fn unicode_min_equivalent(chars : Array[Char], fallback : Char) -> Char {
 /// # Example
 /// ```mbt check
 /// test "char upcase" {
-///   inspect(unicode_char('a').upcase(), content="A")
+///   inspect(UnicodeChar::new('a').upcase(), content="A")
 /// }
 /// ```
 pub fn UnicodeChar::upcase(self : UnicodeChar) -> Char {
@@ -244,7 +244,7 @@ pub fn UnicodeChar::upcase(self : UnicodeChar) -> Char {
 /// # Example
 /// ```mbt check
 /// test "char downcase" {
-///   inspect(unicode_char('A').downcase(), content="a")
+///   inspect(UnicodeChar::new('A').downcase(), content="a")
 /// }
 /// ```
 pub fn UnicodeChar::downcase(self : UnicodeChar) -> Char {
@@ -262,7 +262,7 @@ pub fn UnicodeChar::downcase(self : UnicodeChar) -> Char {
 /// # Example
 /// ```mbt check
 /// test "char foldcase" {
-///   inspect(unicode_char('A').foldcase(), content="a")
+///   inspect(UnicodeChar::new('A').foldcase(), content="a")
 /// }
 /// ```
 pub fn UnicodeChar::foldcase(self : UnicodeChar) -> Char {
@@ -280,13 +280,13 @@ pub fn UnicodeChar::foldcase(self : UnicodeChar) -> Char {
 /// # Example
 /// ```mbt check
 /// test "string upcase" {
-///   inspect(unicode_string("abc").upcase().into_string(), content="ABC")
+///   inspect(UnicodeString::new("abc").upcase().into_string(), content="ABC")
 /// }
 /// ```
 pub fn UnicodeString::upcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
-    buf.write_char(unicode_char(ch).upcase())
+    buf.write_char(UnicodeChar::new(ch).upcase())
   }
   { value: buf.to_string() }
 }
@@ -297,13 +297,13 @@ pub fn UnicodeString::upcase(self : UnicodeString) -> UnicodeString {
 /// # Example
 /// ```mbt check
 /// test "string downcase" {
-///   inspect(unicode_string("ABC").downcase().into_string(), content="abc")
+///   inspect(UnicodeString::new("ABC").downcase().into_string(), content="abc")
 /// }
 /// ```
 pub fn UnicodeString::downcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
-    buf.write_char(unicode_char(ch).downcase())
+    buf.write_char(UnicodeChar::new(ch).downcase())
   }
   { value: buf.to_string() }
 }
@@ -314,13 +314,13 @@ pub fn UnicodeString::downcase(self : UnicodeString) -> UnicodeString {
 /// # Example
 /// ```mbt check
 /// test "string foldcase" {
-///   inspect(unicode_string("ABC").foldcase().into_string(), content="abc")
+///   inspect(UnicodeString::new("ABC").foldcase().into_string(), content="abc")
 /// }
 /// ```
 pub fn UnicodeString::foldcase(self : UnicodeString) -> UnicodeString {
   let buf = @buffer.new()
   for ch in self.value {
-    buf.write_char(unicode_char(ch).foldcase())
+    buf.write_char(UnicodeChar::new(ch).foldcase())
   }
   { value: buf.to_string() }
 }

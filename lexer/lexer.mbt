@@ -327,7 +327,7 @@ pub fn Reader::read_token(self : Reader) -> String raise @core.ParseError {
               let escaped = self.read_identifier_escape()
               chars.push(
                 if fold_case {
-                  @core.unicode_char(escaped).foldcase()
+                  @core.UnicodeChar::new(escaped).foldcase()
                 } else {
                   escaped
                 },
@@ -335,7 +335,7 @@ pub fn Reader::read_token(self : Reader) -> String raise @core.ParseError {
             }
             continue in_bar, started, fold_case
           } else {
-            let next_char = if fold_case { @core.unicode_char(ch).foldcase() } else { ch }
+            let next_char = if fold_case { @core.UnicodeChar::new(ch).foldcase() } else { ch }
             chars.push(next_char)
             continue in_bar, started, fold_case
           }

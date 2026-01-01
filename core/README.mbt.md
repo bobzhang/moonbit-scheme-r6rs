@@ -12,52 +12,57 @@ Core runtime data types and Unicode utilities used across the interpreter.
 
 ```mbt
 ///|
-let folded = unicode_string("StraSSE").foldcase().into_string()
+let folded = UnicodeString::new("StraSSE").foldcase().into_string()
 
 ///|
-let nfc = unicode_string("e\u{301}").normalize_nfc().into_string()
+let nfc = UnicodeString::new("e\u{301}").normalize_nfc().into_string()
 ```
 
 ```mbt check
 ///|
 test "unicode helpers" {
-  inspect(unicode_char('A').general_category(), content="Lu")
-  inspect(unicode_char('A').is_uppercase(), content="true")
-  inspect(unicode_string("ABC").foldcase().into_string(), content="abc")
-  inspect(unicode_string("AbC").downcase().into_string(), content="abc")
-  inspect(unicode_string("abc").upcase().into_string(), content="ABC")
+  inspect(UnicodeChar::new('A').general_category(), content="Lu")
+  inspect(UnicodeChar::new('A').is_uppercase(), content="true")
+  inspect(UnicodeString::new("ABC").foldcase().into_string(), content="abc")
+  inspect(UnicodeString::new("AbC").downcase().into_string(), content="abc")
+  inspect(UnicodeString::new("abc").upcase().into_string(), content="ABC")
   inspect(
-    unicode_string("e\u{301}").normalize_nfc().into_string(),
+    UnicodeString::new("e\u{301}").normalize_nfc().into_string(),
     content="\u{00e9}",
   )
   inspect(
-    unicode_string("\u{00e9}").normalize_nfd().into_string(),
+    UnicodeString::new("\u{00e9}").normalize_nfd().into_string(),
     content="e\u{301}",
   )
   inspect(
-    unicode_string("e\u{301}").normalize_nfc().foldcase().into_string(),
+    UnicodeString::new("e\u{301}").normalize_nfc().foldcase().into_string(),
     content="\u{00e9}",
   )
   inspect(
-    unicode_string("e\u{301}").normalize_nfkd().into_string(),
+    UnicodeString::new("e\u{301}").normalize_nfkd().into_string(),
     content="e\u{301}",
   )
   inspect(
-    unicode_string("\u{212b}").normalize_nfkc().into_string(),
+    UnicodeString::new("\u{212b}").normalize_nfkc().into_string(),
     content="\u{00c5}",
   )
-  inspect(unicode_string("Hi").into_string(), content="Hi")
+  inspect(UnicodeString::new("Hi").into_string(), content="Hi")
+}
+
+///|
+test "unicode empty normalization" {
+  inspect(UnicodeString::new("").normalize_nfkc().into_string(), content="")
 }
 
 ///|
 test "unicode char case" {
-  inspect(unicode_char('a').is_lowercase(), content="true")
-  inspect(unicode_char('0').is_alphabetic(), content="false")
-  match unicode_char('a').upcase() {
+  inspect(UnicodeChar::new('a').is_lowercase(), content="true")
+  inspect(UnicodeChar::new('0').is_alphabetic(), content="false")
+  match UnicodeChar::new('a').upcase() {
     'A' => ()
     _ => fail("expected A")
   }
-  match unicode_char('A').downcase() {
+  match UnicodeChar::new('A').downcase() {
     'a' => ()
     _ => fail("expected a")
   }

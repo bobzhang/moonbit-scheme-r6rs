@@ -142,7 +142,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
       match args {
         [value] => {
           let s = value_as_string(value)
-          let folded = unicode_string(s).foldcase().into_string()
+          let folded = @core.UnicodeString::new(s).foldcase().into_string()
           Datum(Int(hash_string_value(folded)))
         }
         _ => raise arity_mismatch(1, args.length())

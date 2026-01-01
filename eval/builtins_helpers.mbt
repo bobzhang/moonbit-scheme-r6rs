@@ -2109,12 +2109,12 @@ fn check_copy_range(
 
 ///|
 fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
-  if case_insensitive { unicode_char(ch).foldcase() } else { ch }
+  if case_insensitive { @core.UnicodeChar::new(ch).foldcase() } else { ch }
 }
 
 ///|
 fn foldcase_string_if(s : String, case_insensitive : Bool) -> String {
-  if case_insensitive { unicode_string(s).foldcase().into_string() } else { s }
+  if case_insensitive { @core.UnicodeString::new(s).foldcase().into_string() } else { s }
 }
 
 ///|

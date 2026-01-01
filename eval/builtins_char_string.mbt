@@ -51,7 +51,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some({
             let ch = value_as_char(char_value)
-            bool_value(unicode_char(ch).is_alphabetic())
+            bool_value(@core.UnicodeChar::new(ch).is_alphabetic())
           })
         _ => raise arity_mismatch(1, args.length())
       }
@@ -78,7 +78,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some({
             let ch = value_as_char(char_value)
-            bool_value(unicode_char(ch).is_uppercase())
+            bool_value(@core.UnicodeChar::new(ch).is_uppercase())
           })
         _ => raise arity_mismatch(1, args.length())
       }
@@ -87,7 +87,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some({
             let ch = value_as_char(char_value)
-            bool_value(unicode_char(ch).is_lowercase())
+            bool_value(@core.UnicodeChar::new(ch).is_lowercase())
           })
         _ => raise arity_mismatch(1, args.length())
       }
@@ -96,7 +96,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some(
             Datum(
-              Char(unicode_char(value_as_char(char_value)).upcase()),
+              Char(@core.UnicodeChar::new(value_as_char(char_value)).upcase()),
             ),
           )
         _ => raise arity_mismatch(1, args.length())
@@ -106,7 +106,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some(
             Datum(
-              Char(unicode_char(value_as_char(char_value)).downcase()),
+              Char(@core.UnicodeChar::new(value_as_char(char_value)).downcase()),
             ),
           )
         _ => raise arity_mismatch(1, args.length())
@@ -116,7 +116,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some(
             Datum(
-              Char(unicode_char(value_as_char(char_value)).foldcase()),
+              Char(@core.UnicodeChar::new(value_as_char(char_value)).foldcase()),
             ),
           )
         _ => raise arity_mismatch(1, args.length())
@@ -126,7 +126,7 @@ fn apply_char_string_primitive(
         [char_value] =>
           Some(
             Datum(
-              Symbol(unicode_char(value_as_char(char_value)).general_category()),
+              Symbol(@core.UnicodeChar::new(value_as_char(char_value)).general_category()),
             ),
           )
         _ => raise arity_mismatch(1, args.length())
@@ -519,7 +519,7 @@ fn apply_char_string_primitive(
           Some({
             let s = value_as_string(string_value)
             Datum(
-              String(Ref::new(unicode_string(s).upcase().into_string())),
+              String(Ref::new(@core.UnicodeString::new(s).upcase().into_string())),
             )
           })
         _ => raise arity_mismatch(1, args.length())
@@ -530,7 +530,7 @@ fn apply_char_string_primitive(
           Some({
             let s = value_as_string(string_value)
             Datum(
-              String(Ref::new(unicode_string(s).downcase().into_string())),
+              String(Ref::new(@core.UnicodeString::new(s).downcase().into_string())),
             )
           })
         _ => raise arity_mismatch(1, args.length())
@@ -541,7 +541,7 @@ fn apply_char_string_primitive(
           Some({
             let s = value_as_string(string_value)
             Datum(
-              String(Ref::new(unicode_string(s).foldcase().into_string())),
+              String(Ref::new(@core.UnicodeString::new(s).foldcase().into_string())),
             )
           })
         _ => raise arity_mismatch(1, args.length())
@@ -553,7 +553,7 @@ fn apply_char_string_primitive(
             let s = value_as_string(string_value)
             Datum(
               String(
-                Ref::new(unicode_string(s).normalize_nfc().into_string()),
+                Ref::new(@core.UnicodeString::new(s).normalize_nfc().into_string()),
               ),
             )
           })
@@ -566,7 +566,7 @@ fn apply_char_string_primitive(
             let s = value_as_string(string_value)
             Datum(
               String(
-                Ref::new(unicode_string(s).normalize_nfd().into_string()),
+                Ref::new(@core.UnicodeString::new(s).normalize_nfd().into_string()),
               ),
             )
           })
@@ -579,7 +579,7 @@ fn apply_char_string_primitive(
             let s = value_as_string(string_value)
             Datum(
               String(
-                Ref::new(unicode_string(s).normalize_nfkc().into_string()),
+                Ref::new(@core.UnicodeString::new(s).normalize_nfkc().into_string()),
               ),
             )
           })
@@ -592,7 +592,7 @@ fn apply_char_string_primitive(
             let s = value_as_string(string_value)
             Datum(
               String(
-                Ref::new(unicode_string(s).normalize_nfkd().into_string()),
+                Ref::new(@core.UnicodeString::new(s).normalize_nfkd().into_string()),
               ),
             )
           })

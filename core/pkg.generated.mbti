@@ -6,9 +6,6 @@ import(
 )
 
 // Values
-pub fn unicode_char(Char) -> UnicodeChar
-
-pub fn unicode_string(String) -> UnicodeString
 
 // Errors
 pub(all) suberror EvalError String
@@ -719,6 +716,7 @@ pub fn UnicodeChar::general_category(Self) -> String
 pub fn UnicodeChar::is_alphabetic(Self) -> Bool
 pub fn UnicodeChar::is_lowercase(Self) -> Bool
 pub fn UnicodeChar::is_uppercase(Self) -> Bool
+pub fn UnicodeChar::new(Char) -> Self
 pub fn UnicodeChar::upcase(Self) -> Char
 
 pub struct UnicodeString {
@@ -727,6 +725,7 @@ pub struct UnicodeString {
 pub fn UnicodeString::downcase(Self) -> Self
 pub fn UnicodeString::foldcase(Self) -> Self
 pub fn UnicodeString::into_string(Self) -> String
+pub fn UnicodeString::new(String) -> Self
 pub fn UnicodeString::normalize_nfc(Self) -> Self
 pub fn UnicodeString::normalize_nfd(Self) -> Self
 pub fn UnicodeString::normalize_nfkc(Self) -> Self

@@ -43,8 +43,6 @@ using @core {
   type Value,
   type WindAction,
   type Winder,
-  unicode_char,
-  unicode_string,
 }
 
 ///|

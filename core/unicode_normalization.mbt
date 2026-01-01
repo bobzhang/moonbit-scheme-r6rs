@@ -372,7 +372,7 @@ fn normalize_string(s : String, compat : Bool, compose_output : Bool) -> String 
 /// ```mbt check
 /// test "normalize nfd" {
 ///   inspect(
-///     unicode_string("\u{00e9}").normalize_nfd().into_string(),
+///     UnicodeString::new("\u{00e9}").normalize_nfd().into_string(),
 ///     content="e\u{301}",
 ///   )
 /// }
@@ -388,7 +388,7 @@ pub fn UnicodeString::normalize_nfd(self : UnicodeString) -> UnicodeString {
 /// ```mbt check
 /// test "normalize nfc" {
 ///   inspect(
-///     unicode_string("e\u{301}").normalize_nfc().into_string(),
+///     UnicodeString::new("e\u{301}").normalize_nfc().into_string(),
 ///     content="\u{00e9}",
 ///   )
 /// }
@@ -404,7 +404,7 @@ pub fn UnicodeString::normalize_nfc(self : UnicodeString) -> UnicodeString {
 /// ```mbt check
 /// test "normalize nfkd" {
 ///   inspect(
-///     unicode_string("\u{212b}").normalize_nfkd().into_string(),
+///     UnicodeString::new("\u{212b}").normalize_nfkd().into_string(),
 ///     content="A\u{30a}",
 ///   )
 /// }
@@ -420,7 +420,7 @@ pub fn UnicodeString::normalize_nfkd(self : UnicodeString) -> UnicodeString {
 /// ```mbt check
 /// test "normalize nfkc" {
 ///   inspect(
-///     unicode_string("\u{212b}").normalize_nfkc().into_string(),
+///     UnicodeString::new("\u{212b}").normalize_nfkc().into_string(),
 ///     content="\u{00c5}",
 ///   )
 /// }
