@@ -367,21 +367,17 @@ fn apply_bytevector_primitive(
           Some({
             let datum = value_as_datum(datum_value)
             let items = datum_list_to_array(datum)
-            let bytes : Array[Int] = []
-            for item in items {
-              // invariant : items.length() >= 0
-              // TODO(decreases) : loop index not exposed; possible bug
-              // assert : items.length() >= 0
+            let bytes : Array[Int] = items.map((item) =>
               match item {
                 Int(n) => {
                   if n < 0 || n > 255 {
                     raise @core.EvalError("type error: byte expected")
                   }
-                  bytes.push(n)
+                  n
                 }
                 _ => raise @core.EvalError("type error: byte expected")
               }
-            }
+            )
             Datum(ByteVector(bytes))
           })
         _ => raise arity_mismatch(1, args.length())
