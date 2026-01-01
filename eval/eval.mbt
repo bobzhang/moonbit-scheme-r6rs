@@ -4091,17 +4091,11 @@ fn import_set_except(
     excluded[name] = true
   }
   let result : Map[String, Binding] = {}
-  for key in exports.keys() {
-    // invariant : exports.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : exports.keys().length() >= 0
+  exports.iter2().each((key, binding) =>
     if !excluded.contains(key) {
-      match exports.get(key) {
-        Some(binding) => result[key] = binding
-        None => ()
-      }
+      result[key] = binding
     }
-  }
+  )
   result
 }
 
@@ -4150,15 +4144,9 @@ fn import_set_prefix(
   prefix : String,
 ) -> Map[String, Binding] {
   let result : Map[String, Binding] = {}
-  for key in exports.keys() {
-    // invariant : exports.keys().length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : exports.keys().length() >= 0
-    match exports.get(key) {
-      Some(binding) => result["\{prefix}\{key}"] = binding
-      None => ()
-    }
-  }
+  exports.iter2().each((key, binding) =>
+    result["\{prefix}\{key}"] = binding
+  )
   result
 }
 
@@ -4166,20 +4154,15 @@ fn import_set_prefix(
 fn parse_rename_specs(
   items : Array[Datum],
 ) -> Array[(String, String)] raise EvalError {
-  let renames : Array[(String, String)] = []
-  for item in items {
-    // invariant : items.length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : items.length() >= 0
+  items.map(fn (item) raise EvalError {
     let parts = datum_list_to_array(item)
     if parts.length() != 2 {
       raise @core.EvalError("invalid import set")
     }
     let old_name = parse_symbol(parts[0])
     let new_name = parse_symbol(parts[1])
-    renames.push((old_name, new_name))
-  }
-  renames
+    (old_name, new_name)
+  })
 }
 
 ///|
