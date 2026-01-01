@@ -200,6 +200,28 @@ test "parse errors" {
 }
 ```
 
+## Guardrails for qualifier sweeps
+- After auto-qualifying, scan for nested prefixes like `@core.Value::@core.Primitive::` and fix them with targeted replacements.
+- Keep local enum constructors local; use `MachineState::Eval` instead of `@core.Primitive::Eval`.
+- For core enums with overlapping variant names (e.g., `Set`), qualify with the enum type (`@core.HashtableOp::Set`) to avoid clashes with `@core.Kont::Set`.
+
+Example:
+```mbt
+// Before (broken)
+@core.Primitive::Eval(expr, env, kont, handlers)
+@core.Kont::Set(value)
+
+// After
+MachineState::Eval(expr, env, kont, handlers)
+@core.HashtableOp::Set(value)
+```
+
+Quick checks:
+```bash
+rg "@core\\.Value::@core\\.Primitive::" eval
+moon check
+```
+
 ## Match simplification
 - Group enum variants with `|` patterns when they map to the same output to reduce duplication.
 - For tuple matches, only group variants when the bound variables share the same type.

@@ -64,17 +64,17 @@ fn is_core_identifier(name : String) -> Bool {
 }
 
 ///|
-fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
-  let parts = datum_list_to_array(expr)
+fn parse_syntax_rules(expr : @core.Datum, env : @core.Env) -> @core.SyntaxRules raise @core.EvalError {
+  let parts = @runtime.datum_list_to_array(expr)
   if parts.length() < 3 {
     raise @core.EvalError("invalid syntax-rules")
   }
   match parts[0] {
-    Symbol("syntax-rules") => ()
+    @core.Datum::Symbol("syntax-rules") => ()
     _ => raise @core.EvalError("invalid syntax-rules")
   }
   let (ellipsis, literal_idx) = match parts[1] {
-    Symbol(name) => {
+    @core.Datum::Symbol(name) => {
       if parts.length() < 4 {
         raise @core.EvalError("invalid syntax-rules")
       }
@@ -84,12 +84,12 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
   }
   let literals = parse_literal_list(parts[literal_idx])
   let ellipsis_active = !is_literal(literals, ellipsis)
-  let rules : Array[SyntaxRule] = []
+  let rules : Array[@core.SyntaxRule] = []
   for i = literal_idx + 1; i < parts.length(); {
     // invariant : i >= literal_idx + 1 && i <= parts.length()
     // decreases : parts.length() - i
     // assert : i < parts.length()
-    let rule_parts = datum_list_to_array(parts[i])
+    let rule_parts = @runtime.datum_list_to_array(parts[i])
     if rule_parts.length() != 2 {
       raise @core.EvalError("invalid syntax-rules")
     }
@@ -109,29 +109,29 @@ fn parse_syntax_rules(expr : Datum, env : Env) -> SyntaxRules raise EvalError {
     literals,
     rules,
     ellipsis,
-    kind: SyntaxRules,
+    kind: @core.SyntaxRules,
     def_env: env,
   }
 }
 
 ///|
 fn parse_identifier_syntax(
-  expr : Datum,
+  expr : @core.Datum,
   name : String,
-  env : Env,
-) -> SyntaxRules raise EvalError {
-  let parts = datum_list_to_array(expr)
+  env : @core.Env,
+) -> @core.SyntaxRules raise @core.EvalError {
+  let parts = @runtime.datum_list_to_array(expr)
   if parts.length() < 2 {
     raise @core.EvalError("invalid identifier-syntax")
   }
   match parts[0] {
-    Symbol("identifier-syntax") => ()
+    @core.Datum::Symbol("identifier-syntax") => ()
     _ => raise @core.EvalError("invalid identifier-syntax")
   }
-  let rules : Array[SyntaxRule] = []
+  let rules : Array[@core.SyntaxRule] = []
   if parts.length() == 2 {
     rules.push({
-      pattern: Symbol(name),
+      pattern: @core.Datum::Symbol(name),
       template: parts[1],
       fender: None,
     })
@@ -140,7 +140,7 @@ fn parse_identifier_syntax(
       // invariant : i >= 1 && i <= parts.length()
       // decreases : parts.length() - i
       // assert : i < parts.length()
-      let rule_parts = datum_list_to_array(parts[i])
+      let rule_parts = @runtime.datum_list_to_array(parts[i])
       if rule_parts.length() != 2 {
         raise @core.EvalError("invalid identifier-syntax")
       }
@@ -172,25 +172,25 @@ fn parse_identifier_syntax(
     literals,
     rules,
     ellipsis: "...",
-    kind: SyntaxRules,
+    kind: @core.SyntaxRules,
     def_env: env,
   }
 }
 
 ///|
 fn parse_syntax_case_rules(
-  literals_expr : Datum,
-  clauses : Array[Datum],
-  env : Env,
-) -> SyntaxRules raise EvalError {
+  literals_expr : @core.Datum,
+  clauses : Array[@core.Datum],
+  env : @core.Env,
+) -> @core.SyntaxRules raise @core.EvalError {
   let literals = parse_literal_list(literals_expr)
   let ellipsis_active = !is_literal(literals, "...")
-  let rules : Array[SyntaxRule] = []
+  let rules : Array[@core.SyntaxRule] = []
   for i = 0; i < clauses.length(); {
     // invariant : i >= 0 && i <= clauses.length()
     // decreases : clauses.length() - i
     // assert : i < clauses.length()
-    let rule_parts = datum_list_to_array(clauses[i])
+    let rule_parts = @runtime.datum_list_to_array(clauses[i])
     if rule_parts.length() == 2 {
       validate_pattern(
         rule_parts[0],
@@ -235,18 +235,18 @@ fn parse_syntax_case_rules(
 
 ///|
 fn parse_syntax_case_transformer(
-  expr : Datum,
-  env : Env,
-) -> SyntaxRules raise EvalError {
-  let parts = datum_list_to_array(expr)
+  expr : @core.Datum,
+  env : @core.Env,
+) -> @core.SyntaxRules raise @core.EvalError {
+  let parts = @runtime.datum_list_to_array(expr)
   if parts.length() < 3 {
     raise @core.EvalError("invalid syntax-case")
   }
   match parts[0] {
-    Symbol("lambda") => ()
+    @core.Datum::Symbol("lambda") => ()
     _ => raise @core.EvalError("invalid syntax-case")
   }
-  let params = datum_list_to_array(parts[1])
+  let params = @runtime.datum_list_to_array(parts[1])
   if params.length() != 1 {
     raise @core.EvalError("invalid syntax-case")
   }
@@ -255,12 +255,12 @@ fn parse_syntax_case_transformer(
   if body.length() != 1 {
     raise @core.EvalError("invalid syntax-case")
   }
-  let sc_parts = datum_list_to_array(body[0])
+  let sc_parts = @runtime.datum_list_to_array(body[0])
   if sc_parts.length() < 4 {
     raise @core.EvalError("invalid syntax-case")
   }
   match sc_parts[0] {
-    Symbol("syntax-case") => ()
+    @core.Datum::Symbol("syntax-case") => ()
     _ => raise @core.EvalError("invalid syntax-case")
   }
   let literals_expr = sc_parts[2]
@@ -269,7 +269,7 @@ fn parse_syntax_case_transformer(
 }
 
 ///|
-fn is_syntax_case_transformer_expr(expr : Datum) -> Bool {
+fn is_syntax_case_transformer_expr(expr : @core.Datum) -> Bool {
   match datum_list_to_array_opt(expr) {
     Some(parts) => {
       if parts.length() != 3 {
@@ -297,37 +297,37 @@ fn is_syntax_case_transformer_expr(expr : Datum) -> Bool {
 }
 
 ///|
-fn eval_transformer_expr(expr : Datum, env : Env) -> Value raise EvalError {
-  let eval_env = env_clone(env)
+fn eval_transformer_expr(expr : @core.Datum, env : @core.Env) -> @core.Value raise @core.EvalError {
+  let eval_env = @runtime.env_clone(env)
   eval_expr_transformer(expr, eval_env)
 }
 
 ///|
 fn parse_transformer(
-  expr : Datum,
+  expr : @core.Datum,
   name : String,
-  env : Env,
-) -> MacroTransformer raise EvalError {
-  let parts = datum_list_to_array(expr)
+  env : @core.Env,
+) -> @core.MacroTransformer raise @core.EvalError {
+  let parts = @runtime.datum_list_to_array(expr)
   if parts.is_empty() {
     raise @core.EvalError("invalid syntax transformer")
   }
   match parts[0] {
-    Symbol("syntax-rules") =>
+    @core.Datum::Symbol("syntax-rules") =>
       Rules(parse_syntax_rules(expr, env))
-    Symbol("identifier-syntax") =>
+    @core.Datum::Symbol("identifier-syntax") =>
       Rules(parse_identifier_syntax(expr, name, env))
-    Symbol("make-variable-transformer") => {
+    @core.Datum::Symbol("make-variable-transformer") => {
       if parts.length() != 2 {
         raise @core.EvalError("invalid syntax transformer")
       }
       parse_transformer(parts[1], name, env)
     }
-    Symbol("lambda") if is_syntax_case_transformer_expr(expr) =>
+    @core.Datum::Symbol("lambda") if is_syntax_case_transformer_expr(expr) =>
       Rules(parse_syntax_case_transformer(expr, env))
     _ => {
       let value = eval_transformer_expr(expr, env)
-      if !is_procedure_value(value) {
+      if !@runtime.is_procedure_value(value) {
         raise @core.EvalError("type error: procedure expected")
       }
       Procedure(value, env)
@@ -336,12 +336,12 @@ fn parse_transformer(
 }
 
 ///|
-fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
-  let items = datum_list_to_array(expr)
+fn parse_literal_list(expr : @core.Datum) -> Array[String] raise @core.EvalError {
+  let items = @runtime.datum_list_to_array(expr)
   let literals : Array[String] = []
   for item in items {
     match item {
-      Symbol(name) => literals.push(name)
+      @core.Datum::Symbol(name) => literals.push(name)
       _ => raise @core.EvalError("invalid syntax-rules")
     }
   }
@@ -349,9 +349,9 @@ fn parse_literal_list(expr : Datum) -> Array[String] raise EvalError {
 }
 
 ///|
-fn parse_symbol_name(expr : Datum) -> String raise EvalError {
+fn parse_symbol_name(expr : @core.Datum) -> String raise @core.EvalError {
   match expr {
-    Symbol(name) => name
+    @core.Datum::Symbol(name) => name
     _ => raise @core.EvalError("invalid syntax-case")
   }
 }
@@ -363,19 +363,19 @@ fn is_literal(literals : Array[String], name : String) -> Bool {
 
 ///|
 fn validate_pattern(
-  pattern : Datum,
+  pattern : @core.Datum,
   literals : Array[String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
-) -> Unit raise EvalError {
-  let pat = datum_unlabel(datum_unwrap_syntax(pattern))
+) -> Unit raise @core.EvalError {
+  let pat = @runtime.datum_unlabel(datum_unwrap_syntax(pattern))
   match pat {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       if ellipsis_active && name == ellipsis {
         raise @core.EvalError(error_message)
       }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(pat) {
         Some(items) =>
           validate_pattern_list(
@@ -383,7 +383,7 @@ fn validate_pattern(
           )
         None =>
           match pat {
-            Pair(a, b) => {
+            @core.Datum::Pair(a, b) => {
               validate_pattern(
                 a.val,
                 literals,
@@ -402,11 +402,11 @@ fn validate_pattern(
             _ => ()
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       validate_pattern_list(
         items, literals, ellipsis, ellipsis_active, error_message,
       )
-    Label(_, value) =>
+    @core.Datum::Label(_, value) =>
       validate_pattern(
         value.val,
         literals,
@@ -420,12 +420,12 @@ fn validate_pattern(
 
 ///|
 fn validate_pattern_list(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   literals : Array[String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
-) -> Unit raise EvalError {
+) -> Unit raise @core.EvalError {
   for i = 0; i < items.length(); {
     // invariant : i >= 0 && i <= items.length()
     // decreases : items.length() - i
@@ -461,7 +461,7 @@ fn validate_pattern_list(
 
 ///|
 priv enum BindingVal {
-  Leaf(Datum)
+  Leaf(@core.Datum)
   Seq(Array[BindingVal])
 }
 
@@ -539,7 +539,7 @@ fn binding_select(
   value : BindingVal,
   indices : Array[Int],
   depth : Int,
-) -> Datum? {
+) -> @core.Datum? {
   match value {
     Leaf(datum) =>
       if depth < indices.length() {
@@ -613,26 +613,26 @@ fn binding_has_repeat_at(
 }
 
 ///|
-fn binding_to_datum(value : BindingVal) -> Datum {
+fn binding_to_datum(value : BindingVal) -> @core.Datum {
   match value {
     Leaf(datum) => datum
     Seq(values) => {
-      let items : Array[Datum] =
+      let items : Array[@core.Datum] =
         values.map((item) => binding_to_datum(item))
-      list_from_array(items)
+      @runtime.list_from_array(items)
     }
   }
 }
 
 ///|
 fn fender_allows(
-  expr : Datum,
+  expr : @core.Datum,
   bindings : Map[String, BindingVal],
-  env : Env,
-) -> Bool raise EvalError {
-  let fenv = env_extend(env)
+  env : @core.Env,
+) -> Bool raise @core.EvalError {
+  let fenv = @runtime.env_extend(env)
   bindings.iter2().each((name, value) =>
-    env_define(fenv, name, value_from_datum(binding_to_datum(value)))
+    @runtime.env_define(fenv, name, @runtime.value_from_datum(binding_to_datum(value)))
   )
   let result = eval_expr(expr, fenv)
   !is_false(result)
@@ -640,29 +640,29 @@ fn fender_allows(
 
 ///|
 fn template_env_with_bindings(
-  env : Env,
+  env : @core.Env,
   bindings : Map[String, BindingVal],
-) -> Env {
-  let fenv = env_extend(env)
+) -> @core.Env {
+  let fenv = @runtime.env_extend(env)
   bindings.iter2().each((name, value) =>
-    env_define(fenv, name, value_from_datum(binding_to_datum(value)))
+    @runtime.env_define(fenv, name, @runtime.value_from_datum(binding_to_datum(value)))
   )
   fenv
 }
 
 ///|
-fn value_to_syntax_datum(value : Value) -> Datum raise EvalError {
+fn value_to_syntax_datum(value : @core.Value) -> @core.Datum raise @core.EvalError {
   match value {
-    SyntaxObject(_) | Record(_) => value_to_datum_element(value)
-    Datum(d) => d
+    @core.Value::SyntaxObject(_) | @core.Value::Record(_) => value_to_datum_element(value)
+    @core.Value::Datum(d) => d
     _ => raise @core.EvalError("type error: datum expected")
   }
 }
 
 ///|
 priv struct MacroExpansion {
-  datum : Datum
-  captures : Map[String, Value]
+  datum : @core.Datum
+  captures : Map[String,@core.Value]
 }
 
 ///|
@@ -683,55 +683,55 @@ fn scopes_equal_macro(left : Array[Int], right : Array[Int]) -> Bool {
 ///|
 fn rename_proc_symbol(
   name : String,
-  def_env : Env,
+  def_env : @core.Env,
   renames : Map[String, String],
-  captures : Map[String, Value],
-) -> Datum {
+  captures : Map[String,@core.Value],
+) -> @core.Datum {
   match renames.get(name) {
-    Some(rename) => Symbol(rename)
+    Some(rename) => @core.Datum::Symbol(rename)
     None =>
       match captured_value(def_env, name) {
         Some(value) => {
-          let renamed = gensym(name)
+          let renamed = @runtime.gensym(name)
           renames[name] = renamed
           captures[renamed] = value
-          Symbol(renamed)
+          @core.Datum::Symbol(renamed)
         }
-        None => Symbol(name)
+        None => @core.Datum::Symbol(name)
       }
   }
 }
 
 ///|
 fn rename_proc_datum(
-  datum : Datum,
-  def_env : Env,
+  datum : @core.Datum,
+  def_env : @core.Env,
   call_ctx : Int,
   renames : Map[String, String],
-  captures : Map[String, Value],
-) -> Datum {
+  captures : Map[String,@core.Value],
+) -> @core.Datum {
   match datum {
-    Symbol(name) => rename_proc_symbol(name, def_env, renames, captures)
-    Pair(a, b) =>
-      pair_new(
+    @core.Datum::Symbol(name) => rename_proc_symbol(name, def_env, renames, captures)
+    @core.Datum::Pair(a, b) =>
+      @runtime.pair_new(
         rename_proc_datum(a.val, def_env, call_ctx, renames, captures),
         rename_proc_datum(b.val, def_env, call_ctx, renames, captures),
       )
-    Vector(items) =>
-      Vector(
+    @core.Datum::Vector(items) =>
+      @core.Datum::Vector(
         items.map((item) =>
           rename_proc_datum(item, def_env, call_ctx, renames, captures)
         ),
       )
-    Label(tag, value) =>
-      Label(
+    @core.Datum::Label(tag, value) =>
+      @core.Datum::Label(
         tag,
         Ref::new(
           rename_proc_datum(value.val, def_env, call_ctx, renames, captures),
         ),
       )
-    Complex(real, imag) =>
-      Complex(
+    @core.Datum::Complex(real, imag) =>
+      @core.Datum::Complex(
         Ref::new(
           rename_proc_datum(real.val, def_env, call_ctx, renames, captures),
         ),
@@ -739,7 +739,7 @@ fn rename_proc_datum(
           rename_proc_datum(imag.val, def_env, call_ctx, renames, captures),
         ),
       )
-    Value(SyntaxObject(obj)) =>
+    @core.Datum::Value(@core.Value::SyntaxObject(obj)) =>
       if obj.scopes.contains(call_ctx) {
         datum
       } else {
@@ -750,8 +750,8 @@ fn rename_proc_datum(
           renames,
           captures,
         )
-        Value(
-          SyntaxObject(SyntaxObject::{
+        @core.Datum::Value(
+          @core.Value::SyntaxObject(@core.SyntaxObject::{
             datum: renamed_inner,
             scopes: obj.scopes,
             binding_id: obj.binding_id,
@@ -764,24 +764,24 @@ fn rename_proc_datum(
 
 ///|
 fn rename_proc_expansion(
-  datum : Datum,
-  def_env : Env,
+  datum : @core.Datum,
+  def_env : @core.Env,
   call_ctx : Int,
 ) -> MacroExpansion {
   let renames : Map[String, String] = {}
-  let captures : Map[String, Value] = {}
+  let captures : Map[String,@core.Value] = {}
   let renamed = rename_proc_datum(datum, def_env, call_ctx, renames, captures)
   MacroExpansion::{ datum: renamed, captures }
 }
 
 ///|
 fn expand_macro_rules(
-  rules : SyntaxRules,
-  call : Datum,
-  env : Env,
-) -> MacroExpansion raise EvalError {
+  rules : @core.SyntaxRules,
+  call : @core.Datum,
+  env : @core.Env,
+) -> MacroExpansion raise @core.EvalError {
   let call_scope = match rules.kind {
-    SyntaxRules => Some(next_syntax_context())
+   @core.SyntaxRules => Some(@runtime.next_syntax_context())
     SyntaxCase => None
   }
   let ellipsis_active = !is_literal(rules.literals, rules.ellipsis)
@@ -792,8 +792,8 @@ fn expand_macro_rules(
     let rule = rules.rules[i]
     let bindings : Map[String, BindingVal] = {}
     match (rule.pattern, call) {
-      (Symbol(_), Pair(_, _)) => ()
-      (Pair(_, _), Symbol(_)) => ()
+      (@core.Datum::Symbol(_), @core.Datum::Pair(_, _)) => ()
+      (@core.Datum::Pair(_, _), @core.Datum::Symbol(_)) => ()
       _ =>
         if match_pattern(
             rule.pattern,
@@ -809,7 +809,7 @@ fn expand_macro_rules(
             Some(fender) => {
               let fender_env = match rules.kind {
                 SyntaxCase => rules.def_env
-                SyntaxRules => env
+               @core.SyntaxRules => env
               }
               if !fender_allows(fender, bindings, fender_env) {
                 continue i + 1
@@ -826,7 +826,7 @@ fn expand_macro_rules(
             env,
           )
           let expanded = match rules.kind {
-            SyntaxRules =>
+           @core.SyntaxRules =>
               expand_template(
                 rule.template,
                 bindings,
@@ -862,31 +862,31 @@ fn expand_macro_rules(
 
 ///|
 fn expand_macro_proc(
-  proc : Value,
-  def_env : Env,
-  call : Datum,
-  env : Env,
-) -> MacroExpansion raise EvalError {
-  if !is_procedure_value(proc) {
+  proc : @core.Value,
+  def_env : @core.Env,
+  call : @core.Datum,
+  env : @core.Env,
+) -> MacroExpansion raise @core.EvalError {
+  if !@runtime.is_procedure_value(proc) {
     raise @core.EvalError("type error: procedure expected")
   }
-  let temp_name = gensym("macro_proc")
-  let fenv = env_extend(env)
-  env_define(fenv, temp_name, proc)
-  let call_ctx = next_syntax_context()
-  let marked_call = syntax_add_scope(call, call_ctx)
+  let temp_name = @runtime.gensym("macro_proc")
+  let fenv = @runtime.env_extend(env)
+  @runtime.env_define(fenv, temp_name, proc)
+  let call_ctx = @runtime.next_syntax_context()
+  let marked_call = @runtime.syntax_add_scope(call, call_ctx)
   let stx = match marked_call {
-    Value(SyntaxObject(obj)) => Value::SyntaxObject(obj)
+    @core.Datum::Value(@core.Value::SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
     _ =>
-      Value::SyntaxObject(SyntaxObject::{
+      @core.Value::SyntaxObject(@core.SyntaxObject::{
         datum: marked_call,
         scopes: [call_ctx],
         binding_id: None,
       })
   }
-  let call_expr = list_from_array([
-    Datum::Symbol(temp_name),
-    Datum::Value(stx),
+  let call_expr = @runtime.list_from_array([
+    @core.Datum::Symbol(temp_name),
+    @core.Datum::Value(stx),
   ])
   let value = eval_expr_transformer(call_expr, fenv)
   let datum = value_to_syntax_datum(value)
@@ -895,10 +895,10 @@ fn expand_macro_proc(
 
 ///|
 fn expand_macro(
-  transformer : MacroTransformer,
-  call : Datum,
-  env : Env,
-) -> MacroExpansion raise EvalError {
+  transformer : @core.MacroTransformer,
+  call : @core.Datum,
+  env : @core.Env,
+) -> MacroExpansion raise @core.EvalError {
   match transformer {
     Rules(rules) => expand_macro_rules(rules, call, env)
     Procedure(proc, def_env) =>
@@ -918,49 +918,49 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
 }
 
 ///|
-fn syntax_add_scope_with_env(datum : Datum, scope : Int, env : Env) -> Datum {
+fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) -> @core.Datum {
   match datum {
-    Symbol(name) =>
-      Value(
-        SyntaxObject(SyntaxObject::{
-          datum: Symbol(name),
+    @core.Datum::Symbol(name) =>
+      @core.Datum::Value(
+        @core.Value::SyntaxObject(@core.SyntaxObject::{
+          datum: @core.Datum::Symbol(name),
           scopes: [scope],
-          binding_id: env_binding_id_optional(env, name),
+          binding_id: @runtime.env_binding_id_optional(env, name),
         }),
       )
-    Value(SyntaxObject(obj)) => {
+    @core.Datum::Value(@core.Value::SyntaxObject(obj)) => {
       let next_scopes = scopes_with_added(obj.scopes, scope)
       let inner = match obj.datum {
-        Symbol(_) => obj.datum
+        @core.Datum::Symbol(_) => obj.datum
         _ => syntax_add_scope_with_env(obj.datum, scope, env)
       }
       let binding_id = match obj.binding_id {
         Some(_) => obj.binding_id
         None =>
           match obj.datum {
-            Symbol(name) => env_binding_id_optional(env, name)
+            @core.Datum::Symbol(name) => @runtime.env_binding_id_optional(env, name)
             _ => None
           }
       }
-      Value(
-        SyntaxObject(SyntaxObject::{
+      @core.Datum::Value(
+        @core.Value::SyntaxObject(@core.SyntaxObject::{
           datum: inner,
           scopes: next_scopes,
           binding_id,
         }),
       )
     }
-    Pair(a, b) =>
-      pair_new(
+    @core.Datum::Pair(a, b) =>
+      @runtime.pair_new(
         syntax_add_scope_with_env(a.val, scope, env),
         syntax_add_scope_with_env(b.val, scope, env),
       )
-    Vector(items) =>
-      Vector(
+    @core.Datum::Vector(items) =>
+      @core.Datum::Vector(
         items.map((item) => syntax_add_scope_with_env(item, scope, env)),
       )
-    Complex(real, imag) =>
-      Complex(
+    @core.Datum::Complex(real, imag) =>
+      @core.Datum::Complex(
         Ref::new(syntax_add_scope_with_env(real.val, scope, env)),
         Ref::new(syntax_add_scope_with_env(imag.val, scope, env)),
       )
@@ -969,15 +969,15 @@ fn syntax_add_scope_with_env(datum : Datum, scope : Int, env : Env) -> Datum {
 }
 
 ///|
-fn wrap_pattern_datum(value : Datum, scope : Int?, env : Env) -> Datum {
+fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @core.Datum {
   match scope {
     Some(call_scope) => {
       let marked = syntax_add_scope_with_env(value, call_scope, env)
       match marked {
-        Value(SyntaxObject(_)) => marked
+        @core.Datum::Value(@core.Value::SyntaxObject(_)) => marked
         _ =>
-          Value(
-            SyntaxObject(SyntaxObject::{
+          @core.Datum::Value(
+            @core.Value::SyntaxObject(@core.SyntaxObject::{
               datum: marked,
               scopes: [call_scope],
               binding_id: None,
@@ -987,14 +987,14 @@ fn wrap_pattern_datum(value : Datum, scope : Int?, env : Env) -> Datum {
     }
     None =>
       match value {
-        Value(SyntaxObject(_)) => value
+        @core.Datum::Value(@core.Value::SyntaxObject(_)) => value
         _ => {
-          let binding_id = match datum_unlabel(value) {
-            Symbol(name) => env_binding_id_optional(env, name)
+          let binding_id = match @runtime.datum_unlabel(value) {
+            @core.Datum::Symbol(name) => @runtime.env_binding_id_optional(env, name)
             _ => None
           }
-          Value(
-            SyntaxObject(SyntaxObject::{
+          @core.Datum::Value(
+            @core.Value::SyntaxObject(@core.SyntaxObject::{
               datum: value,
               scopes: [],
               binding_id,
@@ -1007,16 +1007,16 @@ fn wrap_pattern_datum(value : Datum, scope : Int?, env : Env) -> Datum {
 
 ///|
 fn rewrite_template_expr(
-  expr : Datum,
+  expr : @core.Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
-  env : Env,
-) -> Datum raise EvalError {
+  env : @core.Env,
+) -> @core.Datum raise @core.EvalError {
   match expr {
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(expr) {
         Some(items) => {
           if !items.is_empty() {
@@ -1032,19 +1032,19 @@ fn rewrite_template_expr(
                 indices, env, true,
               )
               match expanded {
-                Value(SyntaxObject(obj)) =>
-                  return Value(SyntaxObject(obj))
+                @core.Datum::Value(@core.Value::SyntaxObject(obj)) =>
+                  return @core.Datum::Value(@core.Value::SyntaxObject(obj))
                 _ => {
-                  let scope = next_syntax_context()
+                  let scope = @runtime.next_syntax_context()
                   let scopes = [scope]
-                  let datum = syntax_wrap_root(expanded, scopes)
-                  let obj = SyntaxObject::{ datum, scopes, binding_id: None }
-                  return Value(SyntaxObject(obj))
+                  let datum = @runtime.syntax_wrap_root(expanded, scopes)
+                  let obj =@core.SyntaxObject::{ datum, scopes, binding_id: None }
+                  return @core.Datum::Value(@core.Value::SyntaxObject(obj))
                 }
               }
             }
           }
-          let rewritten : Array[Datum] = []
+          let rewritten : Array[@core.Datum] = []
           for item in items {
             rewritten.push(
               rewrite_template_expr(
@@ -1053,12 +1053,12 @@ fn rewrite_template_expr(
               ),
             )
           }
-          list_from_array(rewritten)
+          @runtime.list_from_array(rewritten)
         }
         None =>
           match expr {
-            Pair(a, b) =>
-              pair_new(
+            @core.Datum::Pair(a, b) =>
+              @runtime.pair_new(
                 rewrite_template_expr(
                   a.val,
                   bindings,
@@ -1081,8 +1081,8 @@ fn rewrite_template_expr(
             _ => expr
           }
       }
-    Vector(items) =>
-      Vector(
+    @core.Datum::Vector(items) =>
+      @core.Datum::Vector(
         items.map((item) =>
           rewrite_template_expr(
             item, bindings, renames, ellipsis, ellipsis_active, error_message, env,
@@ -1095,20 +1095,20 @@ fn rewrite_template_expr(
 
 ///|
 fn match_pattern(
-  pattern : Datum,
-  input : Datum,
+  pattern : @core.Datum,
+  input : @core.Datum,
   literals : Array[String],
   ellipsis : String,
   bindings : Map[String, BindingVal],
   scope : Int?,
-  def_env : Env,
-  use_env : Env,
+  def_env : @core.Env,
+  use_env : @core.Env,
 ) -> Bool {
-  let pat = datum_unlabel(datum_unwrap_syntax(pattern))
-  let inp = datum_unlabel(datum_unwrap_syntax(input))
+  let pat = @runtime.datum_unlabel(datum_unwrap_syntax(pattern))
+  let inp = @runtime.datum_unlabel(datum_unwrap_syntax(input))
   match pat {
-    Label(_, _) => false
-    Symbol(name) =>
+    @core.Datum::Label(_, _) => false
+    @core.Datum::Symbol(name) =>
       if name == "_" {
         if is_literal(literals, name) {
           literal_matches(name, input, def_env, use_env)
@@ -1120,79 +1120,79 @@ fn match_pattern(
       } else {
         bind_var(name, wrap_pattern_datum(input, scope, use_env), bindings)
       }
-    Nil => inp is Nil
-    Bool(b) =>
+    @core.Datum::Nil => inp is @core.Datum::Nil
+    @core.Datum::Bool(b) =>
       match inp {
-        Bool(other) => other == b
+        @core.Datum::Bool(other) => other == b
         _ => false
       }
-    Int(n) =>
+    @core.Datum::Int(n) =>
       match inp {
-        Int(other) => other == n
+        @core.Datum::Int(other) => other == n
         _ => false
       }
-    BigInt(n) =>
+    @core.Datum::BigInt(n) =>
       match inp {
-        BigInt(other) => other == n
+        @core.Datum::BigInt(other) => other == n
         _ => false
       }
-    Rat(n, d) =>
+    @core.Datum::Rat(n, d) =>
       match inp {
-        Rat(on, od) => on == n && od == d
+        @core.Datum::Rat(on, od) => on == n && od == d
         _ => false
       }
-    BigRat(n, d) =>
+    @core.Datum::BigRat(n, d) =>
       match inp {
-        BigRat(on, od) => on == n && od == d
+        @core.Datum::BigRat(on, od) => on == n && od == d
         _ => false
       }
-    Complex(real, imag) =>
+    @core.Datum::Complex(real, imag) =>
       match inp {
-        Complex(other_real, other_imag) =>
+        @core.Datum::Complex(other_real, other_imag) =>
           datum_equal(real.val, other_real.val) &&
           datum_equal(imag.val, other_imag.val)
         _ => false
       }
-    Float(f) =>
+    @core.Datum::Float(f) =>
       match inp {
-        Float(of) => of == f
+        @core.Datum::Float(of) => of == f
         _ => false
       }
-    Char(ch) =>
+    @core.Datum::Char(ch) =>
       match inp {
-        Char(other) => other == ch
+        @core.Datum::Char(other) => other == ch
         _ => false
       }
-    String(s) =>
+    @core.Datum::String(s) =>
       match inp {
-        String(other) => other.val == s.val
+        @core.Datum::String(other) => other.val == s.val
         _ => false
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       match inp {
-        Vector(other) =>
+        @core.Datum::Vector(other) =>
           match_pattern_list(
             items, other, literals, ellipsis, bindings, scope, def_env, use_env,
           )
         _ => false
       }
-    ByteVector(items) =>
+    @core.Datum::ByteVector(items) =>
       match inp {
-        ByteVector(other) => array_int_equal(items, other)
+        @core.Datum::ByteVector(other) => array_int_equal(items, other)
         _ => false
       }
-    Record(rec) =>
+    @core.Datum::Record(rec) =>
       match inp {
-        Record(other) => rec.id == other.id
+        @core.Datum::Record(other) => rec.id == other.id
         _ => false
       }
-    Condition(cond) =>
+    @core.Datum::Condition(cond) =>
       match inp {
-        Condition(other) => cond.id == other.id
+        @core.Datum::Condition(other) => cond.id == other.id
         _ => false
       }
-    Value(value) => value_eqv(value, value_from_datum(inp))
-    Pair(pa, pb) =>
+    @core.Datum::Value(value) => value_eqv(value, @runtime.value_from_datum(inp))
+    @core.Datum::Pair(pa, pb) =>
       match (datum_list_to_array_opt(pat), datum_list_to_array_opt(inp)) {
         (Some(pats), Some(inputs)) =>
           match_pattern_list(
@@ -1200,7 +1200,7 @@ fn match_pattern(
           )
         _ =>
           match inp {
-            Pair(ia, ib) =>
+            @core.Datum::Pair(ia, ib) =>
               if match_pattern(
                   pa.val,
                   ia.val,
@@ -1232,14 +1232,14 @@ fn match_pattern(
 
 ///|
 fn match_pattern_list(
-  pats : Array[Datum],
-  inputs : Array[Datum],
+  pats : Array[@core.Datum],
+  inputs : Array[@core.Datum],
   literals : Array[String],
   ellipsis : String,
   bindings : Map[String, BindingVal],
   scope : Int?,
-  def_env : Env,
-  use_env : Env,
+  def_env : @core.Env,
+  use_env : @core.Env,
 ) -> Bool {
   let ellipsis_active = !is_literal(literals, ellipsis)
   match_pattern_list_from(
@@ -1250,15 +1250,15 @@ fn match_pattern_list(
 
 ///|
 fn collect_repeat_bindings(
-  repeat_pat : Datum,
-  inputs : Array[Datum],
+  repeat_pat : @core.Datum,
+  inputs : Array[@core.Datum],
   start : Int,
   count : Int,
   literals : Array[String],
   ellipsis : String,
   scope : Int?,
-  def_env : Env,
-  use_env : Env,
+  def_env : @core.Env,
+  use_env : @core.Env,
 ) -> Map[String, BindingVal]? {
   let result : Map[String, BindingVal] = {}
   if count == 0 {
@@ -1303,8 +1303,8 @@ fn collect_repeat_bindings(
 
 ///|
 fn match_pattern_list_from(
-  pats : Array[Datum],
-  inputs : Array[Datum],
+  pats : Array[@core.Datum],
+  inputs : Array[@core.Datum],
   pat_idx : Int,
   inp_idx : Int,
   literals : Array[String],
@@ -1312,8 +1312,8 @@ fn match_pattern_list_from(
   ellipsis_active : Bool,
   bindings : Map[String, BindingVal],
   scope : Int?,
-  def_env : Env,
-  use_env : Env,
+  def_env : @core.Env,
+  use_env : @core.Env,
 ) -> Bool {
   if pat_idx >= pats.length() {
     return inp_idx == inputs.length()
@@ -1398,7 +1398,7 @@ fn match_pattern_list_from(
 ///|
 fn bind_var(
   name : String,
-  value : Datum,
+  value : @core.Datum,
   bindings : Map[String, BindingVal],
 ) -> Bool {
   let leaf = Leaf(value)
@@ -1413,17 +1413,17 @@ fn bind_var(
 
 ///|
 fn collect_pattern_vars(
-  pattern : Datum,
+  pattern : @core.Datum,
   literals : Array[String],
   ellipsis : String,
   names : Map[String, Bool],
 ) -> Unit {
   match pattern {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       if name != "_" && name != ellipsis && !is_literal(literals, name) {
         names[name] = true
       }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(pattern) {
         Some(items) =>
           for item in items {
@@ -1431,14 +1431,14 @@ fn collect_pattern_vars(
           }
         None =>
           match pattern {
-            Pair(a, b) => {
+            @core.Datum::Pair(a, b) => {
               collect_pattern_vars(a.val, literals, ellipsis, names)
               collect_pattern_vars(b.val, literals, ellipsis, names)
             }
             _ => ()
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       for item in items {
         collect_pattern_vars(item, literals, ellipsis, names)
       }
@@ -1447,19 +1447,19 @@ fn collect_pattern_vars(
 }
 
 ///|
-fn datum_list_to_array_opt(list : Datum) -> Array[Datum]? {
-  let items : Array[Datum] = []
+fn datum_list_to_array_opt(list : @core.Datum) -> Array[@core.Datum]? {
+  let items : Array[@core.Datum] = []
   let ok = for cur = list; true; {
     // invariant : items.length() >= 0
     // TODO(decreases) : list length not explicit; possible bug
     // assert :
-    //   match datum_unlabel(cur) {
-    //     Pair(_, _) | Nil => true
+    //   match @runtime.datum_unlabel(cur) {
+    //     @core.Datum::Pair(_, _) | @core.Datum::Nil => true
     //     _ => false
     //   }
-    match datum_unlabel(cur) {
-      Nil => break true
-      Pair(a, b) => {
+    match @runtime.datum_unlabel(cur) {
+      @core.Datum::Nil => break true
+      @core.Datum::Pair(a, b) => {
         items.push(a.val)
         continue b.val
       }
@@ -1472,17 +1472,17 @@ fn datum_list_to_array_opt(list : Datum) -> Array[Datum]? {
 }
 
 ///|
-fn datum_unwrap_syntax(value : Datum) -> Datum {
+fn datum_unwrap_syntax(value : @core.Datum) -> @core.Datum {
   match value {
-    Value(SyntaxObject(obj)) => obj.datum
+    @core.Datum::Value(@core.Value::SyntaxObject(obj)) => obj.datum
     _ => value
   }
 }
 
 ///|
-fn datum_is_symbol(value : Datum, name : String) -> Bool {
-  match datum_unlabel(datum_unwrap_syntax(value)) {
-    Symbol(sym) => sym == name
+fn datum_is_symbol(value : @core.Datum, name : String) -> Bool {
+  match @runtime.datum_unlabel(datum_unwrap_syntax(value)) {
+    @core.Datum::Symbol(sym) => sym == name
     _ => false
   }
 }
@@ -1490,19 +1490,19 @@ fn datum_is_symbol(value : Datum, name : String) -> Bool {
 ///|
 fn literal_matches(
   name : String,
-  input : Datum,
-  def_env : Env,
-  use_env : Env,
+  input : @core.Datum,
+  def_env : @core.Env,
+  use_env : @core.Env,
 ) -> Bool {
-  let unlabel = datum_unlabel(input)
+  let unlabel = @runtime.datum_unlabel(input)
   match unlabel {
-    Value(SyntaxObject(obj)) =>
-      match datum_unlabel(obj.datum) {
-        Symbol(other) => {
+    @core.Datum::Value(@core.Value::SyntaxObject(obj)) =>
+      match @runtime.datum_unlabel(obj.datum) {
+        @core.Datum::Symbol(other) => {
           if other != name {
             return false
           }
-          let def_id = env_binding_id_optional(def_env, name)
+          let def_id = @runtime.env_binding_id_optional(def_env, name)
           match (def_id, obj.binding_id) {
             (Some(left), Some(right)) => left == right
             (None, None) => scopes_equal_macro(obj.scopes, [])
@@ -1512,13 +1512,13 @@ fn literal_matches(
         _ => false
       }
     _ =>
-      match datum_unlabel(datum_unwrap_syntax(unlabel)) {
-        Symbol(other) => {
+      match @runtime.datum_unlabel(datum_unwrap_syntax(unlabel)) {
+        @core.Datum::Symbol(other) => {
           if other != name {
             return false
           }
-          let def_id = env_binding_id_optional(def_env, name)
-          let use_id = env_binding_id_optional(use_env, name)
+          let def_id = @runtime.env_binding_id_optional(def_env, name)
+          let use_id = @runtime.env_binding_id_optional(use_env, name)
           match (def_id, use_id) {
             (Some(left), Some(right)) => left == right
             (None, None) => true
@@ -1531,7 +1531,7 @@ fn literal_matches(
 }
 
 ///|
-fn array_datum_equal(left : Array[Datum], right : Array[Datum]) -> Bool {
+fn array_datum_equal(left : Array[@core.Datum], right : Array[@core.Datum]) -> Bool {
   if left.length() != right.length() {
     false
   } else {
@@ -1569,41 +1569,41 @@ fn array_int_equal(left : Array[Int], right : Array[Int]) -> Bool {
 }
 
 ///|
-fn datum_equal(a : Datum, b : Datum) -> Bool {
+fn datum_equal(a : @core.Datum, b : @core.Datum) -> Bool {
   match (a, b) {
-    (Label(_, x), _) => datum_equal(x.val, b)
-    (_, Label(_, y)) => datum_equal(a, y.val)
-    (Nil, Nil) => true
-    (Bool(x), Bool(y)) => x == y
-    (Int(x), Int(y)) => x == y
-    (BigInt(x), BigInt(y)) => x == y
-    (Rat(ax, ay), Rat(bx, by)) => ax == bx && ay == by
-    (BigRat(ax, ay), BigRat(bx, by)) => ax == bx && ay == by
-    (Float(x), Float(y)) => x == y
-    (Complex(ar, ai), Complex(br, bi)) =>
+    (@core.Datum::Label(_, x), _) => datum_equal(x.val, b)
+    (_, @core.Datum::Label(_, y)) => datum_equal(a, y.val)
+    (@core.Datum::Nil, @core.Datum::Nil) => true
+    (@core.Datum::Bool(x), @core.Datum::Bool(y)) => x == y
+    (@core.Datum::Int(x), @core.Datum::Int(y)) => x == y
+    (@core.Datum::BigInt(x), @core.Datum::BigInt(y)) => x == y
+    (@core.Datum::Rat(ax, ay), @core.Datum::Rat(bx, by)) => ax == bx && ay == by
+    (@core.Datum::BigRat(ax, ay), @core.Datum::BigRat(bx, by)) => ax == bx && ay == by
+    (@core.Datum::Float(x), @core.Datum::Float(y)) => x == y
+    (@core.Datum::Complex(ar, ai), @core.Datum::Complex(br, bi)) =>
       datum_equal(ar.val, br.val) && datum_equal(ai.val, bi.val)
-    (Char(x), Char(y)) => x == y
-    (String(x), String(y)) => x.val == y.val
-    (Symbol(x), Symbol(y)) => x == y
-    (Pair(ax, ay), Pair(bx, by)) =>
+    (@core.Datum::Char(x), @core.Datum::Char(y)) => x == y
+    (@core.Datum::String(x), @core.Datum::String(y)) => x.val == y.val
+    (@core.Datum::Symbol(x), @core.Datum::Symbol(y)) => x == y
+    (@core.Datum::Pair(ax, ay), @core.Datum::Pair(bx, by)) =>
       datum_equal(ax.val, bx.val) && datum_equal(ay.val, by.val)
-    (Vector(ax), Vector(bx)) => array_datum_equal(ax, bx)
-    (ByteVector(ax), ByteVector(bx)) => array_int_equal(ax, bx)
-    (Record(ax), Record(bx)) => ax.id == bx.id
-    (Condition(ax), Condition(bx)) => ax.id == bx.id
-    (Value(ax), _) => value_eqv(ax, value_from_datum(b))
-    (_, Value(bx)) => value_eqv(value_from_datum(a), bx)
+    (@core.Datum::Vector(ax), @core.Datum::Vector(bx)) => array_datum_equal(ax, bx)
+    (@core.Datum::ByteVector(ax), @core.Datum::ByteVector(bx)) => array_int_equal(ax, bx)
+    (@core.Datum::Record(ax), @core.Datum::Record(bx)) => ax.id == bx.id
+    (@core.Datum::Condition(ax), @core.Datum::Condition(bx)) => ax.id == bx.id
+    (@core.Datum::Value(ax), _) => value_eqv(ax, @runtime.value_from_datum(b))
+    (_, @core.Datum::Value(bx)) => value_eqv(@runtime.value_from_datum(a), bx)
     _ => false
   }
 }
 
 ///|
-fn is_quote_form(items : Array[Datum]) -> Bool {
+fn is_quote_form(items : Array[@core.Datum]) -> Bool {
   if items.length() != 2 {
     false
   } else {
     match items[0] {
-      Symbol("quote") => true
+      @core.Datum::Symbol("quote") => true
       _ => false
     }
   }
@@ -1615,7 +1615,7 @@ fn should_rename(
   bindings : Map[String, BindingVal],
   literals : Array[String],
   ellipsis : String,
-  env : Env,
+  env : @core.Env,
 ) -> Bool {
   if name == "_" || name == ellipsis {
     false
@@ -1623,7 +1623,7 @@ fn should_rename(
     false
   } else if is_core_identifier(name) {
     false
-  } else if env_get_macro(env, name) is Some(_) {
+  } else if @runtime.env_get_macro(env, name) is Some(_) {
     false
   } else if bindings.contains(name) {
     false
@@ -1633,10 +1633,10 @@ fn should_rename(
 }
 
 ///|
-fn captured_value(def_env : Env, name : String) -> Value? {
-  match env_lookup_optional(def_env, name) {
-    Some(Macro(_)) => None
-    Some(SyntaxKeyword(_)) => None
+fn captured_value(def_env : @core.Env, name : String) -> @core.Value? {
+  match @runtime.env_lookup_optional(def_env, name) {
+    Some(@core.Value::Macro(_)) => None
+    Some(@core.Value::SyntaxKeyword(_)) => None
     Some(value) => Some(value)
     None => None
   }
@@ -1644,15 +1644,15 @@ fn captured_value(def_env : Env, name : String) -> Value? {
 
 ///|
 fn build_rename_map(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   literals : Array[String],
   ellipsis : String,
-  def_env : Env,
-  env : Env,
-) -> (Map[String, String], Map[String, Value]) {
+  def_env : @core.Env,
+  env : @core.Env,
+) -> (Map[String, String], Map[String,@core.Value]) {
   let renames : Map[String, String] = {}
-  let captures : Map[String, Value] = {}
+  let captures : Map[String,@core.Value] = {}
   collect_renames(
     template, bindings, literals, ellipsis, def_env, env, renames, captures,
   )
@@ -1661,27 +1661,27 @@ fn build_rename_map(
 
 ///|
 fn collect_renames(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   literals : Array[String],
   ellipsis : String,
-  def_env : Env,
-  env : Env,
+  def_env : @core.Env,
+  env : @core.Env,
   renames : Map[String, String],
-  captures : Map[String, Value],
+  captures : Map[String,@core.Value],
 ) -> Unit {
   match template {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       if should_rename(name, bindings, literals, ellipsis, env) &&
         !renames.contains(name) {
-        let renamed = gensym(name)
+        let renamed = @runtime.gensym(name)
         renames[name] = renamed
         match captured_value(def_env, name) {
           Some(value) => captures[renamed] = value
           None => ()
         }
       }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if !is_quote_form(items) {
@@ -1693,7 +1693,7 @@ fn collect_renames(
           }
         None =>
           match template {
-            Pair(a, b) => {
+            @core.Datum::Pair(a, b) => {
               collect_renames(
                 a.val,
                 bindings,
@@ -1718,7 +1718,7 @@ fn collect_renames(
             _ => ()
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       for item in items {
         collect_renames(
           item, bindings, literals, ellipsis, def_env, env, renames, captures,
@@ -1730,12 +1730,12 @@ fn collect_renames(
 
 ///|
 fn collect_template_symbols(
-  template : Datum,
+  template : @core.Datum,
   symbols : Map[String, Bool],
 ) -> Unit {
   match template {
-    Symbol(name) => symbols[name] = true
-    Pair(_, _) =>
+    @core.Datum::Symbol(name) => symbols[name] = true
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if !is_quote_form(items) {
@@ -1745,14 +1745,14 @@ fn collect_template_symbols(
           }
         None =>
           match template {
-            Pair(a, b) => {
+            @core.Datum::Pair(a, b) => {
               collect_template_symbols(a.val, symbols)
               collect_template_symbols(b.val, symbols)
             }
             _ => ()
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       for item in items {
         collect_template_symbols(item, symbols)
       }
@@ -1762,24 +1762,24 @@ fn collect_template_symbols(
 
 ///|
 fn expand_with_syntax(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
+  env : @core.Env,
   template_forms : Bool,
-) -> Datum raise EvalError {
+) -> @core.Datum raise @core.EvalError {
   if items.length() < 3 {
     raise @core.EvalError("invalid with-syntax")
   }
-  let binding_specs = datum_list_to_array(items[1])
+  let binding_specs = @runtime.datum_list_to_array(items[1])
   let expanded = bindings_clone(bindings)
   let fenv = template_env_with_bindings(env, bindings)
   for spec in binding_specs {
-    let parts = datum_list_to_array(spec)
+    let parts = @runtime.datum_list_to_array(spec)
     if parts.length() != 2 {
       raise @core.EvalError("invalid with-syntax")
     }
@@ -1817,7 +1817,7 @@ fn expand_with_syntax(
       template_forms,
     )
   } else {
-    let forms : Array[Datum] = [Symbol("begin")]
+    let forms : Array[@core.Datum] = [@core.Datum::Symbol("begin")]
     for i = 2; i < items.length(); {
       // invariant : i >= 2 && i <= items.length()
       // decreases : items.length() - i
@@ -1837,39 +1837,39 @@ fn expand_with_syntax(
       )
       continue i + 1
     }
-    list_from_array(forms)
+    @runtime.list_from_array(forms)
   }
 }
 
 ///|
-fn rename_datum(datum : Datum, renames : Map[String, String]) -> Datum {
+fn rename_datum(datum : @core.Datum, renames : Map[String, String]) -> @core.Datum {
   match datum {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       match renames.get(name) {
-        Some(rename) => Symbol(rename)
+        Some(rename) => @core.Datum::Symbol(rename)
         None => datum
       }
-    Pair(a, b) =>
-      pair_new(rename_datum(a.val, renames), rename_datum(b.val, renames))
-    Vector(items) =>
-      Vector(items.map((item) => rename_datum(item, renames)))
-    Label(tag, value) =>
-      Label(tag, Ref::new(rename_datum(value.val, renames)))
+    @core.Datum::Pair(a, b) =>
+      @runtime.pair_new(rename_datum(a.val, renames), rename_datum(b.val, renames))
+    @core.Datum::Vector(items) =>
+      @core.Datum::Vector(items.map((item) => rename_datum(item, renames)))
+    @core.Datum::Label(tag, value) =>
+      @core.Datum::Label(tag, Ref::new(rename_datum(value.val, renames)))
     _ => datum
   }
 }
 
 ///|
 fn expand_template(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
-  env : Env,
+  env : @core.Env,
   template_forms : Bool,
-) -> Datum raise EvalError {
+) -> @core.Datum raise @core.EvalError {
   let indices : Array[Int] = []
   expand_template_indexed(
     template, bindings, renames, ellipsis, ellipsis_active, error_message, indices,
@@ -1879,24 +1879,24 @@ fn expand_template(
 
 ///|
 fn expand_template_indexed(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
+  env : @core.Env,
   template_forms : Bool,
-) -> Datum raise EvalError {
+) -> @core.Datum raise @core.EvalError {
   match template {
-    Symbol(name) => {
+    @core.Datum::Symbol(name) => {
       if ellipsis_active && name == ellipsis {
         raise @core.EvalError(error_message)
       }
       expand_symbol(name, bindings, renames, indices, error_message)
     }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if is_quote_form(items) {
@@ -1946,8 +1946,8 @@ fn expand_template_indexed(
           }
         None =>
           match template {
-            Pair(a, b) =>
-              pair_new(
+            @core.Datum::Pair(a, b) =>
+              @runtime.pair_new(
                 expand_template_indexed(
                   a.val,
                   bindings,
@@ -1974,7 +1974,7 @@ fn expand_template_indexed(
             _ => template
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       expand_template_vector(
         items, bindings, renames, ellipsis, ellipsis_active, error_message, indices,
         env, template_forms,
@@ -1985,23 +1985,23 @@ fn expand_template_indexed(
 
 ///|
 fn expand_template_quasisyntax(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
-) -> Datum raise EvalError {
+  env : @core.Env,
+) -> @core.Datum raise @core.EvalError {
   match template {
-    Symbol(name) => {
+    @core.Datum::Symbol(name) => {
       if ellipsis_active && name == ellipsis {
         raise @core.EvalError(error_message)
       }
       expand_symbol(name, bindings, renames, indices, error_message)
     }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if is_quote_form(items) {
@@ -2019,8 +2019,8 @@ fn expand_template_quasisyntax(
           }
         None =>
           match template {
-            Pair(a, b) =>
-              pair_new(
+            @core.Datum::Pair(a, b) =>
+              @runtime.pair_new(
                 expand_template_quasisyntax(
                   a.val,
                   bindings,
@@ -2045,7 +2045,7 @@ fn expand_template_quasisyntax(
             _ => template
           }
       }
-    Vector(items) =>
+    @core.Datum::Vector(items) =>
       expand_template_vector_quasisyntax(
         items, bindings, renames, ellipsis, ellipsis_active, error_message, indices,
         env,
@@ -2061,7 +2061,7 @@ fn expand_symbol(
   renames : Map[String, String],
   indices : Array[Int],
   error_message : String,
-) -> Datum raise EvalError {
+) -> @core.Datum raise @core.EvalError {
   match bindings.get(name) {
     Some(value) =>
       match binding_select(value, indices, 0) {
@@ -2070,25 +2070,25 @@ fn expand_symbol(
       }
     None =>
       match renames.get(name) {
-        Some(rename) => Symbol(rename)
-        None => Symbol(name)
+        Some(rename) => @core.Datum::Symbol(rename)
+        None => @core.Datum::Symbol(name)
       }
   }
 }
 
 ///|
 fn expand_template_list(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
+  env : @core.Env,
   template_forms : Bool,
-) -> Datum raise EvalError {
-  let expanded : Array[Datum] = []
+) -> @core.Datum raise @core.EvalError {
+  let expanded : Array[@core.Datum] = []
   for i = 0; i < items.length(); {
     // invariant : i >= 0 && i <= items.length()
     // decreases : items.length() - i
@@ -2141,21 +2141,21 @@ fn expand_template_list(
       continue i + 1
     }
   }
-  list_from_array(expanded)
+  @runtime.list_from_array(expanded)
 }
 
 ///|
 fn expand_template_list_quasisyntax(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
-) -> Datum raise EvalError {
-  let expanded : Array[Datum] = []
+  env : @core.Env,
+) -> @core.Datum raise @core.EvalError {
+  let expanded : Array[@core.Datum] = []
   for i = 0; i < items.length(); {
     // invariant : i >= 0 && i <= items.length()
     // decreases : items.length() - i
@@ -2207,22 +2207,22 @@ fn expand_template_list_quasisyntax(
       continue i + 1
     }
   }
-  list_from_array(expanded)
+  @runtime.list_from_array(expanded)
 }
 
 ///|
 fn expand_template_vector(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
+  env : @core.Env,
   template_forms : Bool,
-) -> Datum raise EvalError {
-  let expanded : Array[Datum] = []
+) -> @core.Datum raise @core.EvalError {
+  let expanded : Array[@core.Datum] = []
   for i = 0; i < items.length(); {
     // invariant : i >= 0 && i <= items.length()
     // decreases : items.length() - i
@@ -2275,21 +2275,21 @@ fn expand_template_vector(
       continue i + 1
     }
   }
-  Vector(expanded)
+  @core.Datum::Vector(expanded)
 }
 
 ///|
 fn expand_template_vector_quasisyntax(
-  items : Array[Datum],
+  items : Array[@core.Datum],
   bindings : Map[String, BindingVal],
   renames : Map[String, String],
   ellipsis : String,
   ellipsis_active : Bool,
   error_message : String,
   indices : Array[Int],
-  env : Env,
-) -> Datum raise EvalError {
-  let expanded : Array[Datum] = []
+  env : @core.Env,
+) -> @core.Datum raise @core.EvalError {
+  let expanded : Array[@core.Datum] = []
   for i = 0; i < items.length(); {
     // invariant : i >= 0 && i <= items.length()
     // decreases : items.length() - i
@@ -2341,22 +2341,22 @@ fn expand_template_vector_quasisyntax(
       continue i + 1
     }
   }
-  Vector(expanded)
+  @core.Datum::Vector(expanded)
 }
 
 ///|
 fn max_binding_len(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   indices : Array[Int],
 ) -> Int {
   match template {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       match bindings.get(name) {
         Some(value) => binding_len_at(value, indices, 0)
         None => 0
       }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if is_quote_form(items) {
@@ -2376,7 +2376,7 @@ fn max_binding_len(
           }
         None =>
           match template {
-            Pair(a, b) => {
+            @core.Datum::Pair(a, b) => {
               let left = max_binding_len(a.val, bindings, indices)
               let right = max_binding_len(b.val, bindings, indices)
               if left > right {
@@ -2388,7 +2388,7 @@ fn max_binding_len(
             _ => 0
           }
       }
-    Vector(items) => {
+    @core.Datum::Vector(items) => {
       let max_len = for i = 0, max_len = 0; i < items.length(); {
         // invariant : i >= 0 && i <= items.length()
         // decreases : items.length() - i
@@ -2407,13 +2407,13 @@ fn max_binding_len(
 
 ///|
 fn template_has_repeat_binding(
-  template : Datum,
+  template : @core.Datum,
   bindings : Map[String, BindingVal],
   ellipsis : String,
   indices : Array[Int],
 ) -> Bool {
   match template {
-    Symbol(name) =>
+    @core.Datum::Symbol(name) =>
       if name == ellipsis {
         false
       } else {
@@ -2422,7 +2422,7 @@ fn template_has_repeat_binding(
           None => false
         }
       }
-    Pair(_, _) =>
+    @core.Datum::Pair(_, _) =>
       match datum_list_to_array_opt(template) {
         Some(items) =>
           if is_quote_form(items) {
@@ -2443,13 +2443,13 @@ fn template_has_repeat_binding(
           }
         None =>
           match template {
-            Pair(a, b) =>
+            @core.Datum::Pair(a, b) =>
               template_has_repeat_binding(a.val, bindings, ellipsis, indices) ||
               template_has_repeat_binding(b.val, bindings, ellipsis, indices)
             _ => false
           }
       }
-    Vector(items) => {
+    @core.Datum::Vector(items) => {
       let found = for i = 0; i < items.length(); {
         // invariant : i >= 0 && i <= items.length()
         // decreases : items.length() - i

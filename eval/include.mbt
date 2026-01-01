@@ -17,15 +17,15 @@ pub fn register_include_source(path : String, content : String) -> Unit {
 }
 
 ///|
-fn include_path_from_arg(arg : Datum) -> String raise EvalError {
-  match datum_unlabel(arg) {
-    String(path) => path.val
+fn include_path_from_arg(arg : @core.Datum) -> String raise @core.EvalError {
+  match @runtime.datum_unlabel(arg) {
+    @core.Datum::String(path) => path.val
     _ => raise @core.EvalError("type error: string expected")
   }
 }
 
 ///|
-fn include_read_text(path : String) -> String raise EvalError {
+fn include_read_text(path : String) -> String raise @core.EvalError {
   match include_registry.val.get(path) {
     Some(content) => content
     None => raise @core.EvalError("include: unknown file: \{path}")
@@ -36,19 +36,19 @@ fn include_read_text(path : String) -> String raise EvalError {
 fn include_parse_file(
   path : String,
   fold_case : Bool,
-) -> Array[Datum] raise EvalError {
+) -> Array[@core.Datum] raise @core.EvalError {
   let content = include_read_text(path)
-  parse_program(content, fold_case=fold_case) catch {
+  @parser.parse_program(content, fold_case=fold_case) catch {
     _ => raise @core.EvalError("include: parse error: \{path}")
   }
 }
 
 ///|
 fn include_forms(
-  args : Array[Datum],
+  args : Array[@core.Datum],
   fold_case : Bool,
-) -> Array[Datum] raise EvalError {
-  let forms : Array[Datum] = []
+) -> Array[@core.Datum] raise @core.EvalError {
+  let forms : Array[@core.Datum] = []
   for arg in args {
     let path = include_path_from_arg(arg)
     let parsed = include_parse_file(path, fold_case)
@@ -59,12 +59,12 @@ fn include_forms(
 
 ///|
 fn eval_include_state(
-  args : Array[Datum],
-  env : Env,
-  kont : Kont,
-  handlers : Array[Value],
+  args : Array[@core.Datum],
+  env : @core.Env,
+  kont : @core.Kont,
+  handlers : Array[@core.Value],
   fold_case : Bool,
-) -> MachineState raise EvalError {
+) -> MachineState raise @core.EvalError {
   let forms = include_forms(args, fold_case)
   eval_sequence_state(forms, env, kont, handlers)
 }
