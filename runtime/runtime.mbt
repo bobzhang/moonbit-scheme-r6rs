@@ -681,10 +681,7 @@ pub fn condition_components_opt(
   match value {
     Datum(Condition(cond)) => Some(cond.components)
     _ =>
-      match value_as_condition_record(value, base) {
-        Some(record) => Some([record])
-        None => None
-      }
+      value_as_condition_record(value, base).map((record) => [record])
   }
 }
 
