@@ -2712,13 +2712,8 @@ fn eval_define_record_type_state(
     None => []
   }
   let parent_count = parent_fields.length()
-  let parent_field_names : Array[String] = []
-  for field in parent_fields {
-    // invariant : parent_fields.length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : parent_fields.length() >= 0
-    parent_field_names.push(field.name)
-  }
+  let parent_field_names : Array[String] =
+    parent_fields.map((field) => field.name)
   let accessors : Map[String, String] = {}
   let mutators : Map[String, String] = {}
   let mutable : Map[String, Bool] = {}
@@ -2782,11 +2777,7 @@ fn eval_define_record_type_state(
     field_index[field_name] = i
     continue i + 1
   }
-  let bindings : Array[RecordFieldBinding] = []
-  for field_name in new_field_names {
-    // invariant : new_field_names.length() >= 0
-    // TODO(decreases) : loop index not exposed; possible bug
-    // assert : new_field_names.length() >= 0
+  let bindings : Array[RecordFieldBinding] = new_field_names.map((field_name) => {
     let idx = match field_index.get(field_name) {
       Some(value) => value
       None => raise @core.EvalError("invalid define-record-type")
@@ -2796,12 +2787,12 @@ fn eval_define_record_type_state(
       None => raise @core.EvalError("invalid define-record-type")
     }
     let mutator_name = mutators.get(field_name)
-    bindings.push(RecordFieldBinding::{
+    RecordFieldBinding::{
       accessor: accessor_name,
       index: idx,
       mutator: mutator_name,
-    })
-  }
+    }
+  })
   let existing_desc = match uid {
     Some(uid_name) => lookup_record_type_descriptor_by_uid(uid_name)
     None => None
