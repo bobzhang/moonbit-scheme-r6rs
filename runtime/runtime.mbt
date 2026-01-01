@@ -664,13 +664,7 @@ pub fn condition_base_type() -> RecordType raise EvalError {
 ///|
 fn value_as_condition_record(value : Value, base : RecordType) -> Record? {
   match value {
-    Record(record) =>
-      if record_type_is_a(record.record_type, base) {
-        Some(record)
-      } else {
-        None
-      }
-    Datum(Record(record)) =>
+    Record(record) | Datum(Record(record)) =>
       if record_type_is_a(record.record_type, base) {
         Some(record)
       } else {

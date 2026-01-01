@@ -2008,6 +2008,23 @@ match env.get_binding(name) {
 }
 ```
 
+## Combine match arms with or-patterns
+- Use `|` in patterns when two cases share the same branch.
+- This keeps condition checks in one place.
+
+Example:
+```mbt
+match value {
+  Record(record) | Datum(Record(record)) =>
+    if record_type_is_a(record.record_type, base) {
+      Some(record)
+    } else {
+      None
+    }
+  _ => None
+}
+```
+
 ## Drop constructor prefixes in patterns
 - In `match` patterns, you can omit `TypePath::` when the scrutinee type is known.
 - Keep prefixes in expressions unless the type is explicit; otherwise the compiler treats the constructor name as an unbound value.
