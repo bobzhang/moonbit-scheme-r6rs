@@ -2683,3 +2683,32 @@ let base = @runtime.condition_base_type()
 // after
 let base = condition_base_type()
 ```
+
+## Use tuple pattern matches to collapse duplicated branches
+- Extract repeated parse branches into a helper and use `match (kind, flag)` to keep the decision logic in one place.
+- This keeps comma/unquote parsing in one helper and reduces drift between syntax and datum variants.
+
+Example:
+```mbt
+enum CommaKind {
+  Unquote
+  Unsyntax
+}
+
+fn read_comma_form(r : @lexer.Reader, kind : CommaKind) -> @core.Datum raise @core.ParseError {
+  let splicing = match r.peek() {
+    Some('@') => {
+      ignore(r.next())
+      true
+    }
+    _ => false
+  }
+  let expr = read_expr(r)
+  match (kind, splicing) {
+    (Unquote, true) => make_unquote_splicing(expr)
+    (Unquote, false) => make_unquote(expr)
+    (Unsyntax, true) => make_unsyntax_splicing(expr)
+    (Unsyntax, false) => make_unsyntax(expr)
+  }
+}
+```

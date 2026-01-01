@@ -1126,6 +1126,33 @@ fn token_to_datum(tok : String) -> @core.Datum {
 }
 
 ///|
+priv enum CommaKind {
+  Unquote
+  Unsyntax
+}
+
+///|
+fn read_comma_form(
+  r : @lexer.Reader,
+  kind : CommaKind,
+) -> @core.Datum raise @core.ParseError {
+  let splicing = match r.peek() {
+    Some('@') => {
+      ignore(r.next())
+      true
+    }
+    _ => false
+  }
+  let expr = read_expr(r)
+  match (kind, splicing) {
+    (Unquote, true) => make_unquote_splicing(expr)
+    (Unquote, false) => make_unquote(expr)
+    (Unsyntax, true) => make_unsyntax_splicing(expr)
+    (Unsyntax, false) => make_unsyntax(expr)
+  }
+}
+
+///|
 fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
   match r..skip_ws_and_comments().peek() {
     None => raise @core.ParseError("unexpected EOF")
@@ -1149,19 +1176,7 @@ fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
     }
     Some(',') => {
       ignore(r.next())
-      let splicing = match r.peek() {
-        Some('@') => {
-          ignore(r.next())
-          true
-        }
-        _ => false
-      }
-      let expr = read_expr(r)
-      if splicing {
-        make_unquote_splicing(expr)
-      } else {
-        make_unquote(expr)
-      }
+      read_comma_form(r, Unquote)
     }
     Some('#') =>
       match r.peek_next() {
@@ -1218,20 +1233,8 @@ fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
         Some(',') => {
           ignore(r.next())
           ignore(r.next())
-          let splicing = match r.peek() {
-            Some('@') => {
-              ignore(r.next())
-              true
-            }
-            _ => false
-          }
-          let expr = read_expr(r)
-          if splicing {
-            make_unsyntax_splicing(expr)
-          } else {
-            make_unsyntax(expr)
-          }
-      }
+          read_comma_form(r, Unsyntax)
+        }
     _ =>
       if r.is_vector_start() {
         ignore(r.next())
