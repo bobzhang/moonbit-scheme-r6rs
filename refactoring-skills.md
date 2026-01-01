@@ -2056,6 +2056,7 @@ let typed : Datum = Int(1)
 - Use `moon ide find-references` to confirm a helper is package-internal.
 - Move any public README examples to docstring tests before making the helper private.
 - If only one downstream package needs it, add a local helper there to avoid exporting it.
+- Convert truly unused public helpers to private to shrink `pkg.generated.mbti`.
 
 Example:
 ```mbt
@@ -2066,6 +2067,13 @@ fn digit_value(ch : Char) -> Int? {
     'A'..='F' => Some(ch.to_int() - 'A'.to_int() + 10)
     _ => None
   }
+}
+```
+
+Example:
+```mbt
+fn env_lookup_binding_optional(env : Env, name : String) -> Binding? {
+  env.get_binding(name)
 }
 ```
 

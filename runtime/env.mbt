@@ -109,13 +109,6 @@ pub fn env_lookup_binding(env : Env, name : String) -> Binding raise EvalError {
   }
 }
 
-///|
-/// Look up a binding by name, returning None if missing.
-pub fn env_lookup_binding_optional(env : Env, name : String) -> Binding? {
-  env.get_binding(name)
-}
-
-///|
 /// Look up a binding id by name, returning None if missing.
 pub fn env_binding_id_optional(env : Env, name : String) -> Int? {
   env.get_binding(name).map((binding) => binding.id)

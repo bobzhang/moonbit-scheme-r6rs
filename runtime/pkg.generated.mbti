@@ -61,8 +61,6 @@ pub fn env_lookup(Array[Map[String, @core.Binding]], String) -> @core.Value rais
 
 pub fn env_lookup_binding(Array[Map[String, @core.Binding]], String) -> @core.Binding raise @core.EvalError
 
-pub fn env_lookup_binding_optional(Array[Map[String, @core.Binding]], String) -> @core.Binding?
-
 pub fn env_lookup_optional(Array[Map[String, @core.Binding]], String) -> @core.Value?
 
 pub fn env_new() -> Array[Map[String, @core.Binding]]
