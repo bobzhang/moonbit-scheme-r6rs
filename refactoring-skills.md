@@ -144,6 +144,20 @@ match datum {
 }
 ```
 
+## Batch remove Datum constructor prefixes safely
+- Use a file-local replacement for `@core.Datum::` when the file already has strong type context.
+- Re-run `moon check` to catch any ambiguous constructor sites immediately.
+
+Example:
+```bash
+python3 - <<'PY'
+from pathlib import Path
+path = Path('eval/macro.mbt')
+path.write_text(path.read_text().replace('@core.Datum::', ''))
+PY
+moon check
+```
+
 ## Private helper methods on Reader
 - Convert `Reader`-only helpers to private methods to keep lookahead and escape logic local to the reader API.
 
