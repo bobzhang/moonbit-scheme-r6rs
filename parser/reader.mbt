@@ -10,16 +10,19 @@ fn digit_value(ch : Char) -> Int? {
 
 ///|
 fn parse_decimal_digits(chars : StringView) -> Int? {
-  let mut acc = 0
-  let mut has_digit = false
-  for ch in chars {
-    if !ch.is_ascii_digit() {
-      return None
+  match chars {
+    [] => None
+    _ => {
+      let mut acc = 0
+      for ch in chars {
+        if !ch.is_ascii_digit() {
+          return None
+        }
+        acc = acc * 10 + (ch.to_int() - '0'.to_int())
+      }
+      Some(acc)
     }
-    acc = acc * 10 + (ch.to_int() - '0'.to_int())
-    has_digit = true
   }
-  if has_digit { Some(acc) } else { None }
 }
 
 ///|
@@ -1001,18 +1004,19 @@ pub fn parse_number_token(tok : String, radix? : Int) -> @core.Datum? {
 
 ///|
 fn parse_hex_digits(chars : StringView) -> Int? {
-  let mut acc = 0
-  let mut has_digit = false
-  for ch in chars {
-    match digit_value(ch) {
-      Some(digit) if digit < 16 => {
-        acc = acc * 16 + digit
-        has_digit = true
+  match chars {
+    [] => None
+    _ => {
+      let mut acc = 0
+      for ch in chars {
+        match digit_value(ch) {
+          Some(digit) if digit < 16 => acc = acc * 16 + digit
+          _ => return None
+        }
       }
-      _ => return None
+      Some(acc)
     }
   }
-  if has_digit { Some(acc) } else { None }
 }
 
 ///|

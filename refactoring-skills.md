@@ -2884,3 +2884,39 @@ match datum_list_to_array(expr) {
   }
 }
 ```
+
+## Use StringView emptiness patterns to drop sentinel flags
+- Match `[]` vs `_` on `StringView` to handle empty input and avoid `has_digit` locals.
+- Keep the digit loop simple; return `None` on the first non-digit.
+
+Example:
+```mbt
+fn parse_decimal_digits(chars : StringView) -> Int? {
+  match chars {
+    [] => None
+    _ => {
+      let mut acc = 0
+      for ch in chars {
+        if !ch.is_ascii_digit() {
+          return None
+        }
+        acc = acc * 10 + (ch.to_int() - '0'.to_int())
+      }
+      Some(acc)
+    }
+  }
+}
+```
+
+## Cover printer branches with constructor-built values
+- Use core constructors (RecordType::new/Record::new/Condition::new) to exercise
+  `Datum::Record` and `Datum::Condition` without touching registries.
+- Build a cyclic `Label` via `Ref` to hit the `#n#` branch in the printer.
+
+Example:
+```mbt
+let cell = Ref::new(@core.Datum::Nil)
+let label = @core.Datum::Label(1, cell)
+cell.val = label
+inspect(value_to_string(@core.Value::Datum(label)), content="#1=#1#")
+```

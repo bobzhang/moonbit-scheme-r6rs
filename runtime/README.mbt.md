@@ -105,6 +105,108 @@ test "value to string" {
 }
 
 ///|
+test "printer datum rendering" {
+  let record_type = @core.RecordType::new(1, "r", None, false, false, None, [])
+  let record = @core.Record::new(1, record_type, [])
+  let record_for_condition = @core.Record::new(2, record_type, [])
+  let condition = @core.Condition::new(1, [record_for_condition])
+  let label_cell = Ref::new(@core.Datum::Nil)
+  let label = @core.Datum::Label(1, label_cell)
+  label_cell.val = label
+  let proper_list = @core.Datum::Pair(
+    Ref::new(@core.Datum::Int(1)),
+    Ref::new(
+      @core.Datum::Pair(
+        Ref::new(@core.Datum::Int(2)),
+        Ref::new(@core.Datum::Nil),
+      ),
+    ),
+  )
+  let dotted_list = @core.Datum::Pair(
+    Ref::new(@core.Datum::Int(1)),
+    Ref::new(@core.Datum::Int(2)),
+  )
+  let entries : Array[(@core.Datum, String)] = [
+    (@core.Datum::Nil, "()"),
+    (@core.Datum::Bool(true), "#t"),
+    (@core.Datum::Int(3), "3"),
+    (@core.Datum::BigInt(@bigint.BigInt::from_int(-12)), "-12"),
+    (@core.Datum::Rat(1, 2), "1/2"),
+    (
+      @core.Datum::BigRat(
+        @bigint.BigInt::from_int(-1),
+        @bigint.BigInt::from_int(3),
+      ),
+      "-1/3",
+    ),
+    (@core.Datum::Float(1.5), "1.5"),
+    (
+      @core.Datum::Complex(
+        Ref::new(@core.Datum::Int(1)),
+        Ref::new(@core.Datum::BigInt(@bigint.BigInt::from_int(-2))),
+      ),
+      "1-2i",
+    ),
+    (@core.Datum::Char(' '), "#\\space"),
+    (@core.Datum::Char('\n'), "#\\newline"),
+    (@core.Datum::Char('\t'), "#\\tab"),
+    (@core.Datum::Char('a'), "#\\a"),
+    (
+      @core.Datum::String(Ref::new("a\n\t\r\"\\b")),
+      "\"a\\n\\t\\r\\\"\\\\b\"",
+    ),
+    (@core.Datum::Symbol("foo"), "foo"),
+    (proper_list, "(1 2)"),
+    (dotted_list, "(1 . 2)"),
+    (@core.Datum::Vector([@core.Datum::Int(1), @core.Datum::Bool(true)]), "#(1 #t)"),
+    (@core.Datum::ByteVector([1, 2]), "#vu8(1 2)"),
+    (@core.Datum::Record(record), "#<record>"),
+    (@core.Datum::Condition(condition), "#<condition>"),
+    (@core.Datum::Value(@core.Value::Void), "#<void>"),
+    (label, "#1=#1#"),
+  ]
+  for entry in entries {
+    let (datum, expected) = entry
+    inspect(value_to_string(@core.Value::Datum(datum)), content=expected)
+  }
+}
+
+///|
+test "value to string variants" {
+  let env = env_new()
+  let record_type = @core.RecordType::new(1, "r", None, false, false, None, [])
+  let record = @core.Record::new(1, record_type, [])
+  let ctor_desc_for_type = @core.RecordConstructorDescriptor::new(1, record_type, None, None)
+  let ctor_desc = @core.RecordConstructorDescriptor::new(2, record_type, None, None)
+  let record_type_desc =
+    @core.RecordTypeDescriptor::new(1, record_type, ctor_desc_for_type)
+  let enum_set = @core.EnumSet::new(1, ["a"], [true])
+  let table = @core.Hashtable::new(1, true, @core.HashtableEquiv::Eq, None, [])
+  let port = new_output_string_port()
+  let promise = @core.Promise::new(1, @core.PromiseState::Value(@core.Value::Void))
+  let eval_env = @core.EvalEnv::new(1, env)
+  let syntax_obj = @core.SyntaxObject::new(@core.Datum::Symbol("x"), [], None)
+  let values : Array[(@core.Value, String)] = [
+    (@core.Value::Primitive(@core.Primitive::Add), "#<procedure>"),
+    (@core.Value::Values([@core.Value::Void]), "#<values>"),
+    (@core.Value::Promise(promise), "#<promise>"),
+    (@core.Value::EvalEnv(eval_env), "#<environment>"),
+    (@core.Value::Port(port), "#<port>"),
+    (@core.Value::Record(record), "#<record>"),
+    (@core.Value::Hashtable(table), "#<hashtable>"),
+    (@core.Value::EnumSet(enum_set), "#<enum-set>"),
+    (@core.Value::RecordTypeDescriptor(record_type_desc), "#<record-type-descriptor>"),
+    (@core.Value::RecordConstructorDescriptor(ctor_desc), "#<record-constructor-descriptor>"),
+    (@core.Value::SyntaxObject(syntax_obj), "#<syntax>"),
+    (@core.Value::SyntaxKeyword("syntax"), "#<syntax-keyword>"),
+  ]
+  for entry in values {
+    let (value, expected) = entry
+    inspect(value_to_string(value), content=expected)
+  }
+}
+
+///|
 test "datum unlabel" {
   match datum_unlabel(@core.Datum::Int(3)) {
     Int(3) => ()
