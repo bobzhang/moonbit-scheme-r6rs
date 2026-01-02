@@ -1034,25 +1034,40 @@ for acc = 0, has_digit = false; true; {
 
 Example:
 ```mbt
-let current = value_as_fixnum_int(args[0])
-let current = for i = 1, current = current; i < args.length(); {
-  let cur = value_as_fixnum_int(args[i])
-  let next = if cur > current { cur } else { current }
-  continue i + 1, next
-} else {
-  current
+match args {
+  [first, ..rest] => {
+    let current = value_as_fixnum_int(first)
+    let current = for i = 0, current = current; i < rest.length(); {
+      let cur = value_as_fixnum_int(rest[i])
+      let next = if cur > current { cur } else { current }
+      continue i + 1, next
+    } else {
+      current
+    }
+    current
+  }
+  _ => raise arity_mismatch(1, args.length())
 }
 ```
 
 Example:
 ```mbt
-let (best, has_inexact) = for i = 1, best = best, has_inexact = has_inexact; i < args.length(); {
-  let cur = value_as_number(args[i])
-  let next_best = if num_less(best, cur) { cur } else { best }
-  let next_has_inexact = has_inexact || cur is Float(_)
-  continue i + 1, next_best, next_has_inexact
-} else {
-  (best, has_inexact)
+match args {
+  [first, ..rest] => {
+    let best = value_as_number(first)
+    let has_inexact = best is Float(_)
+    let (best, has_inexact) =
+      for i = 0, best = best, has_inexact = has_inexact; i < rest.length(); {
+        let cur = value_as_number(rest[i])
+        let next_best = if num_less(best, cur) { cur } else { best }
+        let next_has_inexact = has_inexact || cur is Float(_)
+        continue i + 1, next_best, next_has_inexact
+      } else {
+        (best, has_inexact)
+      }
+    (best, has_inexact)
+  }
+  _ => raise arity_mismatch(1, args.length())
 }
 ```
 
@@ -1514,33 +1529,41 @@ fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
 }
 
 fn compare_chain_char(args : Array[Value], mode : CompareMode, case_insensitive : Bool) -> Bool raise EvalError {
-  if args.length() <= 1 {
-    return true
-  }
-  let prev = foldcase_char_if(value_as_char(args[0]), case_insensitive)
-  for i = 1, prev = prev; i < args.length(); {
-    let cur = foldcase_char_if(value_as_char(args[i]), case_insensitive)
-    if !compare_ok(mode, prev.to_int().compare(cur.to_int())) {
-      return false
+  match args {
+    [] | [_] => true
+    [first, ..rest] => {
+      let prev = foldcase_char_if(value_as_char(first), case_insensitive)
+      for i = 0, prev = prev; i < rest.length(); {
+        let cur = foldcase_char_if(value_as_char(rest[i]), case_insensitive)
+        if !compare_ok(mode, prev.to_int().compare(cur.to_int())) {
+          return false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
     }
-    continue i + 1, cur
-  } else {
-    true
   }
 }
 ```
 
 Example:
 ```mbt
-let prev = value_as_number(args[0])
-let ok = for i = 1, prev = prev; i < args.length(); {
-  let cur = value_as_number(args[i])
-  if !num_less(prev, cur) {
-    break false
+match args {
+  [] | [_] => true
+  [first, ..rest] => {
+    let prev = value_as_number(first)
+    let ok = for i = 0, prev = prev; i < rest.length(); {
+      let cur = value_as_number(rest[i])
+      if !num_less(prev, cur) {
+        break false
+      }
+      continue i + 1, cur
+    } else {
+      true
+    }
+    ok
   }
-  continue i + 1, cur
-} else {
-  true
 }
 ```
 
@@ -1904,19 +1927,18 @@ pub fn eval_program(src : String) -> Value raise {
 Example:
 ```mbt
 fn flonum_increasing(args : Array[Value]) -> Bool {
-  if args.length() <= 1 {
-    true
-  } else {
-    let first = value_as_flonum(args[0])
-    for i = 1, prev = first; i < args.length(); {
-      let cur = value_as_flonum(args[i])
-      if prev >= cur {
-        break false
+  match args {
+    [] | [_] => true
+    [first, ..rest] =>
+      for i = 0, prev = value_as_flonum(first); i < rest.length(); {
+        let cur = value_as_flonum(rest[i])
+        if prev >= cur {
+          break false
+        }
+        continue i + 1, cur
+      } else {
+        true
       }
-      continue i + 1, cur
-    } else {
-      true
-    }
   }
 }
 ```
