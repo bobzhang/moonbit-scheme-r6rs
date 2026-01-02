@@ -1953,42 +1953,37 @@ fn eval_define_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    match datum_unwrap_syntax(args[0]) {
-      Symbol(_) => {
-        let name = parse_symbol(args[0])
-        match args {
-          [_, value_expr] =>
-            MachineState::Eval(
-              value_expr,
-              env,
-              @core.Kont::Define(name, env, kont),
-              handlers,
-            )
-          _ => raise arity_mismatch(2, args.length())
-        }
-      }
-      Pair(head, tail) => {
-        let name = parse_symbol(head.val)
-        let formals = parse_formals(tail.val)
-        match args {
-          [_, ..body] => {
-            @runtime.env_define(
-              env,
-              name,
-              @core.Value::Closure(
-                make_closure(formals.params, formals.rest, body.to_array(), env),
-              ),
-            )
-            MachineState::Apply(@core.Value::Void, kont, handlers)
+  match args {
+    [first, ..rest] if !rest.is_empty() =>
+      match datum_unwrap_syntax(first) {
+        Symbol(_) => {
+          let name = parse_symbol(first)
+          match rest {
+            [value_expr] =>
+              MachineState::Eval(
+                value_expr,
+                env,
+                @core.Kont::Define(name, env, kont),
+                handlers,
+              )
+            _ => raise arity_mismatch(2, args.length())
           }
-          _ => raise arity_mismatch(2, args.length())
         }
+        Pair(head, tail) => {
+          let name = parse_symbol(head.val)
+          let formals = parse_formals(tail.val)
+          @runtime.env_define(
+            env,
+            name,
+            @core.Value::Closure(
+              make_closure(formals.params, formals.rest, rest.to_array(), env),
+            ),
+          )
+          MachineState::Apply(@core.Value::Void, kont, handlers)
+        }
+        _ => raise @core.EvalError("type error: symbol expected")
       }
-      _ => raise @core.EvalError("type error: symbol expected")
-    }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2447,64 +2442,65 @@ fn eval_do_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  }
-  let (names, inits, steps) = parse_do_bindings(args[0])
-  let (test_expr, result_exprs) = match datum_list_to_array(args[1]) {
-    [test_expr, ..rest] => {
-      let results : Array[@core.Datum] = []
-      for expr in rest {
-        results.push(expr)
+  match args {
+    [bindings_expr, test_spec, ..command_exprs] => {
+      let (names, inits, steps) = parse_do_bindings(bindings_expr)
+      let (test_expr, result_exprs) = match datum_list_to_array(test_spec) {
+        [test_expr, ..rest] => {
+          let results : Array[@core.Datum] = []
+          for expr in rest {
+            results.push(expr)
+          }
+          (test_expr, results)
+        }
+        _ => raise @core.EvalError("invalid do")
       }
-      (test_expr, results)
+      let loop_name = next_do_name()
+      let params : Array[@core.Datum] = []
+      for name in names {
+        params.push(Symbol(name))
+      }
+      let call_items : Array[@core.Datum] = []
+      call_items.push(Symbol(loop_name))
+      for step in steps {
+        call_items.push(step)
+      }
+      let call_expr = list_from_array(call_items)
+      let else_body : Array[@core.Datum] = []
+      for expr in command_exprs {
+        else_body.push(expr)
+      }
+      else_body.push(call_expr)
+      let then_expr = build_begin(result_exprs)
+      let else_expr = build_begin(else_body)
+      let if_expr = list_from_array([
+        Symbol("if"),
+        test_expr,
+        then_expr,
+        else_expr,
+      ])
+      let lambda_expr = list_from_array([
+        Symbol("lambda"),
+        list_from_array(params),
+        if_expr,
+      ])
+      let binding_expr = list_from_array([Symbol(loop_name), lambda_expr])
+      let bindings_expr = list_from_array([binding_expr])
+      let init_call_items : Array[@core.Datum] = []
+      init_call_items.push(Symbol(loop_name))
+      for init in inits {
+        init_call_items.push(init)
+      }
+      let init_call_expr = list_from_array(init_call_items)
+      let expanded = list_from_array([
+        Symbol("letrec"),
+        bindings_expr,
+        init_call_expr,
+      ])
+      MachineState::Eval(expanded, env, kont, handlers)
     }
-    _ => raise @core.EvalError("invalid do")
+    _ => raise arity_mismatch(2, args.length())
   }
-  let command_exprs = args.sub(start=2).to_array()
-  let loop_name = next_do_name()
-  let params : Array[@core.Datum] = []
-  for name in names {
-    params.push(Symbol(name))
-  }
-  let call_items : Array[@core.Datum] = []
-  call_items.push(Symbol(loop_name))
-  for step in steps {
-    call_items.push(step)
-  }
-  let call_expr = list_from_array(call_items)
-  let else_body : Array[@core.Datum] = []
-  for expr in command_exprs {
-    else_body.push(expr)
-  }
-  else_body.push(call_expr)
-  let then_expr = build_begin(result_exprs)
-  let else_expr = build_begin(else_body)
-  let if_expr = list_from_array([
-    Symbol("if"),
-    test_expr,
-    then_expr,
-    else_expr,
-  ])
-  let lambda_expr = list_from_array([
-    Symbol("lambda"),
-    list_from_array(params),
-    if_expr,
-  ])
-  let binding_expr = list_from_array([Symbol(loop_name), lambda_expr])
-  let bindings_expr = list_from_array([binding_expr])
-  let init_call_items : Array[@core.Datum] = []
-  init_call_items.push(Symbol(loop_name))
-  for init in inits {
-    init_call_items.push(init)
-  }
-  let init_call_expr = list_from_array(init_call_items)
-  let expanded = list_from_array([
-    Symbol("letrec"),
-    bindings_expr,
-    init_call_expr,
-  ])
-  MachineState::Eval(expanded, env, kont, handlers)
 }
 
 ///|
@@ -2514,18 +2510,23 @@ fn eval_define_record_type_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 3 {
-    raise @core.EvalError("invalid define-record-type")
+  let (record_name, ctor_name, ctor_fields, pred_name, raw_specs) = match args {
+    [record_name_expr, ctor_expr, pred_expr, ..raw_specs] => {
+      let ctor_parts = datum_list_to_array(ctor_expr)
+      match ctor_parts {
+        [] => raise @core.EvalError("invalid define-record-type")
+        [ctor_head, ..ctor_tail] =>
+          (
+            parse_symbol(record_name_expr),
+            parse_symbol(ctor_head),
+            parse_symbol_list(ctor_tail),
+            parse_symbol(pred_expr),
+            raw_specs.to_array(),
+          )
+      }
+    }
+    _ => raise @core.EvalError("invalid define-record-type")
   }
-  let record_name = parse_symbol(args[0])
-  let ctor_parts = datum_list_to_array(args[1])
-  if ctor_parts.is_empty() {
-    raise @core.EvalError("invalid define-record-type")
-  }
-  let ctor_name = parse_symbol(ctor_parts[0])
-  let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1))
-  let pred_name = parse_symbol(args[2])
-  let raw_specs = args.sub(start=3).to_array()
   let field_specs : Array[@core.Datum] = []
   let (parent_name, protocol_expr, is_sealed, is_opaque, uid) =
     for i = 0,
@@ -2766,14 +2767,17 @@ fn eval_define_condition_type_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 4 {
-    raise @core.EvalError("invalid define-condition-type")
+  let (record_name, parent_name, ctor_name, pred_name, field_specs) = match args {
+    [record_name_expr, parent_name_expr, ctor_name_expr, pred_name_expr, ..field_specs] =>
+      (
+        parse_symbol(record_name_expr),
+        parse_symbol(parent_name_expr),
+        parse_symbol(ctor_name_expr),
+        parse_symbol(pred_name_expr),
+        field_specs.to_array(),
+      )
+    _ => raise @core.EvalError("invalid define-condition-type")
   }
-  let record_name = parse_symbol(args[0])
-  let parent_name = parse_symbol(args[1])
-  let ctor_name = parse_symbol(args[2])
-  let pred_name = parse_symbol(args[3])
-  let field_specs = args.sub(start=4).to_array()
   match @runtime.lookup_record_type_descriptor(record_name) {
     Some(_) => raise @core.EvalError("invalid define-condition-type")
     None => ()
@@ -2860,12 +2864,15 @@ fn eval_define_enumeration_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 3 {
-    raise @core.EvalError("invalid define-enumeration")
+  let (type_name, symbols, ctor_name) = match args {
+    [type_name_expr, symbols_expr, ctor_name_expr] =>
+      (
+        parse_symbol(type_name_expr),
+        parse_symbol_list(datum_list_to_array(symbols_expr)),
+        parse_symbol(ctor_name_expr),
+      )
+    _ => raise @core.EvalError("invalid define-enumeration")
   }
-  let type_name = parse_symbol(args[0])
-  let symbols = parse_symbol_list(datum_list_to_array(args[1]))
-  let ctor_name = parse_symbol(args[2])
   let seen : Map[String, Bool] = {}
   for name in symbols {
     if seen.contains(name) {
@@ -2974,44 +2981,47 @@ fn apply_record_proc(
       }
     }
     Predicate(record_type) =>
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      } else {
-        let result = match args[0] {
-          Record(record) =>
-            @runtime.record_type_is_a(record.record_type, record_type)
-          _ => false
+      match args {
+        [value] => {
+          let result = match value {
+            Record(record) =>
+              @runtime.record_type_is_a(record.record_type, record_type)
+            _ => false
+          }
+          MachineState::Apply(bool_value(result), kont, handlers)
         }
-        MachineState::Apply(bool_value(result), kont, handlers)
+        _ => raise arity_mismatch(1, args.length())
       }
     Accessor(record_type, idx) =>
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      } else {
-        let record = value_as_record(args[0])
-        if !@runtime.record_type_is_a(record.record_type, record_type) {
-          raise @core.EvalError(
-            "type error: record type mismatch: expected \{record_type.name}",
-          )
+      match args {
+        [value] => {
+          let record = value_as_record(value)
+          if !@runtime.record_type_is_a(record.record_type, record_type) {
+            raise @core.EvalError(
+              "type error: record type mismatch: expected \{record_type.name}",
+            )
+          }
+          MachineState::Apply(record.fields[idx].val, kont, handlers)
         }
-        MachineState::Apply(record.fields[idx].val, kont, handlers)
+        _ => raise arity_mismatch(1, args.length())
       }
     Mutator(record_type, idx) =>
-      if args.length() != 2 {
-        raise arity_mismatch(2, args.length())
-      } else {
-        let record = value_as_record(args[0])
-        if !@runtime.record_type_is_a(record.record_type, record_type) {
-          raise @core.EvalError(
-            "type error: record type mismatch: expected \{record_type.name}",
-          )
+      match args {
+        [value, new_value] => {
+          let record = value_as_record(value)
+          if !@runtime.record_type_is_a(record.record_type, record_type) {
+            raise @core.EvalError(
+              "type error: record type mismatch: expected \{record_type.name}",
+            )
+          }
+          let field = record.record_type.fields[idx]
+          if !field.mutable {
+            raise @core.EvalError("record field is immutable: \{field.name}")
+          }
+          record.fields[idx].val = new_value
+          MachineState::Apply(@core.Value::Void, kont, handlers)
         }
-        let field = record.record_type.fields[idx]
-        if !field.mutable {
-          raise @core.EvalError("record field is immutable: \{field.name}")
-        }
-        record.fields[idx].val = args[1]
-        MachineState::Apply(@core.Value::Void, kont, handlers)
+        _ => raise arity_mismatch(2, args.length())
       }
     ProtocolN(record_type, parent_desc) => {
       let parent_type = match record_type.parent {
@@ -3067,54 +3077,56 @@ fn apply_condition_proc(
 ) -> MachineState raise @core.EvalError {
   match proc.kind {
     Predicate(record_type) =>
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      } else {
-        let base = condition_base_type()
-        let ok = match condition_components_opt(args[0], base) {
-          Some(components) =>
+      match args {
+        [value] => {
+          let base = condition_base_type()
+          let ok = match condition_components_opt(value, base) {
+            Some(components) =>
+              for i = 0; i < components.length(); {
+                // invariant : i >= 0 && i <= components.length()
+                // decreases : components.length() - i
+                // assert : i <= components.length()
+                if @runtime.record_type_is_a(components[i].record_type, record_type) {
+                  break true
+                }
+                continue i + 1
+              } else {
+                false
+              }
+            None => false
+          }
+          MachineState::Apply(bool_value(ok), kont, handlers)
+        }
+        _ => raise arity_mismatch(1, args.length())
+      }
+    Accessor(record_type, idx) =>
+      match args {
+        [value] => {
+          let base = condition_base_type()
+          let components = condition_components(value, base)
+          let found =
             for i = 0; i < components.length(); {
               // invariant : i >= 0 && i <= components.length()
               // decreases : components.length() - i
               // assert : i <= components.length()
-              if @runtime.record_type_is_a(components[i].record_type, record_type) {
-                break true
+              let record = components[i]
+              if @runtime.record_type_is_a(record.record_type, record_type) {
+                break Some(record)
               }
               continue i + 1
             } else {
-              false
+              None
             }
-          None => false
-        }
-        MachineState::Apply(bool_value(ok), kont, handlers)
-      }
-    Accessor(record_type, idx) =>
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      } else {
-        let base = condition_base_type()
-        let components = condition_components(args[0], base)
-        let found =
-          for i = 0; i < components.length(); {
-            // invariant : i >= 0 && i <= components.length()
-            // decreases : components.length() - i
-            // assert : i <= components.length()
-            let record = components[i]
-            if @runtime.record_type_is_a(record.record_type, record_type) {
-              break Some(record)
-            }
-            continue i + 1
-          } else {
-            None
+          match found {
+            Some(record) =>
+              MachineState::Apply(record.fields[idx].val, kont, handlers)
+            None =>
+              raise @core.EvalError(
+                "type error: condition type mismatch: expected \{record_type.name}",
+              )
           }
-        match found {
-          Some(record) =>
-            MachineState::Apply(record.fields[idx].val, kont, handlers)
-          None =>
-            raise @core.EvalError(
-              "type error: condition type mismatch: expected \{record_type.name}",
-            )
         }
+        _ => raise arity_mismatch(1, args.length())
       }
   }
 }
@@ -3128,26 +3140,30 @@ fn apply_enum_set_proc(
 ) -> MachineState raise @core.EvalError {
   match proc.kind {
     Indexer(set) => {
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
-      }
-      let name = parse_symbol(value_as_datum(args[0]))
-      match @runtime.enum_set_index_of(set.universe, name) {
-        Some(idx) =>
-          MachineState::Apply(@core.Value::Datum(Int(idx)), kont, handlers)
-        None =>
-          MachineState::Apply(@core.Value::Datum(Bool(false)), kont, handlers)
+      match args {
+        [value] => {
+          let name = parse_symbol(value_as_datum(value))
+          match @runtime.enum_set_index_of(set.universe, name) {
+            Some(idx) =>
+              MachineState::Apply(@core.Value::Datum(Int(idx)), kont, handlers)
+            None =>
+              MachineState::Apply(@core.Value::Datum(Bool(false)), kont, handlers)
+          }
+        }
+        _ => raise arity_mismatch(1, args.length())
       }
     }
     Constructor(set) => {
-      if args.length() != 1 {
-        raise arity_mismatch(1, args.length())
+      match args {
+        [value] => {
+          let names = parse_symbol_list(
+            datum_list_to_array(value_as_datum(value)),
+          )
+          let subset = @runtime.enum_set_from_names(set.universe, names)
+          MachineState::Apply(@core.Value::EnumSet(subset), kont, handlers)
+        }
+        _ => raise arity_mismatch(1, args.length())
       }
-      let names = parse_symbol_list(
-        datum_list_to_array(value_as_datum(args[0])),
-      )
-      let subset = @runtime.enum_set_from_names(set.universe, names)
-      MachineState::Apply(@core.Value::EnumSet(subset), kont, handlers)
     }
   }
 }
@@ -3341,20 +3357,20 @@ fn apply_hashtable_ref(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 3 {
-    raise arity_mismatch(3, args.length())
+  match args {
+    [table_value, key, default_value] => {
+      let table = value_as_hashtable(table_value)
+      hashtable_find_state(
+        table,
+        key,
+        0,
+        @core.HashtableOp::Ref(default_value),
+        kont,
+        handlers,
+      )
+    }
+    _ => raise arity_mismatch(3, args.length())
   }
-  let table = value_as_hashtable(args[0])
-  let key = args[1]
-  let default_value = args[2]
-  hashtable_find_state(
-    table,
-    key,
-    0,
-    @core.HashtableOp::Ref(default_value),
-    kont,
-    handlers,
-  )
 }
 
 ///|
@@ -3363,20 +3379,20 @@ fn apply_hashtable_set(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 3 {
-    raise arity_mismatch(3, args.length())
+  match args {
+    [table_value, key, value] => {
+      let table = value_as_hashtable(table_value)
+      hashtable_find_state(
+        table,
+        key,
+        0,
+        @core.HashtableOp::Set(value),
+        kont,
+        handlers,
+      )
+    }
+    _ => raise arity_mismatch(3, args.length())
   }
-  let table = value_as_hashtable(args[0])
-  let key = args[1]
-  let value = args[2]
-  hashtable_find_state(
-    table,
-    key,
-    0,
-    @core.HashtableOp::Set(value),
-    kont,
-    handlers,
-  )
 }
 
 ///|
@@ -3385,19 +3401,20 @@ fn apply_hashtable_delete(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 2 {
-    raise arity_mismatch(2, args.length())
+  match args {
+    [table_value, key] => {
+      let table = value_as_hashtable(table_value)
+      hashtable_find_state(
+        table,
+        key,
+        0,
+        @core.HashtableOp::Delete,
+        kont,
+        handlers,
+      )
+    }
+    _ => raise arity_mismatch(2, args.length())
   }
-  let table = value_as_hashtable(args[0])
-  let key = args[1]
-  hashtable_find_state(
-    table,
-    key,
-    0,
-    @core.HashtableOp::Delete,
-    kont,
-    handlers,
-  )
 }
 
 ///|
@@ -3406,19 +3423,20 @@ fn apply_hashtable_contains(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 2 {
-    raise arity_mismatch(2, args.length())
+  match args {
+    [table_value, key] => {
+      let table = value_as_hashtable(table_value)
+      hashtable_find_state(
+        table,
+        key,
+        0,
+        @core.HashtableOp::Contains,
+        kont,
+        handlers,
+      )
+    }
+    _ => raise arity_mismatch(2, args.length())
   }
-  let table = value_as_hashtable(args[0])
-  let key = args[1]
-  hashtable_find_state(
-    table,
-    key,
-    0,
-    @core.HashtableOp::Contains,
-    kont,
-    handlers,
-  )
 }
 
 ///|
@@ -3427,24 +3445,23 @@ fn apply_hashtable_update(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() != 4 {
-    raise arity_mismatch(4, args.length())
+  match args {
+    [table_value, key, proc, default_value] => {
+      let table = value_as_hashtable(table_value)
+      if !@runtime.is_procedure_value(proc) {
+        raise @core.EvalError("type error: procedure expected")
+      }
+      hashtable_find_state(
+        table,
+        key,
+        0,
+        @core.HashtableOp::Update(proc, default_value),
+        kont,
+        handlers,
+      )
+    }
+    _ => raise arity_mismatch(4, args.length())
   }
-  let table = value_as_hashtable(args[0])
-  let key = args[1]
-  let proc = args[2]
-  let default_value = args[3]
-  if !@runtime.is_procedure_value(proc) {
-    raise @core.EvalError("type error: procedure expected")
-  }
-  hashtable_find_state(
-    table,
-    key,
-    0,
-    @core.HashtableOp::Update(proc, default_value),
-    kont,
-    handlers,
-  )
 }
 
 ///|
@@ -4167,32 +4184,34 @@ fn eval_library_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 3 {
-    raise @core.EvalError("invalid library")
-  }
-  let name_spec = parse_library_name_spec(args[0])
-  let exports = parse_export_clause(args[1])
-  let imports = parse_import_clause(args[2])
-  let body = args.sub(start=3).to_array()
-  let lib_env = init_env()
-  for import_set in imports {
-    import_set_into_env(import_set, lib_env)
-  }
-  for form in body {
-    let _ = eval_expr(form, lib_env)
+  match args {
+    [name_expr, exports_expr, imports_expr, ..body] => {
+      let name_spec = parse_library_name_spec(name_expr)
+      let exports = parse_export_clause(exports_expr)
+      let imports = parse_import_clause(imports_expr)
+      let body = body.to_array()
+      let lib_env = init_env()
+      for import_set in imports {
+        import_set_into_env(import_set, lib_env)
+      }
+      for form in body {
+        let _ = eval_expr(form, lib_env)
 
-  }
-  let export_map : Map[String,@core.Binding] = {}
-  for export_spec in exports {
-    let (external, internal) = export_spec
-    if is_syntax_keyword(internal) {
-      export_map[external] = @runtime.make_binding(@core.Value::SyntaxKeyword(external))
-    } else {
-      export_map[external] = @runtime.env_lookup_binding(lib_env, internal)
+      }
+      let export_map : Map[String,@core.Binding] = {}
+      for export_spec in exports {
+        let (external, internal) = export_spec
+        if is_syntax_keyword(internal) {
+          export_map[external] = @runtime.make_binding(@core.Value::SyntaxKeyword(external))
+        } else {
+          export_map[external] = @runtime.env_lookup_binding(lib_env, internal)
+        }
+      }
+      register_library_entry(name_spec.base, name_spec.version, export_map)
+      MachineState::Apply(@core.Value::Void, kont, handlers)
     }
+    _ => raise @core.EvalError("invalid library")
   }
-  register_library_entry(name_spec.base, name_spec.version, export_map)
-  MachineState::Apply(@core.Value::Void, kont, handlers)
 }
 
 ///|
@@ -4728,96 +4747,93 @@ fn apply_proc(
         _ => raise arity_mismatch(2, args.length())
       }
     Primitive(@core.Primitive::Error) =>
-      if args.length() < 2 {
-        raise arity_mismatch(2, args.length())
-      } else {
-        let who = args[0]
-        let message = args[1]
-        let irritants = args.sub(start=2).to_array()
-        let components : Array[@core.Record] = []
-        components.push(make_condition_record("&error", []))
-        components.push(make_condition_record("&message", [message]))
-        components.push(make_condition_record("&who", [who]))
-        components.push(
-          make_condition_record("&irritants", [irritants_list_value(irritants)]),
-        )
-        raise_condition(components, kont, handlers)
+      match args {
+        [who, message, ..irritants] => {
+          let irritants = irritants.to_array()
+          let components : Array[@core.Record] = []
+          components.push(make_condition_record("&error", []))
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
+        }
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive(@core.Primitive::AssertionViolation) =>
-      if args.length() < 2 {
-        raise arity_mismatch(2, args.length())
-      } else {
-        let who = args[0]
-        let message = args[1]
-        let irritants = args.sub(start=2).to_array()
-        let components : Array[@core.Record] = []
-        components.push(make_condition_record("&assertion", []))
-        components.push(make_condition_record("&message", [message]))
-        components.push(make_condition_record("&who", [who]))
-        components.push(
-          make_condition_record("&irritants", [irritants_list_value(irritants)]),
-        )
-        raise_condition(components, kont, handlers)
+      match args {
+        [who, message, ..irritants] => {
+          let irritants = irritants.to_array()
+          let components : Array[@core.Record] = []
+          components.push(make_condition_record("&assertion", []))
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
+        }
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive(@core.Primitive::ImplementationRestrictionViolation) =>
-      if args.length() < 2 {
-        raise arity_mismatch(2, args.length())
-      } else {
-        let who = args[0]
-        let message = args[1]
-        let irritants = args.sub(start=2).to_array()
-        let components : Array[@core.Record] = []
-        components.push(
-          make_condition_record("&implementation-restriction", []),
-        )
-        components.push(make_condition_record("&message", [message]))
-        components.push(make_condition_record("&who", [who]))
-        components.push(
-          make_condition_record("&irritants", [irritants_list_value(irritants)]),
-        )
-        raise_condition(components, kont, handlers)
+      match args {
+        [who, message, ..irritants] => {
+          let irritants = irritants.to_array()
+          let components : Array[@core.Record] = []
+          components.push(
+            make_condition_record("&implementation-restriction", []),
+          )
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
+        }
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive(@core.Primitive::UndefinedViolation) =>
-      if args.length() < 2 {
-        raise arity_mismatch(2, args.length())
-      } else {
-        let who = args[0]
-        let message = args[1]
-        let irritants = args.sub(start=2).to_array()
-        let components : Array[@core.Record] = []
-        components.push(make_condition_record("&undefined", []))
-        components.push(make_condition_record("&message", [message]))
-        components.push(make_condition_record("&who", [who]))
-        components.push(
-          make_condition_record("&irritants", [irritants_list_value(irritants)]),
-        )
-        raise_condition(components, kont, handlers)
+      match args {
+        [who, message, ..irritants] => {
+          let irritants = irritants.to_array()
+          let components : Array[@core.Record] = []
+          components.push(make_condition_record("&undefined", []))
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
+        }
+        _ => raise arity_mismatch(2, args.length())
       }
     Primitive(@core.Primitive::SyntaxViolation) =>
-      if args.length() < 3 {
-        raise arity_mismatch(3, args.length())
-      } else {
-        let who = args[0]
-        let message = args[1]
-        let form = args[2]
-        let subform = if args.length() >= 4 {
-          args[3]
-        } else {
-          @core.Value::Datum(Bool(false))
+      match args {
+        [who, message, form] => {
+          let subform = @core.Value::Datum(Bool(false))
+          let irritants : Array[@core.Value] = []
+          let components : Array[@core.Record] = []
+          components.push(make_condition_record("&syntax", [form, subform]))
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
         }
-        let irritants = if args.length() >= 4 {
-          args.sub(start=4).to_array()
-        } else {
-          []
+        [who, message, form, subform, ..irritants] => {
+          let irritants = irritants.to_array()
+          let components : Array[@core.Record] = []
+          components.push(make_condition_record("&syntax", [form, subform]))
+          components.push(make_condition_record("&message", [message]))
+          components.push(make_condition_record("&who", [who]))
+          components.push(
+            make_condition_record("&irritants", [irritants_list_value(irritants)]),
+          )
+          raise_condition(components, kont, handlers)
         }
-        let components : Array[@core.Record] = []
-        components.push(make_condition_record("&syntax", [form, subform]))
-        components.push(make_condition_record("&message", [message]))
-        components.push(make_condition_record("&who", [who]))
-        components.push(
-          make_condition_record("&irritants", [irritants_list_value(irritants)]),
-        )
-        raise_condition(components, kont, handlers)
+        _ => raise arity_mismatch(3, args.length())
       }
     Primitive(@core.Primitive::Raise) =>
       match args {
@@ -5074,12 +5090,11 @@ fn apply_proc(
           raise @core.EvalError(
             "arity mismatch: expected 0 or 1 got \{args.length()}",
           )
-      }
+    }
     Continuation(cont) => {
-      let resume_value = if args.length() == 1 {
-        args[0]
-      } else {
-        @core.Value::Values(args)
+      let resume_value = match args {
+        [single] => single
+        _ => @core.Value::Values(args)
       }
       let current_winds = wind_stack.val
       let target_winds = cont.winds

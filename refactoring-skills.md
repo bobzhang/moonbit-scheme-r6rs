@@ -2853,6 +2853,7 @@ match datum_list_to_array(binding) {
 - Pair with guards to handle markers like `=>` without manual length checks.
 - Use middle rests like `[..prefix, last]` or `[head, ..mid, tail]` to split out tails while validating prefixes.
 - If a form needs “at least N”, match `[head, ..rest]` and guard on `rest.length() >= N - 1` to keep the arity check local.
+- For “N required + variadic tail” forms, pattern match `[a, b, ..rest]` and pass `rest.to_array()` (or iterate the view directly) instead of `args.sub(start=2)`.
 
 Example:
 ```mbt
