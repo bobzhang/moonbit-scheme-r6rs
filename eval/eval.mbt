@@ -1226,15 +1226,12 @@ fn eval_delay(args : Array[@core.Datum], env : @core.Env) -> @core.Value raise @
 fn unwrap_form(expr : @core.Datum, name : String) -> @core.Datum? {
   match datum_unwrap_syntax(expr) {
     Pair(head, tail) =>
-      match datum_unwrap_syntax(head.val) {
-        Symbol(head_name) if head_name == name =>
-          match tail.val {
-            Pair(arg, rest) =>
-              match rest.val {
-                Nil => Some(arg.val)
-                _ => None
-              }
-            _ => None
+      match (datum_unwrap_syntax(head.val), tail.val) {
+        (Symbol(head_name), Pair(arg, rest)) =>
+          if head_name == name && rest.val is Nil {
+            Some(arg.val)
+          } else {
+            None
           }
         _ => None
       }
@@ -1642,9 +1639,10 @@ fn parse_parameterize_bindings(
 
 ///|
 fn parse_symbol(expr : @core.Datum) -> String raise @core.EvalError {
-  match @runtime.symbol_name(datum_unwrap_syntax(expr)) {
-    Some(name) => name
-    None => raise @core.EvalError("type error: symbol expected")
+  if @runtime.symbol_name(datum_unwrap_syntax(expr)) is Some(name) {
+    name
+  } else {
+    raise @core.EvalError("type error: symbol expected")
   }
 }
 
@@ -1670,11 +1668,8 @@ fn parse_symbol_list(
 ///|
 fn expect_single(value : @core.Value) -> @core.Value raise @core.EvalError {
   match value {
-    Values(values) =>
-      match values {
-        [single] => single
-        _ => raise @core.EvalError("multiple values in single-value context")
-      }
+    Values([single]) => single
+    Values(_) => raise @core.EvalError("multiple values in single-value context")
     _ => value
   }
 }
@@ -4289,12 +4284,9 @@ fn case_dispatch(
     let parts = datum_list_to_array(clauses[i])
     match parts {
       [] => continue i + 1
-      [head_expr, ..body] => {
-        match @runtime.symbol_name(head_expr) {
-          Some("else") =>
-            return eval_sequence_state(body.to_array(), env, kont, handlers)
-          _ => ()
-        }
+      [head_expr, ..body] if @runtime.symbol_name(head_expr) is Some("else") =>
+        return eval_sequence_state(body.to_array(), env, kont, handlers)
+      [head_expr, ..] => {
         let datums = datum_list_to_array(head_expr)
         let matched = for j = 0; j < datums.length(); {
           // invariant : j >= 0 && j <= datums.length()
@@ -4344,19 +4336,16 @@ fn cond_start(
     let parts = datum_list_to_array(clauses[i])
     match parts {
       [] => continue i + 1
-      [head_expr, ..body] => {
-        let head = @runtime.symbol_name(head_expr)
-        if head is Some("else") {
-          return eval_sequence_state(body.to_array(), env, kont, handlers)
-        } else {
-          let rest = clauses.sub(start=i + 1).to_array()
-          return MachineState::Eval(
-            head_expr,
-            env,
-            @core.Kont::Cond(parts, rest, env, kont),
-            handlers,
-          )
-        }
+      [head_expr, ..body] if @runtime.symbol_name(head_expr) is Some("else") =>
+        return eval_sequence_state(body.to_array(), env, kont, handlers)
+      [head_expr, ..] => {
+        let rest = clauses.sub(start=i + 1).to_array()
+        return MachineState::Eval(
+          head_expr,
+          env,
+          @core.Kont::Cond(parts, rest, env, kont),
+          handlers,
+        )
       }
     }
   }

@@ -3096,6 +3096,7 @@ Notes:
 - Update public-facing README examples to use facade functions instead of `@internal/...` packages so docs reinforce the minimal API surface.
 - Replace nested `match` chains with `is` pattern checks when you only need a single constructor, which keeps intent clear and removes one level of indentation.
 - Flatten double-dispatch matches by matching on tuples (e.g. `(pat, inp)`) and use `is` guards with precomputed head names to avoid repeated `symbol_name` calls.
+- Use nested patterns like `Values([single])` to replace a `match` inside a `match` when destructuring a wrapper around an array.
 
 Tooling example:
 ```bash
@@ -3141,5 +3142,14 @@ match (pat, inp) {
 match parts {
   [_, arg] if head_name is Some("parent") => parse_symbol(arg)
   _ => ()
+}
+```
+
+Array destructuring example:
+```mbt
+match value {
+  Values([single]) => single
+  Values(_) => raise @core.EvalError("multiple values in single-value context")
+  _ => value
 }
 ```
