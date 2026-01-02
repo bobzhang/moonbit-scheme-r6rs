@@ -1,9 +1,4 @@
 ///|
-fn string_to_chars(value : String) -> Array[Char] {
-  value.to_array()
-}
-
-///|
 fn digit_value(ch : Char) -> Int? {
   match ch {
     '0'..='9' => Some(ch.to_int() - '0'.to_int())
@@ -246,15 +241,31 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> @core.Datum? {
 }
 
 ///|
-fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
+fn view_contains_char(chars : StringView, target : Char) -> Bool {
+  let target_code = target.to_int()
+  for i = 0; i < chars.length(); {
+    // invariant : i >= 0 && i <= chars.length()
+    // decreases : chars.length() - i
+    // assert : i <= chars.length()
+    if chars[i].to_int() == target_code {
+      return true
+    }
+    continue i + 1
+  } else {
+    false
+  }
+}
+
+///|
+fn find_unique_char(chars : StringView, target : Char) -> Int? {
+  let target_code = target.to_int()
   let found : Int? =
     for i = 0, found = None; i < chars.length(); {
       // invariant : i >= 0 && i <= chars.length()
       // invariant : found is None || (found is Some(idx) && idx < i)
       // decreases : chars.length() - i
       // assert : i <= chars.length()
-      let ch = chars[i]
-      if ch == target {
+      if chars[i].to_int() == target_code {
         match found {
           Some(_) => return None
           None => continue i + 1, Some(i)
@@ -269,11 +280,21 @@ fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
 
 ///|
 fn parse_rat_token(tok : String) -> @core.Datum? {
-  let chars = string_to_chars(tok)
-  match find_unique_char(chars, '/') {
-    Some(slash) if slash > 0 && slash + 1 < chars.length() => {
-      let num_str = String::from_array(chars.sub(end=slash).to_array())
-      let den_str = String::from_array(chars.sub(start=slash + 1).to_array())
+  let view = tok[:]
+  match find_unique_char(view, '/') {
+    Some(slash) if slash > 0 && slash + 1 < view.length() => {
+      let num_view = try view.sub(end=slash) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let den_view = try view.sub(start=slash + 1) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let num_str = num_view.to_string()
+      let den_str = den_view.to_string()
       match (parse_integer_token(num_str), parse_integer_token(den_str)) {
         (Some(num), Some(den)) => normalize_rat_datum(num, den)
         _ => None
@@ -374,13 +395,15 @@ fn pow10_float(exp : Int) -> Float {
 
 ///|
 fn split_exp_token(tok : String) -> (String, Int)? {
-  let chars = string_to_chars(tok)
-  let idx = for i = 0; i < chars.length(); {
-    // invariant : i >= 0 && i <= chars.length()
-    // decreases : chars.length() - i
-    // assert : i <= chars.length()
-    let ch = chars[i]
-    if ch == 'e' || ch == 'E' {
+  let view = tok[:]
+  let lower_e = 'e'.to_int()
+  let upper_e = 'E'.to_int()
+  let idx = for i = 0; i < view.length(); {
+    // invariant : i >= 0 && i <= view.length()
+    // decreases : view.length() - i
+    // assert : i <= view.length()
+    let code = view[i].to_int()
+    if code == lower_e || code == upper_e {
       break i
     }
     continue i + 1
@@ -389,11 +412,21 @@ fn split_exp_token(tok : String) -> (String, Int)? {
   }
   if idx == -1 {
     None
-  } else if idx == 0 || idx + 1 == chars.length() {
+  } else if idx == 0 || idx + 1 == view.length() {
     None
   } else {
-    let base = String::from_array(chars.sub(end=idx).to_array())
-    let exp_str = String::from_array(chars.sub(start=idx + 1).to_array())
+    let base_view = try view.sub(end=idx) catch {
+      _ => return None
+    } noraise {
+      view => view
+    }
+    let exp_view = try view.sub(start=idx + 1) catch {
+      _ => return None
+    } noraise {
+      view => view
+    }
+    let base = base_view.to_string()
+    let exp_str = exp_view.to_string()
     parse_int_token(exp_str).map((exp) => (base, exp))
   }
 }
@@ -469,11 +502,21 @@ fn parse_exact_decimal(tok : String) -> @core.Datum? {
 
 ///|
 fn parse_rat_token_radix(tok : String, radix : Int) -> @core.Datum? {
-  let chars = string_to_chars(tok)
-  match find_unique_char(chars, '/') {
-    Some(slash) if slash > 0 && slash + 1 < chars.length() => {
-      let num_str = String::from_array(chars.sub(end=slash).to_array())
-      let den_str = String::from_array(chars.sub(start=slash + 1).to_array())
+  let view = tok[:]
+  match find_unique_char(view, '/') {
+    Some(slash) if slash > 0 && slash + 1 < view.length() => {
+      let num_view = try view.sub(end=slash) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let den_view = try view.sub(start=slash + 1) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let num_str = num_view.to_string()
+      let den_str = den_view.to_string()
       match
         (
           parse_integer_token_radix(num_str, radix),
@@ -680,20 +723,24 @@ fn parse_real_token_with_settings(
 }
 
 ///|
-fn find_complex_split(core_chars : Array[Char], radix : Int) -> Int? {
+fn find_complex_split(core_chars : StringView, radix : Int) -> Int? {
   match core_chars {
     [] | [_] => None
-    _ =>
+    _ => {
+      let plus_code = '+'.to_int()
+      let minus_code = '-'.to_int()
+      let lower_e = 'e'.to_int()
+      let upper_e = 'E'.to_int()
       for i = core_chars.length(); i > 1; {
         // invariant : i >= 1 && i <= core_chars.length()
         // decreases : i - 1
         // assert : i <= core_chars.length()
         let idx = i - 1
-        let ch = core_chars[idx]
-        if ch == '+' || ch == '-' {
+        let code = core_chars[idx].to_int()
+        if code == plus_code || code == minus_code {
           if radix == 10 {
-            let prev = core_chars[idx - 1]
-            if prev == 'e' || prev == 'E' {
+            let prev = core_chars[idx - 1].to_int()
+            if prev == lower_e || prev == upper_e {
               continue i - 1
             }
           }
@@ -703,6 +750,7 @@ fn find_complex_split(core_chars : Array[Char], radix : Int) -> Int? {
       } else {
         None
       }
+    }
   }
 }
 
@@ -713,18 +761,28 @@ fn parse_complex_token(
   exactness : Char?,
   allow_rat : Bool,
 ) -> @core.Datum? {
-  let chars = string_to_chars(tok)
-  let at = find_unique_char(chars, '@')
-  if at is None && chars.contains('@') {
+  let view = tok[:]
+  let at = find_unique_char(view, '@')
+  if at is None && view_contains_char(view, '@') {
     return None
   }
   match at {
     Some(at) => {
-      if at == 0 || at + 1 == chars.length() {
+      if at == 0 || at + 1 == view.length() {
         return None
       }
-      let left = String::from_array(chars.sub(end=at).to_array())
-      let right = String::from_array(chars.sub(start=at + 1).to_array())
+      let left_view = try view.sub(end=at) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let right_view = try view.sub(start=at + 1) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let left = left_view.to_string()
+      let right = right_view.to_string()
       let r = match
         parse_real_token_with_settings(left, radix, exactness, allow_rat) {
         Some(value) => value
@@ -749,49 +807,79 @@ fn parse_complex_token(
     }
     None => ()
   }
-  let (core, last) = match chars {
+  let (core_chars, last) = match view {
     [] => return None
-    [..core_chars, last] => (String::from_array(core_chars.to_array()), last)
+    [..core_chars, last] => (core_chars, last)
   }
   if last != 'i' && last != 'I' {
     return None
   }
-  if core.length() == 0 || core == "+" || core == "-" {
-    let sign = if core == "-" { -1 } else { 1 }
-    let imag = match exactness {
-      Some('i') | Some('I') => @core.Datum::Float(Float::from_int(sign))
-      _ => @core.Datum::Int(sign)
+  match core_chars {
+    [] => {
+      let imag = match exactness {
+        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
+        _ => @core.Datum::Int(1)
+      }
+      return Some(make_complex_datum(@core.Datum::Int(0), imag))
     }
-    return Some(make_complex_datum(@core.Datum::Int(0), imag))
+    ['+'] => {
+      let imag = match exactness {
+        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
+        _ => @core.Datum::Int(1)
+      }
+      return Some(make_complex_datum(@core.Datum::Int(0), imag))
+    }
+    ['-'] => {
+      let imag = match exactness {
+        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(-1))
+        _ => @core.Datum::Int(-1)
+      }
+      return Some(make_complex_datum(@core.Datum::Int(0), imag))
+    }
+    _ => ()
   }
-  let core_chars = string_to_chars(core)
   match find_complex_split(core_chars, radix) {
     Some(split) => {
-      let real_str = String::from_array(core_chars.sub(end=split).to_array())
-      let imag_str = String::from_array(core_chars.sub(start=split).to_array())
+      let real_view = try core_chars.sub(end=split) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let imag_view = try core_chars.sub(start=split) catch {
+        _ => return None
+      } noraise {
+        view => view
+      }
+      let real_str = real_view.to_string()
       let real = match
         parse_real_token_with_settings(real_str, radix, exactness, allow_rat) {
         Some(value) => value
         None => return None
       }
-      let imag = if imag_str == "+" || imag_str == "-" {
-        let sign = if imag_str == "-" { -1 } else { 1 }
-        match exactness {
-          Some('i') | Some('I') => @core.Datum::Float(Float::from_int(sign))
-          _ => @core.Datum::Int(sign)
+      let imag = match imag_view {
+        ['+'] => match exactness {
+          Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
+          _ => @core.Datum::Int(1)
         }
-      } else {
-        match
-          parse_real_token_with_settings(imag_str, radix, exactness, allow_rat) {
-          Some(value) => value
-          None => return None
+        ['-'] => match exactness {
+          Some('i') | Some('I') => @core.Datum::Float(Float::from_int(-1))
+          _ => @core.Datum::Int(-1)
+        }
+        _ => {
+          let imag_str = imag_view.to_string()
+          match
+            parse_real_token_with_settings(imag_str, radix, exactness, allow_rat) {
+            Some(value) => value
+            None => return None
+          }
         }
       }
       Some(make_complex_datum(real, imag))
     }
     None => {
+      let core_str = core_chars.to_string()
       let imag = match
-        parse_real_token_with_settings(core, radix, exactness, allow_rat) {
+        parse_real_token_with_settings(core_str, radix, exactness, allow_rat) {
         Some(value) => value
         None => return None
       }
@@ -802,50 +890,87 @@ fn parse_complex_token(
 
 ///|
 fn parse_number_token_internal(tok : String, radix_override : Int?) -> @core.Datum? {
-  let chars = string_to_chars(tok)
-  let len = chars.length()
+  let view = tok[:]
+  let len = view.length()
   let base_radix = match radix_override {
     Some(r) => r
     None => 10
   }
   let default_exactness : Char? = None
   let (start, radix, exactness) = for i = 0, radix = base_radix,
-    exactness = default_exactness; i + 1 < len && chars[i] == '#'; {
+    exactness = default_exactness; i + 1 < len && view[i].to_int() == '#'.to_int(); {
     // invariant : i >= 0 && i <= len
     // decreases : len - i
     // assert : i + 1 <= len
-    let tag = chars[i + 1]
-    match tag {
-      'b' | 'B' | 'o' | 'O' | 'd' | 'D' | 'x' | 'X' =>
-        if radix_override is None {
-          if radix != 10 {
-            return None
-          }
-          let next_radix = match tag {
-            'b' | 'B' => 2
-            'o' | 'O' => 8
-            'd' | 'D' => 10
-            _ => 16
-          }
-          continue i + 2, next_radix, exactness
-        } else {
+    let tag = view[i + 1].to_int()
+    if tag == 'b'.to_int() || tag == 'B'.to_int() {
+      if radix_override is None {
+        if radix != 10 {
           return None
         }
-      'e' | 'E' | 'i' | 'I' => {
-        if exactness is Some(_) {
-          return None
-        }
-        continue i + 2, radix, Some(tag)
+        continue i + 2, 2, exactness
+      } else {
+        return None
       }
-      _ => return None
     }
+    if tag == 'o'.to_int() || tag == 'O'.to_int() {
+      if radix_override is None {
+        if radix != 10 {
+          return None
+        }
+        continue i + 2, 8, exactness
+      } else {
+        return None
+      }
+    }
+    if tag == 'd'.to_int() || tag == 'D'.to_int() {
+      if radix_override is None {
+        if radix != 10 {
+          return None
+        }
+        continue i + 2, 10, exactness
+      } else {
+        return None
+      }
+    }
+    if tag == 'x'.to_int() || tag == 'X'.to_int() {
+      if radix_override is None {
+        if radix != 10 {
+          return None
+        }
+        continue i + 2, 16, exactness
+      } else {
+        return None
+      }
+    }
+    if tag == 'e'.to_int() || tag == 'E'.to_int() || tag == 'i'.to_int() || tag == 'I'.to_int() {
+      if exactness is Some(_) {
+        return None
+      }
+      let exact_tag = if tag == 'e'.to_int() {
+        'e'
+      } else if tag == 'E'.to_int() {
+        'E'
+      } else if tag == 'i'.to_int() {
+        'i'
+      } else {
+        'I'
+      }
+      continue i + 2, radix, Some(exact_tag)
+    }
+    return None
   } else {
     (i, radix, exactness)
   }
   if start >= len {
     return None
   }
-  let rest = String::from_array(chars.sub(start=start).to_array())
+  let rest_view = try view.sub(start=start) catch {
+    _ => return None
+  } noraise {
+    view => view
+  }
+  let rest = rest_view.to_string()
   let allow_rat = radix_override is None
   match parse_complex_token(rest, radix, exactness, allow_rat) {
     Some(datum) => Some(datum)
