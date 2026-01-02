@@ -135,6 +135,7 @@ moon info
 ## Array view pattern matching
 - Match arrays directly; the compiler lowers to ArrayView, so `..rest` is a view (call `rest.to_array()` when you need an `Array`).
 - Use `..` in the middle to split prefix/suffix without manual length checks.
+- String/StringView follow the same pattern-matching rules as Array/ArrayView; you can match directly on strings and string views without conversion.
 - When parsing tokens, prefer `['+', ..rest]` / `['#', first, ..middle, last]` to replace length guards and index reads; keep digit loops in a small helper for reuse.
 - In tight loops with a mutable `Array`, use singleton patterns like `['#']` instead of `length() == 1 && arr[0] == '#'`.
 - Replace `length() <= 1` guards with `match arr { [] | [_] => ... }` to keep arity checks in the pattern.
