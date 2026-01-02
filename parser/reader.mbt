@@ -283,7 +283,7 @@ fn find_unique_char(chars : Array[Char], target : Char) -> Int? {
 fn parse_rat_token(tok : String) -> @core.Datum? {
   let chars = string_to_chars(tok)
   match find_unique_char(chars, '/') {
-    Some(slash) if slash > 0 && slash < chars.length() - 1 => {
+    Some(slash) if slash > 0 && slash + 1 < chars.length() => {
       let num_str = String::from_array(chars.sub(end=slash).to_array())
       let den_str = String::from_array(chars.sub(start=slash + 1).to_array())
       match (parse_integer_token(num_str), parse_integer_token(den_str)) {
@@ -401,7 +401,7 @@ fn split_exp_token(tok : String) -> (String, Int)? {
   }
   if idx == -1 {
     None
-  } else if idx == 0 || idx == chars.length() - 1 {
+  } else if idx == 0 || idx + 1 == chars.length() {
     None
   } else {
     let base = String::from_array(chars.sub(end=idx).to_array())
@@ -486,7 +486,7 @@ fn parse_exact_decimal(tok : String) -> @core.Datum? {
 fn parse_rat_token_radix(tok : String, radix : Int) -> @core.Datum? {
   let chars = string_to_chars(tok)
   match find_unique_char(chars, '/') {
-    Some(slash) if slash > 0 && slash < chars.length() - 1 => {
+    Some(slash) if slash > 0 && slash + 1 < chars.length() => {
       let num_str = String::from_array(chars.sub(end=slash).to_array())
       let den_str = String::from_array(chars.sub(start=slash + 1).to_array())
       match
@@ -735,7 +735,7 @@ fn parse_complex_token(
   }
   match at {
     Some(at) => {
-      if at == 0 || at == chars.length() - 1 {
+      if at == 0 || at + 1 == chars.length() {
         return None
       }
       let left = String::from_array(chars.sub(end=at).to_array())

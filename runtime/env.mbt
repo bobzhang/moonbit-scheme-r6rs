@@ -50,7 +50,10 @@ pub fn env_clone(env : @core.Env) -> @core.Env {
 
 ///|
 fn @core.Env::last_frame(self : @core.Env) -> Map[String, @core.Binding] {
-  self[self.length() - 1]
+  match self {
+    [.., frame] => frame
+    [] => panic()
+  }
 }
 
 ///|
@@ -58,11 +61,11 @@ fn @core.Env::get_binding(self : @core.Env, name : String) -> @core.Binding? {
   if self.is_empty() {
     return None
   }
-  let result : @core.Binding? = for i = self.length() - 1; i >= 0; i = i - 1 {
-    // invariant : i >= 0 && i < self.length()
+  let result : @core.Binding? = for i = self.length(); i > 0; i = i - 1 {
+    // invariant : i >= 0 && i <= self.length()
     // decreases : i
-    // assert : i < self.length()
-    let frame = self[i]
+    // assert : i <= self.length()
+    let frame = self[i - 1]
     match frame.get(name) {
       Some(binding) => break Some(binding)
       None => ()
@@ -174,11 +177,11 @@ pub fn env_set(env : @core.Env, name : String, value : @core.Value) -> Unit rais
   if env.is_empty() {
     raise @core.EvalError("unbound variable: \{name}")
   }
-  let updated = for i = env.length() - 1; i >= 0; i = i - 1 {
-    // invariant : i >= 0 && i < env.length()
+  let updated = for i = env.length(); i > 0; i = i - 1 {
+    // invariant : i >= 0 && i <= env.length()
     // decreases : i
-    // assert : i < env.length()
-    let frame = env[i]
+    // assert : i <= env.length()
+    let frame = env[i - 1]
     if frame.contains(name) {
       let binding = frame[name]
       frame[name] = @core.Binding::new(binding.id(), value)

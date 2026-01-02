@@ -1778,11 +1778,13 @@ fn wind_push(winder : @core.Winder) -> Unit {
 ///|
 fn wind_pop() -> @core.Winder {
   let current = wind_stack.val
-  let last_index = current.length() - 1
-  let winder = current[last_index]
-  let next = current.sub(start=0, end=last_index).to_array()
-  wind_stack.val = next
-  winder
+  match current {
+    [] => panic()
+    [..prefix, last] => {
+      wind_stack.val = prefix.to_array()
+      last
+    }
+  }
 }
 
 ///|
@@ -1899,7 +1901,10 @@ fn eval_begin_for_syntax_state(
     let _ = eval_expr(form, syntax_env)
 
   }
-  let frame = syntax_env[syntax_env.length() - 1]
+  let frame = match syntax_env {
+    [.., frame] => frame
+    [] => panic()
+  }
   frame.iter2().each((key, binding) =>
     match binding.value() {
       Macro(rules) => @runtime.env_define(env, key, @core.Value::Macro(rules))
@@ -4375,31 +4380,43 @@ fn eval_cond_expand_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  for i = 0; i < clauses.length(); {
-    // invariant : i >= 0 && i <= clauses.length()
-    // decreases : clauses.length() - i
-    // assert : i <= clauses.length()
-    let parts = datum_list_to_array(clauses[i])
-    if parts.is_empty() {
-      raise @core.EvalError("invalid cond-expand")
-    }
-    match parts[0] {
-      Symbol("else") => {
-        if i != clauses.length() - 1 {
+  match clauses {
+    [] => MachineState::Apply(@core.Value::Void, kont, handlers)
+    [..prefix, last] => {
+      let prefix = prefix.to_array()
+      for clause in prefix {
+        let parts = datum_list_to_array(clause)
+        if parts.is_empty() {
           raise @core.EvalError("invalid cond-expand")
         }
-        let body = parts.sub(start=1).to_array()
-        return eval_sequence_state(body, env, kont, handlers)
-      }
-      _ =>
-        if cond_expand_feature(parts[0]) {
-          let body = parts.sub(start=1).to_array()
-          return eval_sequence_state(body, env, kont, handlers)
+        match parts[0] {
+          Symbol("else") => raise @core.EvalError("invalid cond-expand")
+          _ =>
+            if cond_expand_feature(parts[0]) {
+              let body = parts.sub(start=1).to_array()
+              return eval_sequence_state(body, env, kont, handlers)
+            }
         }
+      }
+      let parts = datum_list_to_array(last)
+      if parts.is_empty() {
+        raise @core.EvalError("invalid cond-expand")
+      }
+      match parts[0] {
+        Symbol("else") => {
+          let body = parts.sub(start=1).to_array()
+          eval_sequence_state(body, env, kont, handlers)
+        }
+        _ =>
+          if cond_expand_feature(parts[0]) {
+            let body = parts.sub(start=1).to_array()
+            eval_sequence_state(body, env, kont, handlers)
+          } else {
+            MachineState::Apply(@core.Value::Void, kont, handlers)
+          }
+      }
     }
-    continue i + 1
   }
-  MachineState::Apply(@core.Value::Void, kont, handlers)
 }
 
 ///|

@@ -504,12 +504,12 @@ fn binding_select(
         None
       } else {
         let idx = indices[depth]
-        let actual = if idx < values.length() {
-          idx
-        } else {
-          values.length() - 1
+        let last = match values {
+          [.., last] => last
+          [] => return None
         }
-        binding_select(values[actual], indices, depth + 1)
+        let actual = if idx < values.length() { values[idx] } else { last }
+        binding_select(actual, indices, depth + 1)
       }
   }
 }
@@ -524,12 +524,12 @@ fn binding_len_at(value : BindingVal, indices : Array[Int], depth : Int) -> Int 
           0
         } else {
           let idx = indices[depth]
-          let actual = if idx < values.length() {
-            idx
-          } else {
-            values.length() - 1
+          let last = match values {
+            [.., last] => last
+            [] => return 0
           }
-          binding_len_at(values[actual], indices, depth + 1)
+          let actual = if idx < values.length() { values[idx] } else { last }
+          binding_len_at(actual, indices, depth + 1)
         }
       } else {
         values.length()
@@ -551,12 +551,12 @@ fn binding_has_repeat_at(
           false
         } else {
           let idx = indices[depth]
-          let actual = if idx < values.length() {
-            idx
-          } else {
-            values.length() - 1
+          let last = match values {
+            [.., last] => last
+            [] => return false
           }
-          binding_has_repeat_at(values[actual], indices, depth + 1)
+          let actual = if idx < values.length() { values[idx] } else { last }
+          binding_has_repeat_at(actual, indices, depth + 1)
         }
       } else {
         true
