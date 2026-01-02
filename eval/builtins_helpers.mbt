@@ -2127,22 +2127,25 @@ fn compare_chain_char(
   mode : CompareMode,
   case_insensitive : Bool,
 ) -> Bool raise @core.EvalError {
-  if args.length() <= 1 {
-    return true
-  }
-  let prev = foldcase_char_if(value_as_char(args[0]), case_insensitive)
-  for i = 1, prev = prev; i < args.length(); {
-    // invariant : i >= 1 && i <= args.length()
-    // decreases : args.length() - i
-    // assert : i <= args.length()
-    let cur = foldcase_char_if(value_as_char(args[i]), case_insensitive)
-    let cmp = prev.to_int().compare(cur.to_int())
-    if !compare_ok(mode, cmp) {
-      return false
+  match args {
+    [] | [_] => true
+    [first, ..rest] => {
+      let prev = foldcase_char_if(value_as_char(first), case_insensitive)
+      let rest = rest.to_array()
+      for i = 0, prev = prev; i < rest.length(); {
+        // invariant : i >= 0 && i <= rest.length()
+        // decreases : rest.length() - i
+        // assert : i <= rest.length()
+        let cur = foldcase_char_if(value_as_char(rest[i]), case_insensitive)
+        let cmp = prev.to_int().compare(cur.to_int())
+        if !compare_ok(mode, cmp) {
+          return false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
     }
-    continue i + 1, cur
-  } else {
-    true
   }
 }
 
@@ -2152,62 +2155,71 @@ fn compare_chain_string(
   mode : CompareMode,
   case_insensitive : Bool,
 ) -> Bool raise @core.EvalError {
-  if args.length() <= 1 {
-    return true
-  }
-  let prev = foldcase_string_if(value_as_string(args[0]), case_insensitive)
-  for i = 1, prev = prev; i < args.length(); {
-    // invariant : i >= 1 && i <= args.length()
-    // decreases : args.length() - i
-    // assert : i <= args.length()
-    let cur = foldcase_string_if(value_as_string(args[i]), case_insensitive)
-    let cmp = prev.lexical_compare(cur)
-    if !compare_ok(mode, cmp) {
-      return false
+  match args {
+    [] | [_] => true
+    [first, ..rest] => {
+      let prev = foldcase_string_if(value_as_string(first), case_insensitive)
+      let rest = rest.to_array()
+      for i = 0, prev = prev; i < rest.length(); {
+        // invariant : i >= 0 && i <= rest.length()
+        // decreases : rest.length() - i
+        // assert : i <= rest.length()
+        let cur = foldcase_string_if(value_as_string(rest[i]), case_insensitive)
+        let cmp = prev.lexical_compare(cur)
+        if !compare_ok(mode, cmp) {
+          return false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
     }
-    continue i + 1, cur
-  } else {
-    true
   }
 }
 
 ///|
 fn compare_chain_bool(args : Array[@core.Value]) -> Bool raise @core.EvalError {
-  if args.length() <= 1 {
-    return true
-  }
-  let prev = value_as_bool(args[0])
-  for i = 1, prev = prev; i < args.length(); {
-    // invariant : i >= 1 && i <= args.length()
-    // decreases : args.length() - i
-    // assert : i <= args.length()
-    let cur = value_as_bool(args[i])
-    if prev != cur {
-      return false
+  match args {
+    [] | [_] => true
+    [first, ..rest] => {
+      let prev = value_as_bool(first)
+      let rest = rest.to_array()
+      for i = 0, prev = prev; i < rest.length(); {
+        // invariant : i >= 0 && i <= rest.length()
+        // decreases : rest.length() - i
+        // assert : i <= rest.length()
+        let cur = value_as_bool(rest[i])
+        if prev != cur {
+          return false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
     }
-    continue i + 1, cur
-  } else {
-    true
   }
 }
 
 ///|
 fn compare_chain_symbol(args : Array[@core.Value]) -> Bool raise @core.EvalError {
-  if args.length() <= 1 {
-    return true
-  }
-  let prev = value_as_symbol(args[0])
-  for i = 1, prev = prev; i < args.length(); {
-    // invariant : i >= 1 && i <= args.length()
-    // decreases : args.length() - i
-    // assert : i <= args.length()
-    let cur = value_as_symbol(args[i])
-    if prev != cur {
-      return false
+  match args {
+    [] | [_] => true
+    [first, ..rest] => {
+      let prev = value_as_symbol(first)
+      let rest = rest.to_array()
+      for i = 0, prev = prev; i < rest.length(); {
+        // invariant : i >= 0 && i <= rest.length()
+        // decreases : rest.length() - i
+        // assert : i <= rest.length()
+        let cur = value_as_symbol(rest[i])
+        if prev != cur {
+          return false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
     }
-    continue i + 1, cur
-  } else {
-    true
   }
 }
 
