@@ -1666,8 +1666,14 @@ fn parse_bool(expr : @core.Datum) -> Bool raise @core.EvalError {
 }
 
 ///|
-fn parse_symbol_list(items : Array[@core.Datum]) -> Array[String] raise @core.EvalError {
-  items.map((item) => parse_symbol(item))
+fn parse_symbol_list(
+  items : ArrayView[@core.Datum],
+) -> Array[String] raise @core.EvalError {
+  let names : Array[String] = []
+  for item in items {
+    names.push(parse_symbol(item))
+  }
+  names
 }
 
 ///|
@@ -2492,7 +2498,7 @@ fn eval_define_record_type_state(
     raise @core.EvalError("invalid define-record-type")
   }
   let ctor_name = parse_symbol(ctor_parts[0])
-  let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1).to_array())
+  let ctor_fields = parse_symbol_list(ctor_parts.sub(start=1))
   let pred_name = parse_symbol(args[2])
   let raw_specs = args.sub(start=3).to_array()
   let field_specs : Array[@core.Datum] = []
@@ -3501,7 +3507,9 @@ fn register_library_entry(
 }
 
 ///|
-fn parse_version_items(items : Array[@core.Datum]) -> Array[Int] raise @core.EvalError {
+fn parse_version_items(
+  items : ArrayView[@core.Datum],
+) -> Array[Int] raise @core.EvalError {
   match items {
     [] => raise @core.EvalError("invalid library name")
     _ => {
@@ -3529,7 +3537,7 @@ fn parse_version_list(expr : @core.Datum) -> Array[Int] raise @core.EvalError {
 
 ///|
 fn parse_version_ref_version(
-  items : Array[@core.Datum],
+  items : ArrayView[@core.Datum],
 ) -> Array[Int] raise @core.EvalError {
   match items {
     [] => raise @core.EvalError("invalid library name")
@@ -3570,32 +3578,16 @@ fn parse_version_ref(expr : @core.Datum) -> VersionRef raise @core.EvalError {
     [Symbol("not"), ref_expr] =>
       VersionNot(Ref::new(parse_version_ref(ref_expr)))
     [Symbol(">"), ..rest] => {
-      let parts : Array[@core.Datum] = []
-      for item in rest {
-        parts.push(item)
-      }
-      VersionGt(parse_version_ref_version(parts))
+      VersionGt(parse_version_ref_version(rest))
     }
     [Symbol(">="), ..rest] => {
-      let parts : Array[@core.Datum] = []
-      for item in rest {
-        parts.push(item)
-      }
-      VersionGe(parse_version_ref_version(parts))
+      VersionGe(parse_version_ref_version(rest))
     }
     [Symbol("<"), ..rest] => {
-      let parts : Array[@core.Datum] = []
-      for item in rest {
-        parts.push(item)
-      }
-      VersionLt(parse_version_ref_version(parts))
+      VersionLt(parse_version_ref_version(rest))
     }
     [Symbol("<="), ..rest] => {
-      let parts : Array[@core.Datum] = []
-      for item in rest {
-        parts.push(item)
-      }
-      VersionLe(parse_version_ref_version(parts))
+      VersionLe(parse_version_ref_version(rest))
     }
     [Int(_), ..] => VersionExact(parse_version_items(items))
     _ => raise @core.EvalError("invalid library name")
