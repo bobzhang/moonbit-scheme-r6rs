@@ -1215,6 +1215,213 @@ test "numeric edge cases" {
 }
 
 ///|
+test "syntax and quasiquote errors" {
+  let err_quote = try? eval_program("(quote 1 2)")
+  inspect(err_quote is Err(_), content="true")
+  let err_syntax = try? eval_program("(syntax 1 2)")
+  inspect(err_syntax is Err(_), content="true")
+  let err_quasi = try? eval_program("(quasiquote 1 2)")
+  inspect(err_quasi is Err(_), content="true")
+  let err_quasisyn = try? eval_program("(quasisyntax 1 2)")
+  inspect(err_quasisyn is Err(_), content="true")
+  let err_unquote_splice = try? eval_program("(quasiquote (unquote-splicing 1))")
+  inspect(err_unquote_splice is Err(_), content="true")
+  let err_unsyntax_splice = try? eval_program("(quasisyntax (unsyntax-splicing 1))")
+  inspect(err_unsyntax_splice is Err(_), content="true")
+  let err_syntax_case = try? eval_program("(syntax-case 1 ())")
+  inspect(err_syntax_case is Err(_), content="true")
+  let err_delay = try? eval_program("(delay 1 2)")
+  inspect(err_delay is Err(_), content="true")
+}
+
+///|
+test "quasiquote nesting" {
+  let value = eval_program("(quasiquote (quasiquote #(1 2)))")
+  inspect(@runtime.value_to_string(value), content="(quasiquote #(1 2))")
+}
+
+///|
+test "quasisyntax nesting and splicing" {
+  let nested =
+    eval_program("(syntax->datum (quasisyntax (quasisyntax #(1 2))))")
+  inspect(@runtime.value_to_string(nested), content="(quasisyntax #(1 2))")
+  let splice =
+    eval_program(
+      "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
+    )
+  inspect(@runtime.value_to_string(splice), content="(1 2 3)")
+}
+
+///|
+test "lambda and case-lambda errors" {
+  let err_lambda = try? eval_program("(lambda)")
+  inspect(err_lambda is Err(_), content="true")
+  let err_formals = try? eval_program("((lambda (1) 2) 3)")
+  inspect(err_formals is Err(_), content="true")
+  let err_case_empty = try? eval_program("(case-lambda)")
+  inspect(err_case_empty is Err(_), content="true")
+  let err_case_clause = try? eval_program("(case-lambda (1))")
+  inspect(err_case_clause is Err(_), content="true")
+  let err_case_arity =
+    try? eval_program("((case-lambda ((x) x) ((x y) y)) 1 2 3)")
+  inspect(err_case_arity is Err(_), content="true")
+  let err_lambda_rest = try? eval_program("((lambda (x . rest) x))")
+  inspect(err_lambda_rest is Err(_), content="true")
+}
+
+///|
+test "binding and parameterize errors" {
+  let err_define = try? eval_program("(begin (define 1 2) 3)")
+  inspect(err_define is Err(_), content="true")
+  let err_define_syntax = try? eval_program("(define-syntax x)")
+  inspect(err_define_syntax is Err(_), content="true")
+  let err_let = try? eval_program("(let (1) 2)")
+  inspect(err_let is Err(_), content="true")
+  let err_let_values = try? eval_program("(let-values (1) 2)")
+  inspect(err_let_values is Err(_), content="true")
+  let err_param = try? eval_program("(parameterize (1) 2)")
+  inspect(err_param is Err(_), content="true")
+  let err_param_bind = try? eval_program("(parameterize ((1 2)) 3)")
+  inspect(err_param_bind is Err(_), content="true")
+  let err_let_syntax = try? eval_program("(let-syntax ((x 1)) x)")
+  inspect(err_let_syntax is Err(_), content="true")
+  let err_bool =
+    try? eval_program(
+      "(define-record-type point (make-point x) point? (x point-x) (sealed 1))",
+    )
+  inspect(err_bool is Err(_), content="true")
+}
+
+///|
+test "exception primitives" {
+  let err_undefined = try? eval_program("(undefined-violation 'who \"msg\")")
+  inspect(err_undefined is Err(_), content="true")
+  let err_syntax_violation =
+    try? eval_program("(syntax-violation 'who \"msg\" 'form)")
+  inspect(err_syntax_violation is Err(_), content="true")
+  let err_syntax_violation2 =
+    try? eval_program("(syntax-violation 'who \"msg\" 'form 'subform 1)")
+  inspect(err_syntax_violation2 is Err(_), content="true")
+  let err_raise =
+    try? eval_program(
+      "(with-exception-handler (lambda (c) 0) (lambda () (raise 'boom)))",
+    )
+  inspect(err_raise is Err(_), content="true")
+  let cont =
+    eval_program(
+      "(with-exception-handler (lambda (c) 5) (lambda () (raise-continuable 'boom)))",
+    )
+  inspect(@runtime.value_to_string(cont), content="5")
+  let err_raise_arity = try? eval_program("(raise)")
+  inspect(err_raise_arity is Err(_), content="true")
+}
+
+///|
+test "map, apply, and length errors" {
+  let err_map = try? eval_program("(map)")
+  inspect(err_map is Err(_), content="true")
+  let err_for_each = try? eval_program("(for-each)")
+  inspect(err_for_each is Err(_), content="true")
+  let err_vec_map = try? eval_program("(vector-map)")
+  inspect(err_vec_map is Err(_), content="true")
+  let err_vec_for = try? eval_program("(vector-for-each)")
+  inspect(err_vec_for is Err(_), content="true")
+  let err_str_map = try? eval_program("(string-map)")
+  inspect(err_str_map is Err(_), content="true")
+  let err_str_for = try? eval_program("(string-for-each)")
+  inspect(err_str_for is Err(_), content="true")
+  let err_apply = try? eval_program("(apply +)")
+  inspect(err_apply is Err(_), content="true")
+  let err_apply2 = try? eval_program("(apply + 1)")
+  inspect(err_apply2 is Err(_), content="true")
+  let err_proc = try? eval_program("((+ 1 2) 3)")
+  inspect(err_proc is Err(_), content="true")
+  let err_vec_len =
+    try? eval_program(
+      "(vector-map (lambda (a b) a) #(1 2) #(3))",
+    )
+  inspect(err_vec_len is Err(_), content="true")
+  let err_vec_for_len =
+    try? eval_program(
+      "(vector-for-each (lambda (a b) #t) #(1 2) #(3))",
+    )
+  inspect(err_vec_for_len is Err(_), content="true")
+  let err_str_len =
+    try? eval_program("(string-map (lambda (a b) a) \"ab\" \"c\")")
+  inspect(err_str_len is Err(_), content="true")
+  let err_str_for_len =
+    try? eval_program("(string-for-each (lambda (a b) #t) \"ab\" \"c\")")
+  inspect(err_str_for_len is Err(_), content="true")
+  let sum =
+    eval_program(
+      "(begin (define xs '(1 2)) (define ys '(3 4)) (define acc 0) (for-each (lambda (a b) (set! acc (+ acc a b))) xs ys) acc)",
+    )
+  inspect(@runtime.value_to_string(sum), content="10")
+}
+
+///|
+test "parameters and continuations" {
+  let value =
+    eval_program(
+      "(begin (define p (make-parameter 1)) (p 3) (p))",
+    )
+  inspect(@runtime.value_to_string(value), content="3")
+  let cont =
+    eval_program(
+      "(call-with-values (lambda () (call/cc (lambda (k) (k 1 2)))) list)",
+    )
+  inspect(@runtime.value_to_string(cont), content="(1 2)")
+  let err_callcc = try? eval_program("(call/cc)")
+  inspect(err_callcc is Err(_), content="true")
+}
+
+///|
+test "hashtable immutable update" {
+  let err_update =
+    try? eval_program(
+      "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-update! cp 'a (lambda (x) x) 0))",
+    )
+  inspect(err_update is Err(_), content="true")
+}
+
+///|
+test "syntax-case expression and values errors" {
+  let value =
+    eval_program(
+      "(begin (import (rnrs syntax-case)) (syntax-case 'x () ((x) 1) (_ 2)))",
+    )
+  inspect(@runtime.value_to_string(value), content="2")
+  let err_multi = try? eval_program("(if (values #t #f) 1 2)")
+  inspect(err_multi is Err(_), content="true")
+}
+
+///|
+test "parameterize multiple bindings" {
+  let value =
+    eval_program(
+      "(begin (define p1 (make-parameter 1)) (define p2 (make-parameter 2)) (parameterize ((p1 10) (p2 20)) (+ (p1) (p2))))",
+    )
+  inspect(@runtime.value_to_string(value), content="30")
+}
+
+///|
+test "nested unquote and unsyntax" {
+  let value =
+    eval_program(
+      "(quasiquote (quasiquote (unquote-splicing (list 1 2))))",
+    )
+  inspect(
+    @runtime.value_to_string(value),
+    content="(quasiquote (unquote-splicing (list 1 2)))",
+  )
+  let nested =
+    eval_program(
+      "(syntax->datum (quasisyntax (quasisyntax (unsyntax 1))))",
+    )
+  inspect(@runtime.value_to_string(nested), content="(quasisyntax (unsyntax 1))")
+}
+
+///|
 test "numeric complex operations" {
   let program =
     #|(begin

@@ -3182,3 +3182,18 @@ test "hashtable arity errors" {
   inspect(err_arity is Err(_), content="true")
 }
 ```
+
+## Macro-path test scaffolding
+- Use `syntax->datum` to assert results while still exercising `quasisyntax`/`syntax` paths.
+- Prefer `try? eval_program(...)` for arity and exception branches so tests stay black-box.
+
+Example:
+```mbt
+test "quasisyntax splicing" {
+  let value =
+    eval_program(
+      "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
+    )
+  inspect(@runtime.value_to_string(value), content="(1 2 3)")
+}
+```
