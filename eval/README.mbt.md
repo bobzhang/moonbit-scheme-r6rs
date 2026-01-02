@@ -808,4 +808,617 @@ test "hashtable custom equivalence scanning" {
     )
   inspect(@runtime.value_to_string(value), content="2")
 }
+
+///|
+test "hashtable primitives" {
+  let program =
+    #|(begin
+    #|  (define ht (make-hashtable (lambda (x) 0) (lambda (a b) (eq? a b))))
+    #|  (hashtable-set! ht 'a 1)
+    #|  (hashtable-set! ht 'b 2)
+    #|  (define hit (hashtable-ref ht 'a 0))
+    #|  (define miss (hashtable-ref ht 'c 9))
+    #|  (define contains (hashtable-contains? ht 'b))
+    #|  (hashtable-update! ht 'b (lambda (x) (+ x 3)) 0)
+    #|  (define upd (hashtable-ref ht 'b 0))
+    #|  (define size (hashtable-size ht))
+    #|  (define eqf (hashtable-equivalence-function ht))
+    #|  (define hashf (hashtable-hash-function ht))
+    #|  (define mut (hashtable-mutable? ht))
+    #|  (define copy (hashtable-copy ht #f))
+    #|  (define cleared (begin (hashtable-clear! ht) (hashtable-size ht)))
+    #|  (let-values (((keys vals) (hashtable-entries copy)))
+    #|    (list hit miss contains upd size mut (procedure? eqf) (procedure? hashf)
+    #|          (vector-length (hashtable-keys copy))
+    #|          (vector-length keys)
+    #|          (vector-length vals)
+    #|          cleared)))
+  let value = eval_program(program)
+  inspect(
+    @runtime.value_to_string(value),
+    content="(1 9 #t 5 2 #t #t #t 2 2 2 0)",
+  )
+}
+
+///|
+test "hashtable error paths" {
+  let err_clear =
+    try? eval_program(
+      "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-clear! cp))",
+    )
+  inspect(err_clear is Err(_), content="true")
+  let err_update =
+    try? eval_program(
+      "(begin (define ht (make-eq-hashtable)) (hashtable-update! ht 'a 1 0))",
+    )
+  inspect(err_update is Err(_), content="true")
+}
+
+///|
+test "enum set primitives" {
+  let program =
+    #|(begin
+    #|  (define colors (make-enumeration '(red green blue)))
+    #|  (define ctor (enum-set-constructor colors))
+    #|  (define idx (enum-set-indexer colors))
+    #|  (define s1 (ctor '(red blue)))
+    #|  (define s2 (ctor '(green)))
+    #|  (define union (enum-set-union s1 s2))
+    #|  (define inter (enum-set-intersection s1 s2))
+    #|  (define diff (enum-set-difference s1 s2))
+    #|  (define comp (enum-set-complement s1))
+    #|  (define proj (enum-set-projection s1 colors))
+    #|  (list (enum-set? s1)
+    #|        (enum-set-member? 'red s1)
+    #|        (enum-set-subset? s2 union)
+    #|        (enum-set=? s1 s1)
+    #|        (idx 'blue)
+    #|        (enum-set->list union)
+    #|        (enum-set->list inter)
+    #|        (enum-set->list diff)
+    #|        (enum-set->list comp)
+    #|        (enum-set->list proj)))
+  let value = eval_program(program)
+  inspect(
+    @runtime.value_to_string(value),
+    content="(#t #t #t #t 2 (red green blue) () (red blue) (green) (red blue))",
+  )
+}
+
+///|
+test "record primitives" {
+  let program =
+    #|(begin
+    #|  (define rtd (make-record-type-descriptor 'pt #f 'uid #f #f '#((mutable x) (immutable y))))
+    #|  (define rcd (make-record-constructor-descriptor rtd #f #f))
+    #|  (define make-pt (record-constructor rcd))
+    #|  (define pred (record-predicate rtd))
+    #|  (define acc-x (record-accessor rtd 0))
+    #|  (define acc-y (record-accessor rtd 1))
+    #|  (define mut-x (record-mutator rtd 0))
+    #|  (define pt (make-pt 1 2))
+    #|  (mut-x pt 7)
+    #|  (define names (record-type-field-names rtd))
+    #|  (define rcd2 (record-constructor-descriptor rtd))
+    #|  (list (record? pt)
+    #|        (pred pt)
+    #|        (record-type-descriptor? rtd)
+    #|        (record-constructor-descriptor? rcd)
+    #|        (record-constructor-descriptor? rcd2)
+    #|        (record-type-generative? rtd)
+    #|        (record-type-sealed? rtd)
+    #|        (record-type-opaque? rtd)
+    #|        (record-type-field-mutable? rtd 0)
+    #|        (record-type-field-mutable? rtd 1)
+    #|        (eq? (record-type-parent rtd) #f)
+    #|        (symbol? (record-type-name rtd))
+    #|        (symbol? (record-type-uid rtd))
+    #|        (record-type-descriptor? (record-rtd pt))
+    #|        (acc-x pt)
+    #|        (acc-y pt)
+    #|        (length names)))
+  let value = eval_program(program)
+  inspect(
+    @runtime.value_to_string(value),
+    content="(#t #t #t #t #t #f #f #f #t #f #t #t #t #t 7 2 2)",
+  )
+}
+
+///|
+test "condition primitives" {
+  let program =
+    #|(begin
+    #|  (define-condition-type &c &condition make-c c? (x c-x))
+    #|  (define c1 (make-c 1))
+    #|  (define c2 (make-c 2))
+    #|  (define single (condition c1))
+    #|  (define multi (condition c1 c2))
+    #|  (define pred (condition-predicate (record-rtd c1)))
+    #|  (define acc
+    #|    (condition-accessor
+    #|      (record-rtd c1)
+    #|      (record-accessor (record-rtd c1) 0)))
+    #|  (list (condition? single)
+    #|        (condition? multi)
+    #|        (pred single)
+    #|        (pred multi)
+    #|        (acc single)
+    #|        (length (simple-conditions single))
+    #|        (length (simple-conditions multi))))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="(#t #t #t #t 1 1 2)")
+}
+
+///|
+test "fixnum primitives" {
+  let program =
+    #|(begin
+    #|  (define results
+    #|    (list
+    #|      (fixnum? 1)
+    #|      (> (fixnum-width) 0)
+    #|      (fx<=? (least-fixnum) (greatest-fixnum))
+    #|      (fx=? (fx+ 1 2 3) 6)
+    #|      (fx=? (fx- 10 3) 7)
+    #|      (fx=? (fx* 2 3) 6)
+    #|      (fx=? (fxdiv 7 2) 3)
+    #|      (fx=? (fxmod 7 2) 1)
+    #|      (fx=? (fxdiv0 7 2) 3)
+    #|      (fx=? (fxmod0 7 2) 1)
+    #|      (fx=? (fxand 6 3) 2)
+    #|      (fx=? (fxior 6 3) 7)
+    #|      (fx=? (fxxor 6 3) 5)
+    #|      (fx=? (fxif 6 3 1) 3)
+    #|      (fx=? (fxbit-count 7) 3)
+    #|      (fx=? (fxlength 8) 4)
+    #|      (fx=? (fxfirst-bit-set 8) 3)
+    #|      (fxbit-set? 2 1)
+    #|      (fx=? (fxcopy-bit 2 0 1) 3)
+    #|      (fx=? (fxbit-field 6 1 3) 3)
+    #|      (fx=? (fxcopy-bit-field 15 1 3 0) 9)
+    #|      (fx=? (fxrotate-bit-field 14 0 3 1) 13)
+    #|      (fx=? (fxreverse-bit-field 14 0 3) 11)
+    #|      (fx=? (fxarithmetic-shift 1 3) 8)
+    #|      (fx=? (fxarithmetic-shift-left 1 2) 4)
+    #|      (fx=? (fxarithmetic-shift-right 8 2) 2)
+    #|      (fx=? (fxmin 3 1 2) 1)
+    #|      (fx=? (fxmax 3 1 2) 3)
+    #|      (equal? (call-with-values (lambda () (fx+/carry 1 2 0)) list) '(3 0))
+    #|      (equal? (call-with-values (lambda () (fx-/carry 5 3 0)) list) '(2 0))
+    #|      (equal? (call-with-values (lambda () (fx*/carry 2 3 0)) list) '(6 0))))
+    #|  (not (memv #f results)))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="#t")
+}
+
+///|
+test "flonum primitives" {
+  let program =
+    #|(begin
+    #|  (define num (flnumerator 2.5))
+    #|  (define den (fldenominator 2.5))
+    #|  (define inf (fl/ 1.0 0.0))
+    #|  (define nan (fl/ 0.0 0.0))
+    #|  (define from-fx (fixnum->flonum 3))
+    #|  (define from-real (real->flonum 3))
+    #|  (define divmod-ok
+    #|    (call-with-values
+    #|      (lambda () (fldiv-and-mod 7.0 2.0))
+    #|      (lambda (q r) (and (fl=? q 3.0) (fl=? r 1.0)))))
+    #|  (define div0mod0-ok
+    #|    (call-with-values
+    #|      (lambda () (fldiv0-and-mod0 7.0 2.0))
+    #|      (lambda (q r) (and (fl=? q 3.0) (fl=? r 1.0)))))
+    #|  (define results
+    #|    (list
+    #|      (flonum? 1.0)
+    #|      (fl=? 1.0 1.0)
+    #|      (fl<? 1.0 2.0)
+    #|      (fl>? 2.0 1.0)
+    #|      (fl<=? 1.0 1.0)
+    #|      (fl>=? 2.0 2.0)
+    #|      (flinteger? 2.0)
+    #|      (flzero? 0.0)
+    #|      (flpositive? 1.0)
+    #|      (flnegative? -1.0)
+    #|      (flodd? 3.0)
+    #|      (fleven? 4.0)
+    #|      (flfinite? 1.0)
+    #|      (flinfinite? inf)
+    #|      (flnan? nan)
+    #|      (fl=? (flmax 1.0 2.0) 2.0)
+    #|      (fl=? (flmin 1.0 2.0) 1.0)
+    #|      (fl=? (fl+ 1.0 2.0) 3.0)
+    #|      (fl=? (fl* 2.0 3.0) 6.0)
+    #|      (fl=? (fl- 5.0 2.0) 3.0)
+    #|      (fl=? (fl/ 6.0 2.0) 3.0)
+      #|      (fl=? (flabs -3.0) 3.0)
+      #|      (fl=? (flfloor 2.9) 2.0)
+      #|      (fl=? (flceiling 2.1) 3.0)
+      #|      (fl=? (fltruncate -2.9) -2.0)
+      #|      (fl=? (flround 2.4) 2.0)
+      #|      (fl=? (flexp 0.0) 1.0)
+      #|      (fl=? (fllog 1.0) 0.0)
+      #|      (fl=? (flsin 0.0) 0.0)
+      #|      (fl=? (flcos 0.0) 1.0)
+      #|      (fl=? (fltan 0.0) 0.0)
+      #|      (fl=? (flasin 0.0) 0.0)
+      #|      (fl=? (flacos 1.0) 0.0)
+      #|      (fl=? (flatan 0.0) 0.0)
+      #|      (fl=? (flatan 0.0 1.0) 0.0)
+      #|      (fl=? num 5.0)
+      #|      (fl=? den 2.0)
+      #|      (fl=? (flsqrt 4.0) 2.0)
+      #|      (fl=? (flexpt 2.0 3.0) 8.0)
+    #|      (fl=? from-fx 3.0)
+    #|      (fl=? from-real 3.0)
+    #|      divmod-ok
+    #|      div0mod0-ok))
+    #|  (not (memv #f results)))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="#t")
+}
+
+///|
+test "numeric primitives" {
+  let program =
+    #|(begin
+    #|  (define big (string->number "12345678901234567890"))
+    #|  (define bigrat (string->number "12345678901234567890/12345678901234567891"))
+    #|  (define complex (make-rectangular 1 2))
+    #|  (define polar (make-polar 2 0))
+    #|  (define inf (fl/ 1.0 0.0))
+    #|  (define nan (fl/ 0.0 0.0))
+    #|  (define sqrt-pair (call-with-values (lambda () (exact-integer-sqrt 10)) list))
+    #|  (define results
+    #|    (list
+    #|      (number? 1)
+    #|      (integer? 1)
+    #|      (exact-integer? 1)
+    #|      (rational? 1/2)
+    #|      (real? 1)
+    #|      (complex? complex)
+    #|      (exact? 1/2)
+    #|      (inexact? (exact->inexact 1))
+    #|      (zero? 0)
+    #|      (positive? 1)
+    #|      (negative? -1)
+    #|      (odd? 3)
+    #|      (even? 4)
+    #|      (finite? 1.0)
+    #|      (infinite? inf)
+    #|      (nan? nan)
+    #|      (number? big)
+    #|      (rational? bigrat)
+    #|      (= (+ 1 2 3) 6)
+    #|      (= (- 10 3) 7)
+    #|      (= (* 2 3 4) 24)
+    #|      (= (/ 8 2) 4)
+    #|      (= (abs -3) 3)
+    #|      (= (max 1 4 2) 4)
+    #|      (= (min 1 4 2) 1)
+    #|      (= (gcd 12 8) 4)
+    #|      (= (lcm 6 4) 12)
+    #|      (= (quotient 7 2) 3)
+    #|      (= (remainder 7 2) 1)
+    #|      (= (modulo -7 3) 2)
+    #|      (= (numerator 6/8) 3)
+    #|      (= (denominator 6/8) 4)
+    #|      (equal? sqrt-pair '(3 1))
+    #|      (rational? (rationalize 1.25 1/10))
+    #|      (= (real-part complex) 1)
+    #|      (= (imag-part complex) 2)
+    #|      (real? (magnitude complex))
+    #|      (= (angle polar) 0)
+    #|      (= (real-part polar) 2)
+    #|      (= (imag-part polar) 0)
+    #|      (= (sqrt 4) 2)
+    #|      (= (exp 0) 1)
+    #|      (= (log 1) 0)
+    #|      (= (expt 2 3) 8)
+    #|      (= (sin 0) 0)
+    #|      (= (cos 0) 1)
+    #|      (= (tan 0) 0)
+    #|      (= (asin 0) 0)
+    #|      (= (acos 1) 0)
+    #|      (= (atan 0) 0)
+    #|      (= (bitwise-and 6 3) 2)
+    #|      (= (bitwise-ior 6 3) 7)
+    #|      (= (bitwise-xor 6 3) 5)
+    #|      (= (bitwise-not 0) -1)
+    #|      (= (bitwise-if 6 3 1) 3)
+    #|      (= (arithmetic-shift 1 3) 8)
+    #|      (= (bitwise-bit-count 7) 3)
+    #|      (= (bitwise-length 8) 4)
+    #|      (= (bitwise-first-bit-set 8) 3)
+    #|      (bitwise-bit-set? 2 1)
+    #|      (= (bitwise-copy-bit 2 0 1) 3)
+    #|      (= (bitwise-bit-field 6 1 3) 3)
+    #|      (= (bitwise-copy-bit-field 15 1 3 0) 9)
+    #|      (= (bitwise-rotate-bit-field 14 0 3 1) 13)
+    #|      (= (bitwise-reverse-bit-field 14 0 3) 11)
+    #|      (equal? (number->string 10 2) "1010")
+    #|      (= (string->number "ff" 16) 255)
+    #|      (= (inexact->exact 1.5) 3/2)
+    #|      (= (exact->inexact 2) 2.0)))
+    #|  (not (memv #f results)))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="#t")
+}
+
+///|
+test "numeric edge cases" {
+  let eq_zero = eval_program("(=)")
+  inspect(@runtime.value_to_string(eq_zero), content="#t")
+  let lt_zero = eval_program("(<)")
+  inspect(@runtime.value_to_string(lt_zero), content="#t")
+  let gt_single = eval_program("(> 1)")
+  inspect(@runtime.value_to_string(gt_single), content="#t")
+  let le_single = eval_program("(<= 1)")
+  inspect(@runtime.value_to_string(le_single), content="#t")
+  let ge_single = eval_program("(>= 1)")
+  inspect(@runtime.value_to_string(ge_single), content="#t")
+  let err_sub = try? eval_program("(-)")
+  inspect(err_sub is Err(_), content="true")
+  let err_div = try? eval_program("(/)")
+  inspect(err_div is Err(_), content="true")
+  let err_exact_sqrt = try? eval_program("(exact-integer-sqrt -1)")
+  inspect(err_exact_sqrt is Err(_), content="true")
+  let err_num_str_radix = try? eval_program("(number->string 10 1)")
+  inspect(err_num_str_radix is Err(_), content="true")
+  let err_num_str_arity = try? eval_program("(number->string 1 10 2)")
+  inspect(err_num_str_arity is Err(_), content="true")
+  let err_str_num_radix = try? eval_program("(string->number \"10\" 1)")
+  inspect(err_str_num_radix is Err(_), content="true")
+  let err_str_num_arity = try? eval_program("(string->number \"10\" 10 2)")
+  inspect(err_str_num_arity is Err(_), content="true")
+  let err_rect_arity = try? eval_program("(make-rectangular 1)")
+  inspect(err_rect_arity is Err(_), content="true")
+  let err_polar_arity = try? eval_program("(make-polar 1)")
+  inspect(err_polar_arity is Err(_), content="true")
+  let err_real_part = try? eval_program("(real-part)")
+  inspect(err_real_part is Err(_), content="true")
+  let err_imag_part = try? eval_program("(imag-part 1 2)")
+  inspect(err_imag_part is Err(_), content="true")
+  let err_magnitude = try? eval_program("(magnitude)")
+  inspect(err_magnitude is Err(_), content="true")
+  let err_angle = try? eval_program("(angle)")
+  inspect(err_angle is Err(_), content="true")
+  let err_num_str_complex =
+    try? eval_program("(number->string (make-rectangular 1 2) 16)")
+  inspect(err_num_str_complex is Err(_), content="true")
+  let err_inexact_type = try? eval_program("(inexact->exact 'a)")
+  inspect(err_inexact_type is Err(_), content="true")
+  let err_exact_inexact = try? eval_program("(exact->inexact)")
+  inspect(err_exact_inexact is Err(_), content="true")
+  let err_inexact_exact = try? eval_program("(inexact->exact)")
+  inspect(err_inexact_exact is Err(_), content="true")
+  let big_num = eval_program("(number->string 12345678901234567890 10)")
+  inspect(@runtime.value_to_string(big_num), content="\"12345678901234567890\"")
+  let exact_float = eval_program("(inexact? (exact->inexact 1.0))")
+  inspect(@runtime.value_to_string(exact_float), content="#t")
+  let exact_complex =
+    eval_program("(complex? (exact->inexact (make-rectangular 1 2)))")
+  inspect(@runtime.value_to_string(exact_complex), content="#t")
+  let inexact_int = eval_program("(integer? (inexact->exact 1))")
+  inspect(@runtime.value_to_string(inexact_int), content="#t")
+  let inexact_big =
+    eval_program("(integer? (inexact->exact 12345678901234567890))")
+  inspect(@runtime.value_to_string(inexact_big), content="#t")
+  let inexact_rat = eval_program("(rational? (inexact->exact 1/2))")
+  inspect(@runtime.value_to_string(inexact_rat), content="#t")
+  let inexact_bigrat =
+    eval_program(
+      "(rational? (inexact->exact 12345678901234567890/12345678901234567891))",
+    )
+  inspect(@runtime.value_to_string(inexact_bigrat), content="#t")
+}
+
+///|
+test "numeric complex operations" {
+  let program =
+    #|(begin
+    #|  (abs (make-rectangular 3 4))
+    #|  (angle (make-rectangular 0 1))
+    #|  (sqrt (make-rectangular 0 1))
+    #|  (exp (make-rectangular 0 1))
+    #|  (log (make-rectangular 0 1))
+    #|  (expt 2 -3)
+    #|  (expt 12345678901234567890 -2)
+    #|  (expt 1/2 -2)
+    #|  (expt 12345678901234567890/12345678901234567891 -1)
+    #|  (number->string 12345678901234567890)
+    #|  (string? (number->string (make-rectangular 1 2)))
+    #|  #t)
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="#t")
+}
+
+///|
+test "flonum edge cases" {
+  let program =
+    #|(begin
+    #|  (import (rnrs arithmetic flonums))
+    #|  (list (fl=?)
+    #|        (fl=? 1.0)
+    #|        (fl<? 1.0)
+    #|        (fl>? 1.0)
+    #|        (fl<=? 1.0)
+    #|        (fl>=? 1.0)
+    #|        (fl=? 1.0 2.0)
+    #|        (fl<? 2.0 1.0)
+    #|        (fl>? 1.0 2.0)
+    #|        (fl<=? 2.0 1.0)
+    #|        (fl>=? 1.0 2.0)
+    #|        (flnan? (flmax +nan.0 1.0))
+    #|        (flnan? (flmin +nan.0 1.0))))
+  let value = eval_program(program)
+  inspect(
+    @runtime.value_to_string(value),
+    content="(#t #t #t #t #t #t #f #f #f #f #f #t #t)",
+  )
+  let err_max =
+    try? eval_program(
+      "(begin (import (rnrs arithmetic flonums)) (flmax))",
+    )
+  inspect(err_max is Err(_), content="true")
+  let err_min =
+    try? eval_program(
+      "(begin (import (rnrs arithmetic flonums)) (flmin))",
+    )
+  inspect(err_min is Err(_), content="true")
+  let err_sub =
+    try? eval_program(
+      "(begin (import (rnrs arithmetic flonums)) (fl-))",
+    )
+  inspect(err_sub is Err(_), content="true")
+  let err_div =
+    try? eval_program(
+      "(begin (import (rnrs arithmetic flonums)) (fl/))",
+    )
+  inspect(err_div is Err(_), content="true")
+}
+
+///|
+test "hashtable sizing and arity" {
+  let program =
+    #|(begin
+    #|  (define ht1 (make-eq-hashtable 4))
+    #|  (define ht2 (make-eqv-hashtable 2))
+    #|  (define ht3 (make-hashtable (lambda (x) 0) eq? 3))
+    #|  (hashtable-set! ht1 'a 1)
+    #|  (define keys (hashtable-keys ht1))
+    #|  (define ok-entries
+    #|    (call-with-values
+    #|      (lambda () (hashtable-entries ht1))
+    #|      (lambda (ks vs)
+    #|        (and (= (vector-length ks) 1)
+    #|             (= (vector-length vs) 1)))))
+    #|  (define copy (hashtable-copy ht1))
+    #|  (define copy-imm (hashtable-copy ht1 #f))
+    #|  (hashtable-clear! copy)
+    #|  (hashtable-clear! ht1 5)
+    #|  (and (hashtable? ht1)
+    #|       (not (hashtable? 1))
+    #|       (= (vector-length keys) 1)
+    #|       ok-entries
+    #|       (procedure? (hashtable-equivalence-function ht1))
+    #|       (eq? (hashtable-hash-function ht1) #f)
+    #|       (procedure? (hashtable-hash-function ht3))
+    #|       (hashtable-mutable? copy)
+    #|       (not (hashtable-mutable? copy-imm))
+    #|       (= (hashtable-size ht2) 0)
+    #|       (= (hashtable-size ht3) 0)
+    #|       (= (hashtable-size ht1) 0)))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="#t")
+  let err_size = try? eval_program("(make-eq-hashtable -1)")
+  inspect(err_size is Err(_), content="true")
+  let err_hash = try? eval_program("(make-hashtable 1 eq?)")
+  inspect(err_hash is Err(_), content="true")
+  let err_arity = try? eval_program("(hashtable?)")
+  inspect(err_arity is Err(_), content="true")
+}
+
+///|
+test "enum set error paths" {
+  let program =
+    #|(begin
+    #|  (define colors (make-enumeration '(red green blue)))
+    #|  (define ctor (enum-set-constructor colors))
+    #|  (define s1 (ctor '(red blue)))
+    #|  (define s2 (ctor '(green)))
+    #|  (define uni (enum-set-universe s1))
+    #|  (list (enum-set-member? 'green uni)
+    #|        (enum-set-subset? s1 s2)
+    #|        (enum-set=? s1 s2)
+    #|        (enum-set=? (enum-set-projection s1 s2) s1)))
+  let value = eval_program(program)
+  inspect(@runtime.value_to_string(value), content="(#t #f #f #t)")
+  let err_member = try? eval_program("(enum-set-member?)")
+  inspect(err_member is Err(_), content="true")
+  let err_universe = try? eval_program("(enum-set-universe)")
+  inspect(err_universe is Err(_), content="true")
+  let err_enum_set = try? eval_program("(enum-set?)")
+  inspect(err_enum_set is Err(_), content="true")
+}
+
+///|
+test "record and condition error paths" {
+  let rtd_false = eval_program("(record-type-descriptor? 1)")
+  inspect(@runtime.value_to_string(rtd_false), content="#f")
+  let rcd_false = eval_program("(record-constructor-descriptor? 1)")
+  inspect(@runtime.value_to_string(rcd_false), content="#f")
+  let rtd_err = try? eval_program("(record-rtd 1)")
+  inspect(rtd_err is Err(_), content="true")
+  let rtd_arity = try? eval_program("(record-rtd)")
+  inspect(rtd_arity is Err(_), content="true")
+  let name_arity = try? eval_program("(record-type-name)")
+  inspect(name_arity is Err(_), content="true")
+  let field_arity = try? eval_program("(record-type-field-mutable?)")
+  inspect(field_arity is Err(_), content="true")
+  let mut_err =
+    try? eval_program(
+      "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#((immutable x)))) (record-mutator rtd 0))",
+    )
+  inspect(mut_err is Err(_), content="true")
+  let uid_err =
+    try? eval_program(
+      "(make-record-type-descriptor 'pt #f 1 #f #f '#())",
+    )
+  inspect(uid_err is Err(_), content="true")
+  let protocol_err =
+    try? eval_program(
+      "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#())) (make-record-constructor-descriptor rtd #f 1))",
+    )
+  inspect(protocol_err is Err(_), content="true")
+  let cond_err = try? eval_program("(condition)")
+  inspect(cond_err is Err(_), content="true")
+  let acc_err =
+    try? eval_program(
+      "(begin (define-condition-type &c1 &condition make-c1 c1? (x c1-x)) (define-condition-type &c2 &condition make-c2 c2? (y c2-y)) (define acc (record-accessor (record-rtd (make-c2 1)) 0)) (condition-accessor (record-rtd (make-c1 1)) acc))",
+    )
+  inspect(acc_err is Err(_), content="true")
+}
+
+///|
+test "macro invalid syntax" {
+  let ok_id =
+    eval_program("(begin (define-syntax const (identifier-syntax 42)) const)")
+  inspect(@runtime.value_to_string(ok_id), content="42")
+  let err_rules = try? eval_program("(define-syntax bad (syntax-rules ()))")
+  inspect(err_rules is Err(_), content="true")
+  let err_rules_clause =
+    try? eval_program("(define-syntax bad (syntax-rules () (x)))")
+  inspect(err_rules_clause is Err(_), content="true")
+  let err_ident_empty = try? eval_program("(define-syntax bad (identifier-syntax))")
+  inspect(err_ident_empty is Err(_), content="true")
+  let err_ident_rule =
+    try? eval_program("(define-syntax bad (identifier-syntax (x) (y)))")
+  inspect(err_ident_rule is Err(_), content="true")
+  let err_case_clause =
+    try? eval_program(
+      "(define-syntax bad (lambda (stx) (syntax-case stx () ((_) 1 2 3))))",
+    )
+  inspect(err_case_clause is Err(_), content="true")
+}
+
+///|
+test "eval environment and promise" {
+  let basic =
+    #|(let ((env (environment '(rnrs base))))
+    #|  (eval '(+ 1 2) env))
+  inspect(@runtime.value_to_string(eval_program(basic)), content="3")
+  let define_prog =
+    #|(let ((env (environment '(rnrs base))))
+    #|  (eval '(define x 10) env)
+    #|  (eval 'x env))
+  inspect(@runtime.value_to_string(eval_program(define_prog)), content="10")
+  let env_err = try? eval_program("(environment)")
+  inspect(env_err is Err(_), content="true")
+  let promise_val = eval_program("(force (delay (+ 1 2)))")
+  inspect(@runtime.value_to_string(promise_val), content="3")
+  let promise_err = try? eval_program("(make-promise 1)")
+  inspect(promise_err is Err(_), content="true")
+}
 ```

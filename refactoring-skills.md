@@ -3169,3 +3169,16 @@ fn apply_inexact_exactness(exactness : Char?, datum : @core.Datum) -> @core.Datu
   }
 }
 ```
+
+## Coverage-driven refactor/test loop
+- `moon coverage analyze -p eval -- -f summary` focuses on a single package; tests must live in that package (e.g., `eval/README.mbt.md`) to affect the numbers.
+- `moon coverage analyze -p eval -- -f caret -F eval/builtins_numeric.mbt` pinpoints exact uncovered branches to target with tests.
+- After moving package paths, run `moon clean` before `moon coverage analyze -- -f summary` to clear stale file paths.
+
+Example: add error-branch coverage with `try?` and confirm with caret output:
+```mbt
+test "hashtable arity errors" {
+  let err_arity = try? eval_program("(hashtable?)")
+  inspect(err_arity is Err(_), content="true")
+}
+```
