@@ -318,6 +318,82 @@ test "parse number edge cases" {
       }
     _ => fail("expected complex")
   }
+  match parse_number_token("1e-2") {
+    Some(Float(f)) => inspect(f == 0.01, content="true")
+    _ => fail("expected 0.01")
+  }
+  match parse_number_token("#e1e-2") {
+    Some(Rat(1, 100)) => ()
+    _ => fail("expected 1/100")
+  }
+  match parse_number_token("#e1.2e-3") {
+    Some(_) => ()
+    _ => fail("expected exact decimal")
+  }
+  match parse_number_token("#e1.2.3") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#e.") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#i#x10") {
+    Some(Float(f)) if f == 16.0 => ()
+    _ => fail("expected 16.0")
+  }
+  match parse_number_token("#d10", radix=10) {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("1+i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Int(1), Int(1)) => ()
+        _ => fail("expected 1+1i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("1-i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Int(1), Int(-1)) => ()
+        _ => fail("expected 1-1i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("2i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Int(0), Int(2)) => ()
+        _ => fail("expected 0+2i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("#i1000000000000") {
+    Some(Float(f)) if f == 1000000000000.0 => ()
+    _ => fail("expected inexact big int")
+  }
+  match parse_number_token("#i1000000000000/1000000000001") {
+    Some(Float(_)) => ()
+    _ => fail("expected inexact big rat")
+  }
+  match parse_number_token("1000000000000000000000000000000/1000000000000000000000000000000") {
+    Some(Int(1)) => ()
+    _ => fail("expected 1")
+  }
+  match parse_number_token("1000000000000000000000000000000/-3") {
+    Some(BigRat(_, _)) => ()
+    _ => fail("expected big rat")
+  }
+  match parse_number_token("1+1000000000000i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Int(1), BigInt(_)) => ()
+        _ => fail("expected big int imag")
+      }
+    _ => fail("expected complex")
+  }
 }
 
 ///|
