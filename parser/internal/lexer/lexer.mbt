@@ -244,42 +244,6 @@ pub fn Reader::is_ellipsis_start(self : Reader) -> Bool {
 }
 
 ///|
-/// Return true if the reader is positioned at a vector literal start.
-///
-/// # Example
-/// ```mbt check
-/// test "vector start" {
-///   let r = Reader::new("#(1)")
-///   inspect(r.is_vector_start(), content="true")
-/// }
-/// ```
-pub fn Reader::is_vector_start(self : Reader) -> Bool {
-  self.peek_offset(1) == Some('(')
-}
-
-///|
-/// Return true if the reader is positioned at a bytevector literal start.
-///
-/// # Example
-/// ```mbt check
-/// test "bytevector start" {
-///   let r = Reader::new("#vu8(1)")
-///   inspect(r.is_bytevector_start(), content="true")
-/// }
-/// ```
-pub fn Reader::is_bytevector_start(self : Reader) -> Bool {
-  match (
-    self.peek_offset(1),
-    self.peek_offset(2),
-    self.peek_offset(3),
-    self.peek_offset(4),
-  ) {
-    (Some('v'), Some('u'), Some('8'), Some('(')) => true
-    _ => false
-  }
-}
-
-///|
 /// Read the next token from the reader.
 ///
 /// # Example

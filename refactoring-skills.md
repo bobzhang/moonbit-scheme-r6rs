@@ -3234,3 +3234,32 @@ fn parse_label_token(tok : String) -> (Bool, Int)? {
   }
 }
 ```
+
+## Minimal API audit for internal packages
+- Use `moon ide outline <dir>` to list exported symbols, then `rg "@pkg\\." -g '*.mbt'` to confirm which ones are referenced across packages before removing `pub`.
+- After narrowing the surface, run `moon info` so `pkg.generated.mbti` reflects the new public API.
+
+Example: inline vector/bytevector dispatch and drop helper methods from the lexer package.
+```mbt
+match r.peek_next() {
+  Some('(') => {
+    ignore(r.next())
+    ignore(r.next())
+    read_vector_literal(r)
+  }
+  _ => {
+    let tok = r.read_token()
+    match tok {
+      "#vu8" =>
+        match r.peek() {
+          Some('(') => {
+            ignore(r.next())
+            read_bytevector_literal(r)
+          }
+          _ => token_to_datum(tok)
+        }
+      _ => token_to_datum(tok)
+    }
+  }
+}
+```

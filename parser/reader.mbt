@@ -1316,22 +1316,25 @@ fn read_expr(r : @lexer.Reader) -> @core.Datum raise @core.ParseError {
           ignore(r.next())
           read_comma_form(r, Unsyntax)
         }
-    _ =>
-      if r.is_vector_start() {
-        ignore(r.next())
-        ignore(r.next())
-        read_vector_literal(r)
-      } else if r.is_bytevector_start() {
-        ignore(r.next())
-        ignore(r.next())
-        ignore(r.next())
-        ignore(r.next())
-        ignore(r.next())
-        read_bytevector_literal(r)
-      } else {
-        let tok = r.read_token()
-        token_to_datum(tok)
+        Some('(') => {
+          ignore(r.next())
+          ignore(r.next())
+          read_vector_literal(r)
+        }
+        _ => {
+          let tok = r.read_token()
+          match tok {
+            "#vu8" =>
+              match r.peek() {
+                Some('(') => {
+                  ignore(r.next())
+                  read_bytevector_literal(r)
+                }
+                _ => token_to_datum(tok)
+              }
+            _ => token_to_datum(tok)
           }
+        }
       }
     Some('"') => {
       ignore(r.next())

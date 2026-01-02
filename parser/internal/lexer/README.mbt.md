@@ -31,14 +31,15 @@ test "reader helpers" {
   guard labeled.label_get(1) is Some(_) else { fail("expected label") }
   guard labeled.label_get(2) is None else { fail("expected missing label") }
   let r = Reader::new("#(1 2)")
-  inspect(r.is_vector_start(), content="true")
+  guard r.peek_next() is Some('(') else { fail("expected vector start") }
   let ellipsis = Reader::new("...")
   inspect(ellipsis.is_ellipsis_start(), content="true")
   let r_fold = Reader::new("ABC")
   r_fold.set_fold_case(true)
   inspect(r_fold.read_token(), content="abc")
   let bytevector = Reader::new("#vu8(1)")
-  inspect(bytevector.is_bytevector_start(), content="true")
+  inspect(bytevector.read_token(), content="#vu8")
+  guard bytevector.peek() is Some('(') else { fail("expected bytevector start") }
   let r2 = Reader::new("  ; comment\nfoo")
   r2.skip_ws_and_comments()
   guard r2.peek() is Some('f') else { fail("expected f") }
