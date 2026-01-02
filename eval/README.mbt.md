@@ -1422,6 +1422,224 @@ test "nested unquote and unsyntax" {
 }
 
 ///|
+test "numeric extra branches" {
+  let sqrt_big =
+    eval_program(
+      "(call-with-values (lambda () (exact-integer-sqrt 100000000000000000000)) list)",
+    )
+  inspect(@runtime.value_to_string(sqrt_big), content="(10000000000 0)")
+  let err_sqrt_big =
+    try? eval_program("(exact-integer-sqrt -100000000000000000000)")
+  inspect(err_sqrt_big is Err(_), content="true")
+  let err_sqrt_type = try? eval_program("(exact-integer-sqrt 1.0)")
+  inspect(err_sqrt_type is Err(_), content="true")
+  let err_sqrt_arity = try? eval_program("(exact-integer-sqrt)")
+  inspect(err_sqrt_arity is Err(_), content="true")
+  let rat_int = eval_program("(rationalize 2 0.1)")
+  inspect(@runtime.value_to_string(rat_int), content="2")
+  let rat_big = eval_program("(rationalize 100000000000000000000 0.1)")
+  inspect(@runtime.value_to_string(rat_big), content="100000000000000000000")
+  let rat_float = eval_program("(rationalize 0.25 0.1)")
+  inspect(@runtime.value_to_string(rat_float), content="1/4")
+  let err_rat_tol = try? eval_program("(rationalize 1 -1.0)")
+  inspect(err_rat_tol is Err(_), content="true")
+  let err_rat_type = try? eval_program("(rationalize 'a 1)")
+  inspect(err_rat_type is Err(_), content="true")
+  let err_rat_arity = try? eval_program("(rationalize 1)")
+  inspect(err_rat_arity is Err(_), content="true")
+  let str_rat = eval_program("(number->string 1/2)")
+  inspect(@runtime.value_to_string(str_rat), content="\"1/2\"")
+  let str_float = eval_program("(number->string 1.25)")
+  inspect(@runtime.value_to_string(str_float), content="\"1.25\"")
+  let err_num_type = try? eval_program("(number->string 'a)")
+  inspect(err_num_type is Err(_), content="true")
+  let abs_big = eval_program("(abs -100000000000000000000)")
+  inspect(@runtime.value_to_string(abs_big), content="100000000000000000000")
+  let abs_rat = eval_program("(abs -3/2)")
+  inspect(@runtime.value_to_string(abs_rat), content="3/2")
+  let abs_bigrat =
+    eval_program(
+      "(abs -100000000000000000000/100000000000000000001)",
+    )
+  inspect(
+    @runtime.value_to_string(abs_bigrat),
+    content="100000000000000000000/100000000000000000001",
+  )
+  let abs_float = eval_program("(abs -1.5)")
+  inspect(@runtime.value_to_string(abs_float), content="1.5")
+}
+
+///|
+test "record primitive arity errors" {
+  let err_record = try? eval_program("(record?)")
+  inspect(err_record is Err(_), content="true")
+  let err_rtd = try? eval_program("(record-type-descriptor?)")
+  inspect(err_rtd is Err(_), content="true")
+  let err_rcd = try? eval_program("(record-constructor-descriptor?)")
+  inspect(err_rcd is Err(_), content="true")
+  let err_type_name = try? eval_program("(record-type-name)")
+  inspect(err_type_name is Err(_), content="true")
+  let err_type_parent = try? eval_program("(record-type-parent)")
+  inspect(err_type_parent is Err(_), content="true")
+  let err_type_uid = try? eval_program("(record-type-uid)")
+  inspect(err_type_uid is Err(_), content="true")
+  let err_type_gen = try? eval_program("(record-type-generative?)")
+  inspect(err_type_gen is Err(_), content="true")
+  let err_type_sealed = try? eval_program("(record-type-sealed?)")
+  inspect(err_type_sealed is Err(_), content="true")
+  let err_type_opaque = try? eval_program("(record-type-opaque?)")
+  inspect(err_type_opaque is Err(_), content="true")
+  let err_type_fields = try? eval_program("(record-type-field-names)")
+  inspect(err_type_fields is Err(_), content="true")
+  let err_ctor_desc = try? eval_program("(record-constructor-descriptor)")
+  inspect(err_ctor_desc is Err(_), content="true")
+  let err_pred = try? eval_program("(record-predicate)")
+  inspect(err_pred is Err(_), content="true")
+  let err_accessor = try? eval_program("(record-accessor)")
+  inspect(err_accessor is Err(_), content="true")
+  let err_mutator = try? eval_program("(record-mutator)")
+  inspect(err_mutator is Err(_), content="true")
+  let err_mk_rtd = try? eval_program("(make-record-type-descriptor)")
+  inspect(err_mk_rtd is Err(_), content="true")
+  let err_mk_rcd = try? eval_program("(make-record-constructor-descriptor)")
+  inspect(err_mk_rcd is Err(_), content="true")
+  let err_cond_p = try? eval_program("(condition?)")
+  inspect(err_cond_p is Err(_), content="true")
+  let err_simple = try? eval_program("(simple-conditions)")
+  inspect(err_simple is Err(_), content="true")
+  let err_cond_pred = try? eval_program("(condition-predicate)")
+  inspect(err_cond_pred is Err(_), content="true")
+  let err_cond_acc = try? eval_program("(condition-accessor)")
+  inspect(err_cond_acc is Err(_), content="true")
+}
+
+///|
+test "hashtable and enum-set arity errors" {
+  let err_mk_eq = try? eval_program("(make-eq-hashtable 1 2)")
+  inspect(err_mk_eq is Err(_), content="true")
+  let err_mk_eqv = try? eval_program("(make-eqv-hashtable 1 2)")
+  inspect(err_mk_eqv is Err(_), content="true")
+  let err_mk_hash = try? eval_program("(make-hashtable)")
+  inspect(err_mk_hash is Err(_), content="true")
+  let err_hash_p = try? eval_program("(hashtable?)")
+  inspect(err_hash_p is Err(_), content="true")
+  let err_hash_size = try? eval_program("(hashtable-size)")
+  inspect(err_hash_size is Err(_), content="true")
+  let err_hash_copy = try? eval_program("(hashtable-copy)")
+  inspect(err_hash_copy is Err(_), content="true")
+  let err_hash_clear = try? eval_program("(hashtable-clear!)")
+  inspect(err_hash_clear is Err(_), content="true")
+  let err_hash_keys = try? eval_program("(hashtable-keys)")
+  inspect(err_hash_keys is Err(_), content="true")
+  let err_hash_entries = try? eval_program("(hashtable-entries)")
+  inspect(err_hash_entries is Err(_), content="true")
+  let err_hash_equiv = try? eval_program("(hashtable-equivalence-function)")
+  inspect(err_hash_equiv is Err(_), content="true")
+  let err_hash_func = try? eval_program("(hashtable-hash-function)")
+  inspect(err_hash_func is Err(_), content="true")
+  let err_hash_mut = try? eval_program("(hashtable-mutable?)")
+  inspect(err_hash_mut is Err(_), content="true")
+  let err_enum = try? eval_program("(make-enumeration)")
+  inspect(err_enum is Err(_), content="true")
+  let err_enum_universe = try? eval_program("(enum-set-universe)")
+  inspect(err_enum_universe is Err(_), content="true")
+  let err_enum_index = try? eval_program("(enum-set-indexer)")
+  inspect(err_enum_index is Err(_), content="true")
+  let err_enum_ctor = try? eval_program("(enum-set-constructor)")
+  inspect(err_enum_ctor is Err(_), content="true")
+  let err_enum_p = try? eval_program("(enum-set?)")
+  inspect(err_enum_p is Err(_), content="true")
+  let err_enum_member = try? eval_program("(enum-set-member?)")
+  inspect(err_enum_member is Err(_), content="true")
+  let err_enum_subset = try? eval_program("(enum-set-subset?)")
+  inspect(err_enum_subset is Err(_), content="true")
+  let err_enum_eq = try? eval_program("(enum-set=?)")
+  inspect(err_enum_eq is Err(_), content="true")
+  let err_enum_union = try? eval_program("(enum-set-union)")
+  inspect(err_enum_union is Err(_), content="true")
+  let err_enum_inter = try? eval_program("(enum-set-intersection)")
+  inspect(err_enum_inter is Err(_), content="true")
+  let err_enum_diff = try? eval_program("(enum-set-difference)")
+  inspect(err_enum_diff is Err(_), content="true")
+  let err_enum_comp = try? eval_program("(enum-set-complement)")
+  inspect(err_enum_comp is Err(_), content="true")
+  let err_enum_proj = try? eval_program("(enum-set-projection)")
+  inspect(err_enum_proj is Err(_), content="true")
+  let err_enum_list = try? eval_program("(enum-set->list)")
+  inspect(err_enum_list is Err(_), content="true")
+}
+
+///|
+test "eqv? on runtime values" {
+  let program =
+    #|(begin
+    #|  (define f (lambda (x) x))
+    #|  (define g (lambda (x) x))
+    #|  (define c (case-lambda ((x) x)))
+    #|  (define p (make-parameter 1))
+    #|  (define pr (delay 1))
+    #|  (define env (environment '(rnrs base)))
+    #|  (define k (call/cc (lambda (k) k)))
+    #|  (define ht (make-eq-hashtable))
+    #|  (define enum (make-enumeration '(a b)))
+    #|  (define set ((enum-set-constructor enum) '(a)))
+    #|  (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#((mutable x))))
+    #|  (define rcd (make-record-constructor-descriptor rtd #f #f))
+    #|  (define make-pt (record-constructor rcd))
+    #|  (define rec (make-pt 1))
+    #|  (define acc (record-accessor rtd 0))
+    #|  (define pred (record-predicate rtd))
+    #|  (define-condition-type &c &condition make-c c? (x c-x))
+    #|  (define c1 (make-c 1))
+    #|  (define cond-acc
+    #|    (condition-accessor
+    #|      (record-rtd c1)
+    #|      (record-accessor (record-rtd c1) 0)))
+    #|  (list (eqv? + +)
+    #|        (eqv? f f)
+    #|        (eqv? f g)
+    #|        (eqv? c c)
+    #|        (eqv? p p)
+    #|        (eqv? pr pr)
+    #|        (eqv? env env)
+    #|        (eqv? k k)
+    #|        (eqv? ht ht)
+    #|        (eqv? set set)
+    #|        (eqv? rec rec)
+    #|        (eqv? acc acc)
+    #|        (eqv? pred pred)
+    #|        (eqv? cond-acc cond-acc)))
+  let value = eval_program(program)
+  inspect(
+    @runtime.value_to_string(value),
+    content="(#t #t #f #t #t #t #t #t #t #t #t #t #t #t)",
+  )
+}
+
+///|
+test "identifier scope mismatch" {
+  let value =
+    eval_program(
+      "(begin (define a (datum->syntax #f 'x)) (define b (syntax x)) (list (free-identifier=? a b) (bound-identifier=? a b)))",
+    )
+  inspect(@runtime.value_to_string(value), content="(#f #f)")
+}
+
+///|
+test "datum->syntax gensym stripping" {
+  let value =
+    eval_program(
+      "(begin (define s (datum->syntax (syntax foo__sg123__sg4) 'foo)) (symbol->string (syntax->datum s)))",
+    )
+  inspect(@runtime.value_to_string(value), content="\"foo\"")
+  let plain =
+    eval_program(
+      "(begin (define s (datum->syntax (syntax foo) 'foo)) (symbol->string (syntax->datum s)))",
+    )
+  inspect(@runtime.value_to_string(plain), content="\"foo\"")
+}
+
+///|
 test "numeric complex operations" {
   let program =
     #|(begin

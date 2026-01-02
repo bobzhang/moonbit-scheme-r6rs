@@ -3197,3 +3197,17 @@ test "quasisyntax splicing" {
   inspect(@runtime.value_to_string(value), content="(1 2 3)")
 }
 ```
+
+## Identifier scope probes
+- Compare identifiers built from `(datum->syntax #f ...)` vs `(syntax ...)` to hit scope-equality branches.
+
+Example:
+```mbt
+test "identifier scopes" {
+  let value =
+    eval_program(
+      "(begin (define a (datum->syntax #f 'x)) (define b (syntax x)) (list (free-identifier=? a b) (bound-identifier=? a b)))",
+    )
+  inspect(@runtime.value_to_string(value), content="(#f #f)")
+}
+```
