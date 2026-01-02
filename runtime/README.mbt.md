@@ -147,6 +147,32 @@ test "printer datum rendering" {
       ),
       "1-2i",
     ),
+    (
+      @core.Datum::Complex(
+        Ref::new(@core.Datum::Int(1)),
+        Ref::new(@core.Datum::Rat(-1, 2)),
+      ),
+      "1-1/2i",
+    ),
+    (
+      @core.Datum::Complex(
+        Ref::new(@core.Datum::Int(1)),
+        Ref::new(
+          @core.Datum::BigRat(
+            @bigint.BigInt::from_int(-1),
+            @bigint.BigInt::from_int(3),
+          ),
+        ),
+      ),
+      "1-1/3i",
+    ),
+    (
+      @core.Datum::Complex(
+        Ref::new(@core.Datum::Int(1)),
+        Ref::new(@core.Datum::Float(-1.5)),
+      ),
+      "1-1.5i",
+    ),
     (@core.Datum::Char(' '), "#\\space"),
     (@core.Datum::Char('\n'), "#\\newline"),
     (@core.Datum::Char('\t'), "#\\tab"),
@@ -224,6 +250,90 @@ test "strip syntax datum" {
   match strip_syntax_datum(wrapped) {
     Symbol("x") => ()
     _ => fail("expected symbol")
+  }
+}
+
+///|
+test "env error paths" {
+  let empty : @core.Env = []
+  let set_empty = try? env_set(empty, "x", @core.Value::Void)
+  inspect(set_empty is Err(_), content="true")
+  inspect(env_lookup_optional(empty, "x") is None, content="true")
+  let env = env_new()
+  let set_missing = try? env_set(env, "x", @core.Value::Void)
+  inspect(set_missing is Err(_), content="true")
+  inspect(is_procedure_value(@core.Value::Void), content="false")
+}
+
+///|
+test "enum set error paths" {
+  let short = @core.EnumSet::new(1, ["a"], [true])
+  let long = @core.EnumSet::new(2, ["a", "b"], [true, false])
+  inspect(enum_set_universe_equal(short, long), content="false")
+  inspect(enum_set_member_by_name(short, "missing"), content="false")
+  let bad = try? enum_set_from_names(["a"], ["b"])
+  inspect(bad is Err(_), content="true")
+}
+
+///|
+test "syntax helpers extra" {
+  let syntax = @core.Datum::Value(
+    @core.Value::SyntaxObject(
+      @core.SyntaxObject::new(@core.Datum::Symbol("x"), [1], None),
+    ),
+  )
+  match symbol_name(syntax) {
+    Some("x") => ()
+    _ => fail("expected symbol name")
+  }
+  let complex = @core.Datum::Complex(
+    Ref::new(@core.Datum::Int(1)),
+    Ref::new(@core.Datum::Int(2)),
+  )
+  match syntax_wrap_root(complex, [1]) {
+    Complex(_, _) => ()
+    _ => fail("expected complex")
+  }
+  match syntax_add_scope(complex, 2) {
+    Complex(_, _) => ()
+    _ => fail("expected complex")
+  }
+  match syntax_add_scope(syntax, 1) {
+    Value(SyntaxObject(obj)) => inspect(obj.scopes.length(), content="1")
+    _ => fail("expected syntax object")
+  }
+  match syntax_add_scope(syntax, 2) {
+    Value(SyntaxObject(obj)) => inspect(obj.scopes.length(), content="2")
+    _ => fail("expected syntax object")
+  }
+  let vector = @core.Datum::Vector([@core.Datum::Symbol("y")])
+  match syntax_add_scope(vector, 2) {
+    Vector(items) =>
+      match items[0] {
+        Value(SyntaxObject(_)) => ()
+        _ => fail("expected syntax object")
+      }
+    _ => fail("expected vector")
+  }
+  let cell = Ref::new(@core.Datum::Nil)
+  let label = @core.Datum::Label(1, cell)
+  cell.val = label
+  match datum_unlabel(label) {
+    Label(_, _) => ()
+    _ => fail("expected label")
+  }
+}
+
+///|
+test "record type alias without uid" {
+  reset_record_type_registry()
+  let record_type = @core.RecordType::new(50, "doc/alias", None, false, false, None, [])
+  let ctor_desc = @core.RecordConstructorDescriptor::new(50, record_type, None, None)
+  let desc = @core.RecordTypeDescriptor::new(50, record_type, ctor_desc)
+  register_record_type_alias("doc/alias", desc)
+  match lookup_record_type_descriptor("doc/alias") {
+    Some(_) => ()
+    _ => fail("expected record type alias")
   }
 }
 

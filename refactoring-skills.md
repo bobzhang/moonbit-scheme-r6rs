@@ -2945,6 +2945,19 @@ let duplicate_label = try? parse_program("#1= #1= 1")
 inspect(duplicate_label is Err(_), content="true")
 ```
 
+## Runtime coverage notes
+- Use `@core.SyntaxObject::new` with known scopes to hit `syntax_add_scope` branches (same scope vs new scope).
+- Call `reset_record_type_registry()` before registering aliases in tests to keep registries isolated.
+
+Example:
+```mbt
+reset_record_type_registry()
+let record_type = @core.RecordType::new(50, "doc/alias", None, false, false, None, [])
+let ctor_desc = @core.RecordConstructorDescriptor::new(50, record_type, None, None)
+let desc = @core.RecordTypeDescriptor::new(50, record_type, ctor_desc)
+register_record_type_alias("doc/alias", desc)
+```
+
 ## Cover printer branches with constructor-built values
 - Use core constructors (RecordType::new/Record::new/Condition::new) to exercise
   `Datum::Record` and `Datum::Condition` without touching registries.
