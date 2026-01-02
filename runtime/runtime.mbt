@@ -164,27 +164,27 @@ pub fn make_record_type(
   uid : String?,
   fields : Array[@core.RecordField],
 ) -> @core.RecordType {
-  @core.RecordType::{
-    id: next_record_type_id(),
+  @core.RecordType::new(
+    next_record_type_id(),
     name,
     parent,
     is_sealed,
     is_opaque,
     uid,
     fields,
-  }
+  )
 }
 
 ///|
 /// Allocate a record procedure wrapper.
 pub fn make_record_proc(kind : @core.RecordProcKind) -> @core.RecordProc {
-  @core.RecordProc::{ id: next_record_proc_id(), kind }
+  @core.RecordProc::new(next_record_proc_id(), kind)
 }
 
 ///|
 /// Allocate a condition procedure wrapper.
 pub fn make_condition_proc(kind : @core.ConditionProcKind) -> @core.ConditionProc {
-  @core.ConditionProc::{ id: next_condition_proc_id(), kind }
+  @core.ConditionProc::new(next_condition_proc_id(), kind)
 }
 
 ///|
@@ -194,12 +194,12 @@ pub fn make_record_constructor_descriptor(
   parent_desc : @core.RecordConstructorDescriptor?,
   protocol : @core.Value?,
 ) -> @core.RecordConstructorDescriptor {
-  @core.RecordConstructorDescriptor::{
-    id: next_record_ctor_desc_id(),
+  @core.RecordConstructorDescriptor::new(
+    next_record_ctor_desc_id(),
     record_type,
     parent_desc,
     protocol,
-  }
+  )
 }
 
 ///|
@@ -208,11 +208,11 @@ pub fn make_record_type_descriptor(
   record_type : @core.RecordType,
   constructor_desc : @core.RecordConstructorDescriptor,
 ) -> @core.RecordTypeDescriptor {
-  @core.RecordTypeDescriptor::{
-    id: next_record_type_desc_id(),
+  @core.RecordTypeDescriptor::new(
+    next_record_type_desc_id(),
     record_type,
     constructor_desc,
-  }
+  )
 }
 
 ///|
@@ -221,14 +221,13 @@ pub fn make_record_instance(
   record_type : @core.RecordType,
   values : Array[@core.Value],
 ) -> @core.Record {
-  let fields = values.map((value) => Ref::new(value))
-  @core.Record::{ id: next_record_id(), record_type, fields }
+  @core.Record::new(next_record_id(), record_type, values)
 }
 
 ///|
 /// Construct a condition with the given record components.
 pub fn make_condition(components : Array[@core.Record]) -> @core.Condition {
-  @core.Condition::{ id: next_condition_id(), components }
+  @core.Condition::new(next_condition_id(), components)
 }
 
 ///|
@@ -238,13 +237,7 @@ pub fn make_hashtable(
   hash : @core.Value?,
   mutable : Bool,
 ) -> @core.Hashtable {
-  @core.Hashtable::{
-    id: next_hashtable_id(),
-    mutable,
-    equiv,
-    hash,
-    entries: Ref::new([]),
-  }
+  @core.Hashtable::new(next_hashtable_id(), mutable, equiv, hash, [])
 }
 
 ///|
@@ -253,13 +246,13 @@ pub fn make_enum_set(
   universe : Array[String],
   members : Array[Bool],
 ) -> @core.EnumSet {
-  @core.EnumSet::{ id: next_enum_set_id(), universe, members }
+  @core.EnumSet::new(next_enum_set_id(), universe, members)
 }
 
 ///|
 /// Allocate an enum-set procedure wrapper.
 pub fn make_enum_set_proc(kind : @core.EnumSetProcKind) -> @core.EnumSetProc {
-  @core.EnumSetProc::{ id: next_enum_set_proc_id(), kind }
+  @core.EnumSetProc::new(next_enum_set_proc_id(), kind)
 }
 
 ///|
@@ -604,11 +597,9 @@ fn syntax_wrap_datum(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
   match datum {
     Symbol(name) =>
       @core.Datum::Value(
-        @core.Value::SyntaxObject(@core.SyntaxObject::{
-          datum: Symbol(name),
-          scopes,
-          binding_id: None,
-        }),
+        @core.Value::SyntaxObject(
+          @core.SyntaxObject::new(Symbol(name), scopes, None),
+        ),
       )
     Pair(a, b) =>
       pair_new(
@@ -643,11 +634,9 @@ pub fn syntax_add_scope(datum : @core.Datum, scope : Int) -> @core.Datum {
   match datum {
     Symbol(name) =>
       @core.Datum::Value(
-        @core.Value::SyntaxObject(@core.SyntaxObject::{
-          datum: Symbol(name),
-          scopes: [scope],
-          binding_id: None,
-        }),
+        @core.Value::SyntaxObject(
+          @core.SyntaxObject::new(Symbol(name), [scope], None),
+        ),
       )
     Value(SyntaxObject(obj)) => {
       let next_scopes = scopes_with_added(obj.scopes, scope)
@@ -656,11 +645,9 @@ pub fn syntax_add_scope(datum : @core.Datum, scope : Int) -> @core.Datum {
         _ => syntax_add_scope(obj.datum, scope)
       }
       @core.Datum::Value(
-        @core.Value::SyntaxObject(@core.SyntaxObject::{
-          datum: inner,
-          scopes: next_scopes,
-          binding_id: obj.binding_id,
-        }),
+        @core.Value::SyntaxObject(
+          @core.SyntaxObject::new(inner, next_scopes, obj.binding_id),
+        ),
       )
     }
     Pair(a, b) =>

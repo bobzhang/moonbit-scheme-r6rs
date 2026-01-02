@@ -25,11 +25,12 @@ pub fn Binding::id(Self) -> Int
 pub fn Binding::new(Int, Value) -> Self
 pub fn Binding::value(Self) -> Value
 
-pub(all) struct CaseClause {
+pub struct CaseClause {
   params : Array[String]
   rest : String?
   body : Array[Datum]
 }
+pub fn CaseClause::new(Array[String], String?, Array[Datum]) -> Self
 
 pub struct CaseClosure {
   id : Int
@@ -47,27 +48,30 @@ pub struct Closure {
 }
 pub fn Closure::new(Int, Array[String], String?, Array[Datum], Array[Map[String, Binding]]) -> Self
 
-pub(all) struct Condition {
+pub struct Condition {
   id : Int
   components : Array[Record]
 }
+pub fn Condition::new(Int, Array[Record]) -> Self
 
-pub(all) struct ConditionProc {
+pub struct ConditionProc {
   id : Int
   kind : ConditionProcKind
 }
+pub fn ConditionProc::new(Int, ConditionProcKind) -> Self
 
 pub(all) enum ConditionProcKind {
   Predicate(RecordType)
   Accessor(RecordType, Int)
 }
 
-pub(all) struct Continuation {
+pub struct Continuation {
   id : Int
   kont : Kont
   handlers : Array[Value]
   winds : Array[Winder]
 }
+pub fn Continuation::new(Int, Kont, Array[Value], Array[Winder]) -> Self
 
 pub(all) enum Datum {
   Nil
@@ -90,16 +94,18 @@ pub(all) enum Datum {
   Value(Value)
 }
 
-pub(all) struct EnumSet {
+pub struct EnumSet {
   id : Int
   universe : Array[String]
   members : Array[Bool]
 }
+pub fn EnumSet::new(Int, Array[String], Array[Bool]) -> Self
 
-pub(all) struct EnumSetProc {
+pub struct EnumSetProc {
   id : Int
   kind : EnumSetProcKind
 }
+pub fn EnumSetProc::new(Int, EnumSetProcKind) -> Self
 
 pub(all) enum EnumSetProcKind {
   Constructor(EnumSet)
@@ -112,12 +118,13 @@ pub struct EvalEnv {
 }
 pub fn EvalEnv::new(Int, Array[Map[String, Binding]]) -> Self
 
-pub(all) struct Formals {
+pub struct Formals {
   params : Array[String]
   rest : String?
 }
+pub fn Formals::new(Array[String], String?) -> Self
 
-pub(all) struct GuardHandler {
+pub struct GuardHandler {
   id : Int
   name : String
   clauses : Array[Datum]
@@ -125,27 +132,31 @@ pub(all) struct GuardHandler {
   resume_value : Value
   handlers : Array[Value]
 }
+pub fn GuardHandler::new(Int, String, Array[Datum], Array[Map[String, Binding]], Value, Array[Value]) -> Self
 
-pub(all) struct GuardInfo {
+pub struct GuardInfo {
   condition : Value
   resume_value : Value
   handlers : Array[Value]
   raise_kont : Kont
   continuable : Bool
 }
+pub fn GuardInfo::new(Value, Value, Array[Value], Kont, Bool) -> Self
 
-pub(all) struct Hashtable {
+pub struct Hashtable {
   id : Int
   mutable : Bool
   equiv : HashtableEquiv
   hash : Value?
   entries : Ref[Array[HashtableEntry]]
 }
+pub fn Hashtable::new(Int, Bool, HashtableEquiv, Value?, Array[HashtableEntry]) -> Self
 
-pub(all) struct HashtableEntry {
+pub struct HashtableEntry {
   key : Value
   value : Ref[Value]
 }
+pub fn HashtableEntry::new(Value, Value) -> Self
 
 pub(all) enum HashtableEquiv {
   Eq
@@ -218,11 +229,12 @@ pub(all) enum MacroTransformer {
   Procedure(Value, Array[Map[String, Binding]])
 }
 
-pub(all) struct ParamBinding {
+pub struct ParamBinding {
   param : Parameter
   old_value : Value
   new_value : Value
 }
+pub fn ParamBinding::new(Parameter, Value, Value) -> Self
 
 pub struct Parameter {
   id : Int
@@ -637,23 +649,26 @@ pub(all) enum PromiseState {
   Value(Value)
 }
 
-pub(all) struct Record {
+pub struct Record {
   id : Int
   record_type : RecordType
   fields : Array[Ref[Value]]
 }
+pub fn Record::new(Int, RecordType, Array[Value]) -> Self
 
-pub(all) struct RecordConstructorDescriptor {
+pub struct RecordConstructorDescriptor {
   id : Int
   record_type : RecordType
   parent_desc : RecordConstructorDescriptor?
   protocol : Value?
 }
+pub fn RecordConstructorDescriptor::new(Int, RecordType, Self?, Value?) -> Self
 
-pub(all) struct RecordField {
+pub struct RecordField {
   name : String
   mutable : Bool
 }
+pub fn RecordField::new(String, Bool) -> Self
 
 pub struct RecordFieldBinding {
   accessor : String
@@ -665,10 +680,11 @@ pub fn RecordFieldBinding::index(Self) -> Int
 pub fn RecordFieldBinding::mutator(Self) -> String?
 pub fn RecordFieldBinding::new(String, Int, String?) -> Self
 
-pub(all) struct RecordProc {
+pub struct RecordProc {
   id : Int
   kind : RecordProcKind
 }
+pub fn RecordProc::new(Int, RecordProcKind) -> Self
 
 pub(all) enum RecordProcKind {
   Constructor(RecordType)
@@ -679,7 +695,7 @@ pub(all) enum RecordProcKind {
   ProtocolP(RecordType, Array[Value])
 }
 
-pub(all) struct RecordType {
+pub struct RecordType {
   id : Int
   name : String
   parent : RecordType?
@@ -688,18 +704,21 @@ pub(all) struct RecordType {
   uid : String?
   fields : Array[RecordField]
 }
+pub fn RecordType::new(Int, String, Self?, Bool, Bool, String?, Array[RecordField]) -> Self
 
-pub(all) struct RecordTypeDescriptor {
+pub struct RecordTypeDescriptor {
   id : Int
   record_type : RecordType
   constructor_desc : RecordConstructorDescriptor
 }
+pub fn RecordTypeDescriptor::new(Int, RecordType, RecordConstructorDescriptor) -> Self
 
-pub(all) struct SyntaxObject {
+pub struct SyntaxObject {
   datum : Datum
   scopes : Array[Int]
   binding_id : Int?
 }
+pub fn SyntaxObject::new(Datum, Array[Int], Int?) -> Self
 
 pub struct SyntaxRule {
   pattern : Datum
@@ -708,13 +727,14 @@ pub struct SyntaxRule {
 }
 pub fn SyntaxRule::new(Datum, Datum, Datum?) -> Self
 
-pub(all) struct SyntaxRules {
+pub struct SyntaxRules {
   literals : Array[String]
   rules : Array[SyntaxRule]
   ellipsis : String
   kind : SyntaxRulesKind
   def_env : Array[Map[String, Binding]]
 }
+pub fn SyntaxRules::new(Array[String], Array[SyntaxRule], String, SyntaxRulesKind, Array[Map[String, Binding]]) -> Self
 
 pub(all) enum SyntaxRulesKind {
   SyntaxRules

@@ -218,11 +218,9 @@ fn apply_primitive_core(
               _ => raise @core.EvalError("type error: identifier expected")
             }
             let datum = @core.Datum::Symbol(@runtime.gensym(name))
-            let temp = @core.Value::SyntaxObject(@core.SyntaxObject::{
-              datum,
-              scopes,
-              binding_id,
-            })
+            let temp = @core.Value::SyntaxObject(
+              @core.SyntaxObject::new(datum, scopes, binding_id),
+            )
             results.push(value_to_datum_element(temp))
           }
           @core.Value::Datum(list_from_array(results))

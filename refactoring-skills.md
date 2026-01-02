@@ -137,6 +137,7 @@ moon info
 - Add explicit constructors like `Type::new(...)` in the defining package and update record literals in other packages to call them.
 - Use `rg -o "@core\\.[A-Za-z0-9_]+::\\{" -g "*.mbt" --glob "!core/*"` to find record-literal construction outside the package.
 - Use `moon ide find-references "PortKind::OutputString"` (or `WinderKind::Proc`) to locate enum-variant construction before tightening `pub(all)` to `pub`.
+- Before changing a struct to `pub`, run `moon ide find-references "SyntaxObject"` (or the type name) to make sure every record literal is covered by a constructor.
 
 Example:
 ```mbt

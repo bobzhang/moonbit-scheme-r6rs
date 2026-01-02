@@ -41,3 +41,44 @@ pub fn SyntaxRule::new(
 ) -> SyntaxRule {
   { pattern, template, fender }
 }
+
+///|
+pub fn SyntaxRules::new(
+  literals : Array[String],
+  rules : Array[SyntaxRule],
+  ellipsis : String,
+  kind : SyntaxRulesKind,
+  def_env : Env,
+) -> SyntaxRules {
+  { literals, rules, ellipsis, kind, def_env }
+}
+
+///|
+pub fn SyntaxObject::new(
+  datum : Datum,
+  scopes : Array[Int],
+  binding_id : Int?,
+) -> SyntaxObject {
+  { datum, scopes, binding_id }
+}
+
+///|
+pub fn CaseClause::new(
+  params : Array[String],
+  rest : String?,
+  body : Array[Datum],
+) -> CaseClause {
+  { params, rest, body }
+}
+
+///|
+pub fn GuardHandler::new(
+  id : Int,
+  name : String,
+  clauses : Array[Datum],
+  env : Env,
+  resume_value : Value,
+  handlers : Array[Value],
+) -> GuardHandler {
+  { id, name, clauses, env, resume_value, handlers }
+}

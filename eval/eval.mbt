@@ -165,25 +165,25 @@ fn make_guard_handler(
   resume_value : @core.Value,
   handlers : Array[@core.Value],
 ) -> @core.GuardHandler {
- @core.GuardHandler::{
-    id: next_guard_handler_id(),
+  @core.GuardHandler::new(
+    next_guard_handler_id(),
     name,
     clauses,
     env,
     resume_value,
     handlers,
-  }
+  )
 }
 
 ///|
 fn capture_continuation(kont : @core.Kont, handlers : Array[@core.Value]) -> @core.Continuation {
   let winds_copy = wind_stack.val.copy()
- @core.Continuation::{
-    id: next_continuation_id(),
+  @core.Continuation::new(
+    next_continuation_id(),
     kont,
     handlers,
-    winds: winds_copy,
-  }
+    winds_copy,
+  )
 }
 
 ///|
@@ -750,11 +750,9 @@ fn eval_expr_impl(
                     let current = params[i]
                     let old_value = parameter_get(current)
                     let new_val = next_values[i]
-                    bindings_info.push(@core.ParamBinding::{
-                      param: current,
-                      old_value,
-                      new_value: new_val,
-                    })
+                    bindings_info.push(
+                      @core.ParamBinding::new(current, old_value, new_val),
+                    )
                     parameter_set(current, new_val)
                     continue i + 1
                   }
@@ -801,11 +799,9 @@ fn eval_expr_impl(
                 let current = params[i]
                 let old_value = parameter_get(current)
                 let new_val = next_values[i]
-                bindings_info.push(@core.ParamBinding::{
-                  param: current,
-                  old_value,
-                  new_value: new_val,
-                })
+                bindings_info.push(
+                  @core.ParamBinding::new(current, old_value, new_val),
+                )
                 parameter_set(current, new_val)
                 continue i + 1
               }
@@ -1036,7 +1032,7 @@ fn eval_expr_impl(
               entry.value.val = next_value
             } else {
               let entries = table.entries.val
-              entries.push(@core.HashtableEntry::{ key, value: Ref::new(next_value) })
+              entries.push(@core.HashtableEntry::new(key, next_value))
             }
             state = MachineState::Apply(@core.Value::Void, next, handlers)
           }
@@ -1152,7 +1148,9 @@ fn eval_syntax(args : Array[@core.Datum], env : @core.Env) -> @core.Value raise 
         _ => None
       }
       let datum = @runtime.syntax_wrap_root(arg, scopes)
-      @core.Value::SyntaxObject(@core.SyntaxObject::{ datum, scopes, binding_id })
+      @core.Value::SyntaxObject(
+        @core.SyntaxObject::new(datum, scopes, binding_id),
+      )
     }
     _ => raise arity_mismatch(1, args.length())
   }
@@ -1186,7 +1184,9 @@ fn eval_quasisyntax(args : Array[@core.Datum], env : @core.Env) -> @core.Value r
             _ => None
           }
           let datum = @runtime.syntax_wrap_root(expanded, scopes)
-          @core.Value::SyntaxObject(@core.SyntaxObject::{ datum, scopes, binding_id })
+          @core.Value::SyntaxObject(
+            @core.SyntaxObject::new(datum, scopes, binding_id),
+          )
         }
       }
     }
@@ -1440,8 +1440,8 @@ fn parse_formals(expr : @core.Datum) -> @core.Formals raise @core.EvalError {
     // TODO(decreases) : list structure not explicit; possible bug
     // assert : names.length() >= 0
     match datum_unwrap_syntax(cur) {
-      Nil => break@core.Formals::{ params: names, rest: None }
-      Symbol(name) => break@core.Formals::{ params: names, rest: Some(name) }
+      Nil => break @core.Formals::new(names, None)
+      Symbol(name) => break @core.Formals::new(names, Some(name))
       Pair(car, cdr) => {
         let name = parse_symbol(car.val)
         names.push(name)
@@ -1450,7 +1450,7 @@ fn parse_formals(expr : @core.Datum) -> @core.Formals raise @core.EvalError {
       _ => raise @core.EvalError("type error: symbol expected")
     }
   } else {
-   @core.Formals::{ params: names, rest: None }
+    @core.Formals::new(names, None)
   }
 }
 
@@ -1552,11 +1552,7 @@ fn eval_case_lambda(args : Array[@core.Datum], env : @core.Env) -> @core.Value r
       _ => raise @core.EvalError("invalid case-lambda")
     }
     let formals = parse_formals(formals_expr)
-   @core.CaseClause::{
-      params: formals.params,
-      rest: formals.rest,
-      body: body_exprs,
-    }
+    @core.CaseClause::new(formals.params, formals.rest, body_exprs)
   })
   @core.Value::CaseClosure(make_case_closure(clauses, env))
 }
@@ -1757,13 +1753,13 @@ fn handle_guard(
 ) -> MachineState raise @core.EvalError {
   let guard_env = @runtime.env_extend(handler.env)
   @runtime.env_define(guard_env, handler.name, condition)
-  let info =@core.GuardInfo::{
+  let info = @core.GuardInfo::new(
     condition,
-    resume_value: handler.resume_value,
-    handlers: handler.handlers,
+    handler.resume_value,
+    handler.handlers,
     raise_kont,
     continuable,
-  }
+  )
   guard_start(handler.clauses, guard_env, info, handler.handlers)
 }
 
@@ -2353,13 +2349,15 @@ fn eval_letrec_syntax_state(
         [name_expr, _] => parse_symbol(name_expr)
         _ => raise @core.EvalError("type error: syntax binding expected")
       }
-      let placeholder =@core.MacroTransformer::Rules(@core.SyntaxRules::{
-        literals: [],
-        rules: [],
-        ellipsis: "...",
-        kind: @core.SyntaxRulesKind::SyntaxRules,
-        def_env: new_env,
-      })
+      let placeholder = @core.MacroTransformer::Rules(
+        @core.SyntaxRules::new(
+          [],
+          [],
+          "...",
+          @core.SyntaxRulesKind::SyntaxRules,
+          new_env,
+        ),
+      )
       @runtime.env_define(new_env, name, @core.Value::Macro(placeholder))
       continue i + 1
     }
@@ -2656,7 +2654,7 @@ fn eval_define_record_type_state(
         Some(flag) => flag
         None => raise @core.EvalError("invalid define-record-type")
       }
-      fields.push(@core.RecordField::{ name: field_name, mutable: is_mutable })
+      fields.push(@core.RecordField::new(field_name, is_mutable))
     }
     field_index[field_name] = i
     continue i + 1
@@ -2785,7 +2783,7 @@ fn eval_define_condition_type_state(
   let fields = parent_fields.copy()
   fields.push_iter(
     new_field_names
-      .map((field_name) =>@core.RecordField::{ name: field_name, mutable: false })
+      .map((field_name) => @core.RecordField::new(field_name, false))
       .iter(),
   )
   let bindings : Array[@core.RecordFieldBinding] = []
@@ -3283,7 +3281,7 @@ fn hashtable_not_found_state(
         raise @core.EvalError("hashtable is immutable")
       }
       let entries = table.entries.val
-      entries.push(@core.HashtableEntry::{ key, value: Ref::new(value) })
+      entries.push(@core.HashtableEntry::new(key, value))
       MachineState::Apply(@core.Value::Void, kont, handlers)
     }
     @core.HashtableOp::Delete => {
@@ -4957,7 +4955,7 @@ fn apply_proc(
     Primitive(prim) =>
       MachineState::Apply(apply_primitive(prim, args), kont, handlers)
     Closure(cl) => {
-      let formals =@core.Formals::{ params: cl.params, rest: cl.rest }
+      let formals = @core.Formals::new(cl.params, cl.rest)
       let bindings = formals_bindings(formals, args)
       let new_env = @runtime.env_extend(cl.env)
       for binding in bindings {
@@ -4973,10 +4971,7 @@ fn apply_proc(
           // decreases : cl.clauses.length() - i
           // assert : i <= cl.clauses.length()
           let clause = cl.clauses[i]
-          let clause_formals =@core.Formals::{
-            params: clause.params,
-            rest: clause.rest,
-          }
+          let clause_formals = @core.Formals::new(clause.params, clause.rest)
           if formals_accept_len(clause_formals, args.length()) {
             break Some((clause_formals, clause.body))
           }
@@ -5000,10 +4995,7 @@ fn apply_proc(
           }
           let expected_parts : Array[String] = []
           for clause in cl.clauses {
-            let clause_formals =@core.Formals::{
-              params: clause.params,
-              rest: clause.rest,
-            }
+            let clause_formals = @core.Formals::new(clause.params, clause.rest)
             expected_parts.push(formals_expected_desc(clause_formals))
           }
           let expected = expected_parts.join(", ")

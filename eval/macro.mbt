@@ -101,13 +101,7 @@ fn parse_syntax_rules(expr : @core.Datum, env : @core.Env) -> @core.SyntaxRules 
   } else {
     ()
   }
-  {
-    literals,
-    rules,
-    ellipsis,
-    kind: @core.SyntaxRules,
-    def_env: env,
-  }
+  @core.SyntaxRules::new(literals, rules, ellipsis, @core.SyntaxRules, env)
 }
 
 ///|
@@ -148,13 +142,7 @@ fn parse_identifier_syntax(
       .keys()
       .filter((key) => !pattern_vars.contains(key))
       .to_array()
-  {
-    literals,
-    rules,
-    ellipsis: "...",
-    kind: @core.SyntaxRules,
-    def_env: env,
-  }
+  @core.SyntaxRules::new(literals, rules, "...", @core.SyntaxRules, env)
 }
 
 ///|
@@ -197,13 +185,7 @@ fn parse_syntax_case_rules(
   } else {
     ()
   }
-  {
-    literals,
-    rules,
-    ellipsis: "...",
-    kind: SyntaxCase,
-    def_env: env,
-  }
+  @core.SyntaxRules::new(literals, rules, "...", SyntaxCase, env)
 }
 
 ///|
@@ -699,11 +681,9 @@ fn rename_proc_datum(
           captures,
         )
         Value(
-          @core.Value::SyntaxObject(@core.SyntaxObject::{
-            datum: renamed_inner,
-            scopes: obj.scopes,
-            binding_id: obj.binding_id,
-          }),
+          @core.Value::SyntaxObject(
+            @core.SyntaxObject::new(renamed_inner, obj.scopes, obj.binding_id),
+          ),
         )
       }
     _ => datum
@@ -826,11 +806,9 @@ fn expand_macro_proc(
   let stx = match marked_call {
     Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
     _ =>
-      @core.Value::SyntaxObject(@core.SyntaxObject::{
-        datum: marked_call,
-        scopes: [call_ctx],
-        binding_id: None,
-      })
+      @core.Value::SyntaxObject(
+        @core.SyntaxObject::new(marked_call, [call_ctx], None),
+      )
   }
   let call_expr = list_from_array([
     Symbol(temp_name),
@@ -870,11 +848,13 @@ fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) 
   match datum {
     Symbol(name) =>
       Value(
-        @core.Value::SyntaxObject(@core.SyntaxObject::{
-          datum: Symbol(name),
-          scopes: [scope],
-          binding_id: @runtime.env_binding_id_optional(env, name),
-        }),
+        @core.Value::SyntaxObject(
+          @core.SyntaxObject::new(
+            Symbol(name),
+            [scope],
+            @runtime.env_binding_id_optional(env, name),
+          ),
+        ),
       )
     Value(SyntaxObject(obj)) => {
       let next_scopes = scopes_with_added(obj.scopes, scope)
@@ -891,11 +871,9 @@ fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) 
           }
       }
       Value(
-        @core.Value::SyntaxObject(@core.SyntaxObject::{
-          datum: inner,
-          scopes: next_scopes,
-          binding_id,
-        }),
+        @core.Value::SyntaxObject(
+          @core.SyntaxObject::new(inner, next_scopes, binding_id),
+        ),
       )
     }
     Pair(a, b) =>
@@ -925,11 +903,9 @@ fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @co
         Value(SyntaxObject(_)) => marked
         _ =>
           Value(
-            @core.Value::SyntaxObject(@core.SyntaxObject::{
-              datum: marked,
-              scopes: [call_scope],
-              binding_id: None,
-            }),
+            @core.Value::SyntaxObject(
+              @core.SyntaxObject::new(marked, [call_scope], None),
+            ),
           )
       }
     }
@@ -942,11 +918,9 @@ fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @co
             _ => None
           }
           Value(
-            @core.Value::SyntaxObject(@core.SyntaxObject::{
-              datum: value,
-              scopes: [],
-              binding_id,
-            }),
+            @core.Value::SyntaxObject(
+              @core.SyntaxObject::new(value, [], binding_id),
+            ),
           )
         }
       }
@@ -986,7 +960,7 @@ fn rewrite_template_expr(
                   let scope = @runtime.next_syntax_context()
                   let scopes = [scope]
                   let datum = @runtime.syntax_wrap_root(expanded, scopes)
-                  let obj =@core.SyntaxObject::{ datum, scopes, binding_id: None }
+                  let obj = @core.SyntaxObject::new(datum, scopes, None)
                   return Value(@core.Value::SyntaxObject(obj))
                 }
               }

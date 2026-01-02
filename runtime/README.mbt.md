@@ -116,11 +116,7 @@ test "datum unlabel" {
 test "strip syntax datum" {
   let wrapped = @core.Datum::Value(
     @core.Value::SyntaxObject(
-      @core.SyntaxObject::{
-        datum: @core.Datum::Symbol("x"),
-        scopes: [],
-        binding_id: None,
-      },
+      @core.SyntaxObject::new(@core.Datum::Symbol("x"), [], None),
     ),
   )
   match strip_syntax_datum(wrapped) {

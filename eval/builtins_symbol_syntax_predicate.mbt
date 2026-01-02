@@ -218,7 +218,9 @@ fn apply_symbol_syntax_predicate_primitive_core(
             Symbol(_) => context_binding
             _ => None
           }
-          @core.Value::SyntaxObject(@core.SyntaxObject::{ datum, scopes, binding_id })
+          @core.Value::SyntaxObject(
+            @core.SyntaxObject::new(datum, scopes, binding_id),
+          )
         }
         _ =>
           raise @core.EvalError(

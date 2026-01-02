@@ -46,10 +46,7 @@ fn clone_hashtable_entries(
   entries : Array[@core.HashtableEntry],
 ) -> Array[@core.HashtableEntry] {
   entries.map((entry) =>
-   @core.HashtableEntry::{
-      key: entry.key,
-      value: Ref::new(entry.value.val),
-    }
+    @core.HashtableEntry::new(entry.key, entry.value.val)
   )
 }
 

@@ -525,7 +525,7 @@ pub(all) enum SyntaxRulesKind {
 }
 
 ///|
-pub(all) struct SyntaxRules {
+pub struct SyntaxRules {
   literals : Array[String]
   rules : Array[SyntaxRule]
   ellipsis : String
@@ -553,7 +553,7 @@ pub struct Closure {
 }
 
 ///|
-pub(all) struct CaseClause {
+pub struct CaseClause {
   params : Array[String]
   rest : String?
   body : Array[Datum]
@@ -567,7 +567,7 @@ pub struct CaseClosure {
 }
 
 ///|
-pub(all) struct GuardHandler {
+pub struct GuardHandler {
   id : Int
   name : String
   clauses : Array[Datum]
@@ -602,7 +602,7 @@ pub struct EvalEnv {
 }
 
 ///|
-pub(all) struct SyntaxObject {
+pub struct SyntaxObject {
   datum : Datum
   scopes : Array[Int]
   binding_id : Int?

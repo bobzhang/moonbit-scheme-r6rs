@@ -12,14 +12,14 @@ pub struct Port {
 }
 
 ///|
-pub(all) struct RecordField {
+pub struct RecordField {
   name : String
   mutable : Bool
 }
 
 ///|
 /// Record type metadata used by the runtime.
-pub(all) struct RecordType {
+pub struct RecordType {
   id : Int
   name : String
   parent : RecordType?
@@ -31,7 +31,7 @@ pub(all) struct RecordType {
 
 ///|
 /// Record instance with boxed fields.
-pub(all) struct Record {
+pub struct Record {
   id : Int
   record_type : RecordType
   fields : Array[Ref[Value]]
@@ -39,7 +39,7 @@ pub(all) struct Record {
 
 ///|
 /// Condition value containing record components.
-pub(all) struct Condition {
+pub struct Condition {
   id : Int
   components : Array[Record]
 }
@@ -53,14 +53,14 @@ pub(all) enum HashtableEquiv {
 }
 
 ///|
-pub(all) struct HashtableEntry {
+pub struct HashtableEntry {
   key : Value
   value : Ref[Value]
 }
 
 ///|
 /// Hashtable with configured equivalence and hash function.
-pub(all) struct Hashtable {
+pub struct Hashtable {
   id : Int
   mutable : Bool
   equiv : HashtableEquiv
@@ -70,7 +70,7 @@ pub(all) struct Hashtable {
 
 ///|
 /// Enum set value with a fixed universe ordering.
-pub(all) struct EnumSet {
+pub struct EnumSet {
   id : Int
   universe : Array[String]
   members : Array[Bool]
@@ -83,7 +83,7 @@ pub(all) enum EnumSetProcKind {
 }
 
 ///|
-pub(all) struct EnumSetProc {
+pub struct EnumSetProc {
   id : Int
   kind : EnumSetProcKind
 }
@@ -100,7 +100,7 @@ pub(all) enum RecordProcKind {
 
 ///|
 /// Record-related procedure wrapper.
-pub(all) struct RecordProc {
+pub struct RecordProc {
   id : Int
   kind : RecordProcKind
 }
@@ -113,13 +113,13 @@ pub(all) enum ConditionProcKind {
 
 ///|
 /// Condition-related procedure wrapper.
-pub(all) struct ConditionProc {
+pub struct ConditionProc {
   id : Int
   kind : ConditionProcKind
 }
 
 ///|
-pub(all) struct RecordConstructorDescriptor {
+pub struct RecordConstructorDescriptor {
   id : Int
   record_type : RecordType
   parent_desc : RecordConstructorDescriptor?
@@ -127,20 +127,20 @@ pub(all) struct RecordConstructorDescriptor {
 }
 
 ///|
-pub(all) struct RecordTypeDescriptor {
+pub struct RecordTypeDescriptor {
   id : Int
   record_type : RecordType
   constructor_desc : RecordConstructorDescriptor
 }
 
 ///|
-pub(all) struct Formals {
+pub struct Formals {
   params : Array[String]
   rest : String?
 }
 
 ///|
-pub(all) struct ParamBinding {
+pub struct ParamBinding {
   param : Parameter
   old_value : Value
   new_value : Value
@@ -202,7 +202,7 @@ pub(all) enum HashtableOp {
 }
 
 ///|
-pub(all) struct GuardInfo {
+pub struct GuardInfo {
   condition : Value
   resume_value : Value
   handlers : Array[Value]
@@ -329,7 +329,7 @@ pub(all) enum Kont {
 
 ///|
 /// First-class continuation value.
-pub(all) struct Continuation {
+pub struct Continuation {
   id : Int
   kont : Kont
   handlers : Array[Value]

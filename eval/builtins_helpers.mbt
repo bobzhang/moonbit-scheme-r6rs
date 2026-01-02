@@ -2358,9 +2358,9 @@ fn parse_field_spec(item : @core.Datum) -> @core.RecordField raise @core.EvalErr
     [mutability, name_datum] =>
       match (@runtime.symbol_name(mutability), @runtime.symbol_name(name_datum)) {
         (Some("mutable"), Some(field_name)) =>
-          @core.RecordField::{ name: field_name, mutable: true }
+          @core.RecordField::new(field_name, true)
         (Some("immutable"), Some(field_name)) =>
-          @core.RecordField::{ name: field_name, mutable: false }
+          @core.RecordField::new(field_name, false)
         _ => raise @core.EvalError("invalid record field spec")
       }
     _ => raise @core.EvalError("invalid record field spec")
