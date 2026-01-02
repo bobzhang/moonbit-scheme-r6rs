@@ -157,13 +157,14 @@ fn apply_pair_list_primitive(
         match args {
           [] => @core.Value::Datum(Nil)
           [single] => single
-          _ => {
+          [..prefix, last] => {
             let items : Array[@core.Datum] = []
-            for i = 0; i < args.length() - 1; {
-              // invariant : i >= 0 && i <= args.length() - 1
-              // decreases : args.length() - 1 - i
-              // assert : i <= args.length() - 1
-              let datum = match args[i] {
+            let prefix = prefix.to_array()
+            for i = 0; i < prefix.length(); {
+              // invariant : i >= 0 && i <= prefix.length()
+              // decreases : prefix.length() - i
+              // assert : i <= prefix.length()
+              let datum = match prefix[i] {
                 Datum(d) => d
                 _ => raise @core.EvalError("type error: list expected")
               }
@@ -171,7 +172,7 @@ fn apply_pair_list_primitive(
               items.push_iter(part.iter())
               continue i + 1
             }
-            let tail = value_to_datum_element(args[args.length() - 1])
+            let tail = value_to_datum_element(last)
             @core.Value::Datum(list_with_tail(items, tail))
           }
         },

@@ -764,14 +764,13 @@ fn parse_complex_token(
     }
     None => ()
   }
-  if chars.length() == 0 {
-    return None
+  let (core, last) = match chars {
+    [] => return None
+    [..core_chars, last] => (String::from_array(core_chars.to_array()), last)
   }
-  let last = chars[chars.length() - 1]
   if last != 'i' && last != 'I' {
     return None
   }
-  let core = String::from_array(chars.sub(end=chars.length() - 1).to_array())
   if core.length() == 0 || core == "+" || core == "-" {
     let sign = if core == "-" { -1 } else { 1 }
     let imag = match exactness {

@@ -254,10 +254,9 @@ fn next_do_name() -> String {
 /// ```
 pub fn eval_program(src : String) -> @core.Value raise {
   let results = eval_program_all(src)
-  if results.is_empty() {
-    @core.Value::Void
-  } else {
-    results[results.length() - 1]
+  match results {
+    [] => @core.Value::Void
+    [.., last] => last
   }
 }
 
@@ -1675,10 +1674,9 @@ fn parse_symbol_list(items : Array[@core.Datum]) -> Array[String] raise @core.Ev
 fn expect_single(value : @core.Value) -> @core.Value raise @core.EvalError {
   match value {
     Values(values) =>
-      if values.length() == 1 {
-        values[0]
-      } else {
-        raise @core.EvalError("multiple values in single-value context")
+      match values {
+        [single] => single
+        _ => raise @core.EvalError("multiple values in single-value context")
       }
     _ => value
   }
@@ -1699,15 +1697,14 @@ fn raise_to_handlers(
   kont : @core.Kont,
   continuable : Bool,
 ) -> MachineState raise @core.EvalError {
-  if handlers.is_empty() {
-    raise @core.EvalError("uncaught exception")
-  } else {
-    let handler = handlers[handlers.length() - 1]
-    if continuable {
-      apply_proc(handler, [condition], @core.Kont::RaiseCont(kont), handlers)
-    } else {
-      apply_proc(handler, [condition], @core.Kont::RaiseNonCont, handlers)
-    }
+  match handlers {
+    [] => raise @core.EvalError("uncaught exception")
+    [.., handler] =>
+      if continuable {
+        apply_proc(handler, [condition], @core.Kont::RaiseCont(kont), handlers)
+      } else {
+        apply_proc(handler, [condition], @core.Kont::RaiseNonCont, handlers)
+      }
   }
 }
 
@@ -4786,31 +4783,30 @@ fn apply_proc(
     Primitive(@core.Primitive::Raise) =>
       match args {
         [condition] =>
-          if handlers.is_empty() {
-            raise @core.EvalError("uncaught exception")
-          } else {
-            let handler = handlers[handlers.length() - 1]
-            match handler {
-              GuardHandler(guard_handler) =>
-                handle_guard(guard_handler, condition, kont, false)
-              _ =>
-                apply_proc(handler, [condition], @core.Kont::RaiseNonCont, handlers)
-            }
+          match handlers {
+            [] => raise @core.EvalError("uncaught exception")
+            [.., handler] =>
+              match handler {
+                GuardHandler(guard_handler) =>
+                  handle_guard(guard_handler, condition, kont, false)
+                _ =>
+                  apply_proc(handler, [condition], @core.Kont::RaiseNonCont, handlers)
+              }
           }
         _ => raise arity_mismatch(1, args.length())
       }
     Primitive(@core.Primitive::RaiseContinuable) =>
       match args {
         [condition] =>
-          if handlers.is_empty() {
-            raise @core.EvalError("uncaught exception")
-          } else {
-            let handler = handlers[handlers.length() - 1]
-            match handler {
-              GuardHandler(guard_handler) =>
-                handle_guard(guard_handler, condition, kont, true)
-              _ => apply_proc(handler, [condition], @core.Kont::RaiseCont(kont), handlers)
-            }
+          match handlers {
+            [] => raise @core.EvalError("uncaught exception")
+            [.., handler] =>
+              match handler {
+                GuardHandler(guard_handler) =>
+                  handle_guard(guard_handler, condition, kont, true)
+                _ =>
+                  apply_proc(handler, [condition], @core.Kont::RaiseCont(kont), handlers)
+              }
           }
         _ => raise arity_mismatch(1, args.length())
       }
@@ -5094,21 +5090,28 @@ fn apply_apply(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let proc = args[0]
-    let flat : Array[@core.Value] = []
-    for i = 1; i < args.length() - 1; {
-      // invariant : i >= 1 && i <= args.length() - 1
-      // decreases : args.length() - 1 - i
-      // assert : i <= args.length() - 1
-      flat.push(args[i])
-      continue i + 1
+  match args {
+    [] | [_] => raise arity_mismatch(2, args.length())
+    [proc, ..rest] => {
+      let rest = rest.to_array()
+      match rest {
+        [] => raise arity_mismatch(2, args.length())
+        [..prefix, last] => {
+          let flat : Array[@core.Value] = []
+          let prefix = prefix.to_array()
+          for i = 0; i < prefix.length(); {
+            // invariant : i >= 0 && i <= prefix.length()
+            // decreases : prefix.length() - i
+            // assert : i <= prefix.length()
+            flat.push(prefix[i])
+            continue i + 1
+          }
+          let list_value = value_as_datum(last)
+          let tail = datum_list_to_value_array(list_value)
+          flat.append(tail[:])
+          apply_proc(proc, flat, kont, handlers)
+        }
+      }
     }
-    let list_value = value_as_datum(args[args.length() - 1])
-    let tail = datum_list_to_value_array(list_value)
-    flat.append(tail[:])
-    apply_proc(proc, flat, kont, handlers)
   }
 }
