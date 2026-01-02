@@ -3073,3 +3073,7 @@ test "bytevector arity errors" {
   inspect(result is Err(_), content="true")
 }
 ```
+
+Notes:
+- For parser coverage, use `#e`/`#i` prefixes and mixed radices (like `#i#x10`) to drive exactness and inexact conversion branches.
+- Use large integers or large rationals (`1000000000000/1000000000001`) to exercise BigInt/BigRat code paths.
