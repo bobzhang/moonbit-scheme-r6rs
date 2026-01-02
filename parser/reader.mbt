@@ -245,18 +245,12 @@ fn parse_integer_token_radix(tok : String, radix : Int) -> @core.Datum? {
 
 ///|
 fn view_contains_char(chars : StringView, target : Char) -> Bool {
-  let target_code = target.to_int()
-  for i = 0; i < chars.length(); {
-    // invariant : i >= 0 && i <= chars.length()
-    // decreases : chars.length() - i
-    // assert : i <= chars.length()
-    if chars[i].to_int() == target_code {
+  for ch in chars {
+    if ch == target {
       return true
     }
-    continue i + 1
-  } else {
-    false
   }
+  false
 }
 
 ///|
@@ -894,84 +888,13 @@ fn parse_complex_token(
 ///|
 fn parse_number_token_internal(tok : String, radix_override : Int?) -> @core.Datum? {
   let view = tok[:]
-  let len = view.length()
-  let base_radix = match radix_override {
-    Some(r) => r
-    None => 10
+  let (rest_view, radix, exactness) = match parse_number_prefix(view, radix_override) {
+    Some(value) => value
+    None => return None
   }
-  let default_exactness : Char? = None
-  let (start, radix, exactness) = for i = 0, radix = base_radix,
-    exactness = default_exactness; i + 1 < len && view[i].to_int() == '#'.to_int(); {
-    // invariant : i >= 0 && i <= len
-    // decreases : len - i
-    // assert : i + 1 <= len
-    let tag = view[i + 1].to_int()
-    if tag == 'b'.to_int() || tag == 'B'.to_int() {
-      if radix_override is None {
-        if radix != 10 {
-          return None
-        }
-        continue i + 2, 2, exactness
-      } else {
-        return None
-      }
-    }
-    if tag == 'o'.to_int() || tag == 'O'.to_int() {
-      if radix_override is None {
-        if radix != 10 {
-          return None
-        }
-        continue i + 2, 8, exactness
-      } else {
-        return None
-      }
-    }
-    if tag == 'd'.to_int() || tag == 'D'.to_int() {
-      if radix_override is None {
-        if radix != 10 {
-          return None
-        }
-        continue i + 2, 10, exactness
-      } else {
-        return None
-      }
-    }
-    if tag == 'x'.to_int() || tag == 'X'.to_int() {
-      if radix_override is None {
-        if radix != 10 {
-          return None
-        }
-        continue i + 2, 16, exactness
-      } else {
-        return None
-      }
-    }
-    if tag == 'e'.to_int() || tag == 'E'.to_int() || tag == 'i'.to_int() || tag == 'I'.to_int() {
-      if exactness is Some(_) {
-        return None
-      }
-      let exact_tag = if tag == 'e'.to_int() {
-        'e'
-      } else if tag == 'E'.to_int() {
-        'E'
-      } else if tag == 'i'.to_int() {
-        'i'
-      } else {
-        'I'
-      }
-      continue i + 2, radix, Some(exact_tag)
-    }
-    return None
-  } else {
-    (i, radix, exactness)
-  }
-  if start >= len {
-    return None
-  }
-  let rest_view = try view.sub(start=start) catch {
-    _ => return None
-  } noraise {
-    view => view
+  match rest_view {
+    [] => return None
+    _ => ()
   }
   let rest = rest_view.to_string()
   let allow_rat = radix_override is None
@@ -979,6 +902,62 @@ fn parse_number_token_internal(tok : String, radix_override : Int?) -> @core.Dat
     Some(datum) => Some(datum)
     None => parse_real_token_with_settings(rest, radix, exactness, allow_rat)
   }
+}
+
+///|
+fn parse_number_prefix(
+  view : StringView,
+  radix_override : Int?,
+) -> (StringView, Int, Char?)? {
+  let base_radix = match radix_override {
+    Some(r) => r
+    None => 10
+  }
+  let disallow_radix = radix_override is Some(_)
+  fn step(
+    view : StringView,
+    radix : Int,
+    exactness : Char?,
+    disallow_radix : Bool,
+  ) -> (StringView, Int, Char?)? {
+    match view {
+      ['#', tag, ..rest] =>
+        match tag {
+          'b' | 'B' =>
+            if disallow_radix || radix != 10 {
+              None
+            } else {
+              step(rest, 2, exactness, disallow_radix)
+            }
+          'o' | 'O' =>
+            if disallow_radix || radix != 10 {
+              None
+            } else {
+              step(rest, 8, exactness, disallow_radix)
+            }
+          'd' | 'D' =>
+            if disallow_radix || radix != 10 {
+              None
+            } else {
+              step(rest, 10, exactness, disallow_radix)
+            }
+          'x' | 'X' =>
+            if disallow_radix || radix != 10 {
+              None
+            } else {
+              step(rest, 16, exactness, disallow_radix)
+            }
+          'e' | 'E' | 'i' | 'I' =>
+            match exactness {
+              Some(_) => None
+              None => step(rest, radix, Some(tag), disallow_radix)
+            }
+          _ => None
+        }
+      _ => Some((view, radix, exactness))
+    }
+  }
+  step(view, base_radix, None, disallow_radix)
 }
 
 ///|

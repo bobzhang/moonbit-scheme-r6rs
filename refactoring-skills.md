@@ -2908,6 +2908,33 @@ fn parse_decimal_digits(chars : StringView) -> Int? {
 }
 ```
 
+## Parse StringView prefixes with rest patterns
+- Use `['#', tag, ..rest]` to consume tagged prefixes without indexing.
+- Return the remaining `StringView` and carry state (radix/exactness) through recursion.
+- Pattern-match `[]` on the remaining view to reject prefix-only tokens.
+
+Example:
+```mbt
+fn parse_number_prefix(view : StringView) -> (StringView, Int, Char?)? {
+  fn step(view : StringView, radix : Int, exactness : Char?) -> (StringView, Int, Char?)? {
+    match view {
+      ['#', tag, ..rest] =>
+        match tag {
+          'b' | 'B' => step(rest, 2, exactness)
+          'e' | 'E' =>
+            match exactness {
+              Some(_) => None
+              None => step(rest, radix, Some(tag))
+            }
+          _ => None
+        }
+      _ => Some((view, radix, exactness))
+    }
+  }
+  step(view, 10, None)
+}
+```
+
 ## Cover printer branches with constructor-built values
 - Use core constructors (RecordType::new/Record::new/Condition::new) to exercise
   `Datum::Record` and `Datum::Condition` without touching registries.
