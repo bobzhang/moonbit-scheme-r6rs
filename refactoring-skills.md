@@ -3077,3 +3077,5 @@ test "bytevector arity errors" {
 Notes:
 - For parser coverage, use `#e`/`#i` prefixes and mixed radices (like `#i#x10`) to drive exactness and inexact conversion branches.
 - Use large integers or large rationals (`1000000000000/1000000000001`) to exercise BigInt/BigRat code paths.
+- For eval primitive coverage, add black-box tests that return lists of booleans/ints, so multiple branches are asserted in one eval call.
+- Use `(char->integer (char-upcase ...))` and `(string->utf8 "hi" 1)` style calls to cover char/string and optional-arg paths without relying on platform-specific outputs.
