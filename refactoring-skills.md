@@ -235,6 +235,29 @@ let zero = @core.Datum::Int(0)
 
 ## Audit exported APIs for minimal surface
 - Scrape `pkg.generated.mbti` to list exported functions and search for `@pkg.fn` usages outside the package.
+- For packages that only export free functions, a simple text scan can confirm whether any exports are unused; methods need `moon ide find-references` because call sites may be unqualified.
+
+Example (free functions only):
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+pkg = Path('runtime/pkg.generated.mbti').read_text().splitlines()
+fn_names = []
+for line in pkg:
+    line = line.strip()
+    if line.startswith('pub fn '):
+        fn_names.append(line[len('pub fn '):].split('(')[0].strip())
+
+files = [p for p in Path('.').rglob('*.mbt') if 'runtime' not in p.parts]
+files += [p for p in Path('.').rglob('*.mbt.md') if 'runtime' not in p.parts]
+text = ''.join(p.read_text() for p in files)
+
+unused = [name for name in fn_names if f'@runtime.{name}' not in text]
+print('unused:', unused)
+PY
+```
 - For methods, use `moon ide find-references Type::method` instead of text search.
 - Instance calls like `binding.accessor()` will not show up as `@core.RecordFieldBinding::accessor` in text searches.
 
