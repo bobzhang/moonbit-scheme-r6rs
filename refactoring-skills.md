@@ -3093,6 +3093,7 @@ Notes:
 - `eval_program` resets the record type registry, so tests that rely on existing UIDs must build the base descriptor and the mismatched call in the same program string.
 - To make a package internal (Go-style), move it under `<parent>/internal/<pkg>` and update `moon.pkg.json` imports to the new path; keep aliases so call sites don’t churn, then run `moon info` to regenerate `pkg.generated.mbti`.
 - When internalizing a concrete package, update every importing `moon.pkg.json` entry to the new internal path (alias stays the same), then run `moon ide find-references` or `rg` to confirm no old path remains.
+- Update public-facing README examples to use facade functions instead of `@internal/...` packages so docs reinforce the minimal API surface.
 
 Tooling example:
 ```bash
