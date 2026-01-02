@@ -630,4 +630,85 @@ test "syntax helper errors" {
   let syntax_err = try? eval_program("(generate-temporaries (list #'(1)))")
   inspect(syntax_err is Err(_), content="true")
 }
+
+///|
+test "labelled expression evaluation" {
+  let value = eval_program("#1=(+ 1 2)")
+  inspect(@runtime.value_to_string(value), content="3")
+}
+
+///|
+test "cond and case arrow" {
+  let cond_value =
+    eval_program("(cond ((+ 1 2) => (lambda (x) (+ x 1))) (else 0))")
+  inspect(@runtime.value_to_string(cond_value), content="4")
+  let case_value =
+    eval_program(
+      "(case 2 ((1) => (lambda (x) (+ x 10))) ((2) => (lambda (x) (+ x 1))) (else 0))",
+    )
+  inspect(@runtime.value_to_string(case_value), content="3")
+}
+
+///|
+test "cond and case invalid arrow" {
+  let cond_err = try? eval_program("(cond ((+ 1 2) => (lambda (x) x) 4) (else 0))")
+  inspect(cond_err is Err(_), content="true")
+  let case_err =
+    try? eval_program("(case 2 ((2) => (lambda (x) x) 1) (else 0))")
+  inspect(case_err is Err(_), content="true")
+}
+
+///|
+test "guard invalid arrow" {
+  let guard_err =
+    try? eval_program(
+      "(guard (ex ((begin ex) => (lambda (v) v) 1) (else 'no)) (raise 'ok))",
+    )
+  inspect(guard_err is Err(_), content="true")
+}
+
+///|
+test "parameterize multi bindings" {
+  let value =
+    eval_program(
+      "(begin (define p1 (make-parameter 1 (lambda (x) (+ x 1)))) (define p2 (make-parameter 10)) (list (p1) (p2) (parameterize ((p1 4) (p2 20)) (list (p1) (p2))) (p1) (p2)))",
+    )
+  inspect(@runtime.value_to_string(value), content="(2 10 (5 20) 2 10)")
+}
+
+///|
+test "parameterize non-parameter error" {
+  let result = try? eval_program("(parameterize ((1 2)) 3)")
+  inspect(result is Err(_), content="true")
+}
+
+///|
+test "parameter arity error" {
+  let result = try? eval_program("(begin (define p (make-parameter 1)) (p 1 2))")
+  inspect(result is Err(_), content="true")
+}
+
+///|
+test "eval environment error" {
+  let result = try? eval_program("(eval '(+ 1 2) 1)")
+  inspect(result is Err(_), content="true")
+}
+
+///|
+test "record protocol returns non-procedure" {
+  let result =
+    try? eval_program(
+      "(begin (define-record-type foo (make-foo a) foo? (a foo-a) (protocol (lambda (p) 1))) (make-foo 1))",
+    )
+  inspect(result is Err(_), content="true")
+}
+
+///|
+test "hashtable custom equivalence scanning" {
+  let value =
+    eval_program(
+      "(begin (define ht (make-hashtable (lambda (x) 0) (lambda (a b) (eq? a b)))) (hashtable-set! ht 'a 1) (hashtable-set! ht 'b 2) (hashtable-ref ht 'b 0))",
+    )
+  inspect(@runtime.value_to_string(value), content="2")
+}
 ```

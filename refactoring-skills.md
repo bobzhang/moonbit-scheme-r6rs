@@ -3081,3 +3081,20 @@ Notes:
 - Use `(char->integer (char-upcase ...))` and `(string->utf8 "hi" 1)` style calls to cover char/string and optional-arg paths without relying on platform-specific outputs.
 - For list/vector coverage, include both normal flows and arity errors; `vector-copy!` with 3/4/5 args hits all copy branches in a single test block.
 - For numeric predicates, mix exact/inexact literals and complex constructors (`make-rectangular`) to hit exact?/inexact?/zero?/finite?/nan? branches in one test.
+
+## Eval control-flow coverage tips
+- Use labeled expressions like `#1=(+ 1 2)` to exercise the evaluator's `Label` unwrapping without changing runtime behavior.
+- For `cond`/`case`/`guard` arrow clauses, include one valid `=>` path and one invalid extra-argument path to cover both happy-path and error branches.
+- Use `parameterize` with multiple bindings and a converter `(make-parameter 1 (lambda (x) ...))` to hit ParameterizeParam/Value/Convert branches, plus a `try?` case for non-parameter errors.
+- A custom equivalence `(lambda (a b) (eq? a b))` in `make-hashtable` forces `HashtableFindResult` to take both false and true paths when scanning entries.
+
+Example:
+```mbt
+test "cond/case arrow coverage" {
+  inspect(@runtime.value_to_string(eval_program(
+    "(cond ((+ 1 2) => (lambda (x) (+ x 1))) (else 0))",
+  )), content="4")
+  let bad = try? eval_program("(case 2 ((2) => (lambda (x) x) 1) (else 0))")
+  inspect(bad is Err(_), content="true")
+}
+```
