@@ -264,6 +264,8 @@ test "char and string arity errors" {
   inspect(category_err is Err(_), content="true")
   let make_string_err = try? eval_program("(make-string)")
   inspect(make_string_err is Err(_), content="true")
+  let string_p_err = try? eval_program("(string?)")
+  inspect(string_p_err is Err(_), content="true")
   let string_length_err = try? eval_program("(string-length)")
   inspect(string_length_err is Err(_), content="true")
   let string_ref_err = try? eval_program("(string-ref \"a\")")
@@ -272,8 +274,48 @@ test "char and string arity errors" {
   inspect(string_set_err is Err(_), content="true")
   let string_copy_err = try? eval_program("(string-copy \"a\" 0 1 2)")
   inspect(string_copy_err is Err(_), content="true")
+  let string_copy_bang_err = try? eval_program("(string-copy! \"a\" 0)")
+  inspect(string_copy_bang_err is Err(_), content="true")
+  let string_fill_err = try? eval_program("(string-fill! \"a\")")
+  inspect(string_fill_err is Err(_), content="true")
   let substring_err = try? eval_program("(substring \"a\" 0)")
   inspect(substring_err is Err(_), content="true")
+}
+
+///|
+test "string copy and fill variants" {
+  let copy_full =
+    eval_program(
+      "(let ((to (string #\\a #\\b #\\c)) (from (string #\\x #\\y))) (string-copy! to 1 from) to)",
+    )
+  inspect(@runtime.value_to_string(copy_full), content="\"axy\"")
+  let copy_start =
+    eval_program(
+      "(let ((to (string #\\a #\\b #\\c #\\d)) (from (string #\\w #\\x #\\y #\\z))) (string-copy! to 0 from 1) to)",
+    )
+  inspect(@runtime.value_to_string(copy_start), content="\"xyzd\"")
+  let fill_all =
+    eval_program(
+      "(let ((s (string #\\a #\\b #\\c))) (string-fill! s #\\x) s)",
+    )
+  inspect(@runtime.value_to_string(fill_all), content="\"xxx\"")
+  let fill_from =
+    eval_program(
+      "(let ((s (string #\\a #\\b #\\c #\\d))) (string-fill! s #\\x 2) s)",
+    )
+  inspect(@runtime.value_to_string(fill_from), content="\"abxx\"")
+}
+
+///|
+test "string boundary errors" {
+  let ref_err = try? eval_program("(string-ref \"\\x1F600;\" 1)")
+  inspect(ref_err is Err(_), content="true")
+  let copy_err = try? eval_program("(string-copy \"\\x1F600;\" 1)")
+  inspect(copy_err is Err(_), content="true")
+  let copy_range_err = try? eval_program("(string-copy \"\\x1F600;\" 0 1)")
+  inspect(copy_range_err is Err(_), content="true")
+  let substr_err = try? eval_program("(substring \"\\x1F600;\" 0 1)")
+  inspect(substr_err is Err(_), content="true")
 }
 
 ///|

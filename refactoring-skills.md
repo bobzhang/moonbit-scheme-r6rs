@@ -3087,6 +3087,8 @@ Notes:
 - For `cond`/`case`/`guard` arrow clauses, include one valid `=>` path and one invalid extra-argument path to cover both happy-path and error branches.
 - Use `parameterize` with multiple bindings and a converter `(make-parameter 1 (lambda (x) ...))` to hit ParameterizeParam/Value/Convert branches, plus a `try?` case for non-parameter errors.
 - A custom equivalence `(lambda (a b) (eq? a b))` in `make-hashtable` forces `HashtableFindResult` to take both false and true paths when scanning entries.
+- For UTF-16 boundary errors, use a hex escape like `"\\x1F600;"` and request slices at index `1` to trigger surrogate-boundary failures without adding non-ASCII text.
+- `string-copy!` and `string-fill!` each have 3+ arity variants; add 3-arg/4-arg calls to cover the buffer and partial-fill branches.
 
 Example:
 ```mbt
