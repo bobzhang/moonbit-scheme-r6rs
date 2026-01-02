@@ -3089,6 +3089,8 @@ Notes:
 - A custom equivalence `(lambda (a b) (eq? a b))` in `make-hashtable` forces `HashtableFindResult` to take both false and true paths when scanning entries.
 - For UTF-16 boundary errors, use a hex escape like `"\\x1F600;"` and request slices at index `1` to trigger surrogate-boundary failures without adding non-ASCII text.
 - `string-copy!` and `string-fill!` each have 3+ arity variants; add 3-arg/4-arg calls to cover the buffer and partial-fill branches.
+- `guard` only traps Scheme-raised conditions; primitive `EvalError` failures (like invalid record descriptors) must be caught with `try? eval_program` and setup repeated per program.
+- `eval_program` resets the record type registry, so tests that rely on existing UIDs must build the base descriptor and the mismatched call in the same program string.
 
 Example:
 ```mbt

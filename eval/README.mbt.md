@@ -746,6 +746,61 @@ test "record protocol returns non-procedure" {
 }
 
 ///|
+test "record descriptor mismatch errors" {
+  let sealed_program =
+    #|(begin
+    #|  (make-record-type-descriptor 'r1 #f 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 #f 'u #t #f '#((immutable a))))
+  let sealed_err = try? eval_program(sealed_program)
+  inspect(sealed_err is Err(_), content="true")
+  let parent_program =
+    #|(begin
+    #|  (define p1 (make-record-type-descriptor 'p1 #f #f #f #f '#()))
+    #|  (define p2 (make-record-type-descriptor 'p2 #f #f #f #f '#()))
+    #|  (make-record-type-descriptor 'r1 p1 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 p2 'u #f #f '#((immutable a))))
+  let parent_err = try? eval_program(parent_program)
+  inspect(parent_err is Err(_), content="true")
+  let opaque_program =
+    #|(begin
+    #|  (define p1 (make-record-type-descriptor 'p1 #f #f #f #f '#()))
+    #|  (make-record-type-descriptor 'r1 p1 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 p1 'u #f #t '#((immutable a))))
+  let opaque_err = try? eval_program(opaque_program)
+  inspect(opaque_err is Err(_), content="true")
+  let fields_len_program =
+    #|(begin
+    #|  (make-record-type-descriptor 'r1 #f 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 #f 'u #f #f '#()))
+  let fields_len_err = try? eval_program(fields_len_program)
+  inspect(fields_len_err is Err(_), content="true")
+  let fields_mut_program =
+    #|(begin
+    #|  (make-record-type-descriptor 'r1 #f 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 #f 'u #f #f '#((mutable a))))
+  let fields_mut_err = try? eval_program(fields_mut_program)
+  inspect(fields_mut_err is Err(_), content="true")
+  let parent_missing_program =
+    #|(begin
+    #|  (define p1 (make-record-type-descriptor 'p1 #f #f #f #f '#()))
+    #|  (make-record-type-descriptor 'r1 p1 'u #f #f '#((immutable a)))
+    #|  (make-record-type-descriptor 'r2 #f 'u #f #f '#((immutable a))))
+  let parent_missing_err = try? eval_program(parent_missing_program)
+  inspect(parent_missing_err is Err(_), content="true")
+}
+
+///|
+test "condition component type error" {
+  let record_err =
+    try? eval_program(
+      "(begin (define-record-type foo (make-foo a) foo? (a foo-a)) (simple-conditions (make-foo 1)))",
+    )
+  inspect(record_err is Err(_), content="true")
+  let value_err = try? eval_program("(simple-conditions 1)")
+  inspect(value_err is Err(_), content="true")
+}
+
+///|
 test "hashtable custom equivalence scanning" {
   let value =
     eval_program(
