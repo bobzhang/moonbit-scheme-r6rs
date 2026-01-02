@@ -2825,6 +2825,7 @@ fn read_comma_form(r : @lexer.Reader, kind : CommaKind) -> @core.Datum raise @co
 - Match on `Array` directly; the compiler will treat it as an `ArrayView` for pattern matching.
 - This keeps parsing helpers concise and removes manual `length()`/index logic.
 - For state machines that store arrays (like kont stacks), use `[head, ..tail]` and call `tail.to_array()` only when the next state requires an `Array`.
+- If the old code used `sub(start=1)` (which panics on empty), add an explicit `[] => panic()` branch to preserve the same failure behavior.
 
 Example:
 ```mbt

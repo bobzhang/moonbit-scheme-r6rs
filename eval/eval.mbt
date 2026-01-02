@@ -486,6 +486,7 @@ fn eval_expr_impl(
               state = cond_start(rest, env, next, handlers)
             } else {
               match parts {
+                [] => panic()
                 [_] => state = MachineState::Apply(test_value, next, handlers)
                 [_, arrow, proc] if @runtime.symbol_name(arrow) is Some("=>") =>
                   state = MachineState::Eval(
@@ -496,10 +497,8 @@ fn eval_expr_impl(
                   )
                 [_, arrow, ..] if @runtime.symbol_name(arrow) is Some("=>") =>
                   raise @core.EvalError("invalid cond")
-                _ => {
-                  let body = parts.sub(start=1).to_array()
-                  state = eval_sequence_state(body, env, next, handlers)
-                }
+                [_, ..body] =>
+                  state = eval_sequence_state(body.to_array(), env, next, handlers)
               }
             }
           }
@@ -661,24 +660,25 @@ fn eval_expr_impl(
             state = MachineState::Apply(@core.Value::Void, next, handlers)
           }
           @core.Kont::SyntaxCase(rest, env, next) => {
-            if rest.length() < 2 {
-              raise @core.EvalError("invalid syntax-case")
+            match rest {
+              [literals_expr, ..clauses] if clauses.length() >= 1 => {
+                let input = expect_single(value)
+                let rules =
+                  parse_syntax_case_rules(literals_expr, clauses.to_array(), env)
+                let call = value_to_syntax_datum(input)
+                let expansion = expand_macro(
+                  @core.MacroTransformer::Rules(rules),
+                  call,
+                  env,
+                )
+                let result = match expansion.datum {
+                  Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
+                  _ => @core.Value::Datum(expansion.datum)
+                }
+                state = MachineState::Apply(result, next, handlers)
+              }
+              _ => raise @core.EvalError("invalid syntax-case")
             }
-            let input = expect_single(value)
-            let literals_expr = rest[0]
-            let clauses = rest.sub(start=1).to_array()
-            let rules = parse_syntax_case_rules(literals_expr, clauses, env)
-            let call = value_to_syntax_datum(input)
-            let expansion = expand_macro(
-             @core.MacroTransformer::Rules(rules),
-              call,
-              env,
-            )
-            let result = match expansion.datum {
-              Value(SyntaxObject(obj)) => @core.Value::SyntaxObject(obj)
-              _ => @core.Value::Datum(expansion.datum)
-            }
-            state = MachineState::Apply(result, next, handlers)
           }
           @core.Kont::ParameterizeParam(
             bindings,
@@ -839,6 +839,7 @@ fn eval_expr_impl(
               state = guard_start(rest, env, info, handlers)
             } else {
               match parts {
+                [] => panic()
                 [_] =>
                   state = apply_proc(
                     info.resume_value,
@@ -855,15 +856,13 @@ fn eval_expr_impl(
                   )
                 [_, arrow, ..] if @runtime.symbol_name(arrow) is Some("=>") =>
                   raise @core.EvalError("invalid guard")
-                _ => {
-                  let body = parts.sub(start=1).to_array()
+                [_, ..body] =>
                   state = eval_sequence_state(
-                    body,
+                    body.to_array(),
                     env,
                     @core.Kont::GuardResult(info),
                     handlers,
                   )
-                }
               }
             }
           }
@@ -1524,12 +1523,14 @@ fn formals_expected_desc(formals : @core.Formals) -> String {
 
 ///|
 fn eval_lambda(args : Array[@core.Datum], env : @core.Env) -> @core.Value raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let formals = parse_formals(args[0])
-    let body = args.sub(start=1).to_array()
-    @core.Value::Closure(make_closure(formals.params, formals.rest, body, env))
+  match args {
+    [formals_expr, ..body] if !body.is_empty() => {
+      let formals = parse_formals(formals_expr)
+      @core.Value::Closure(
+        make_closure(formals.params, formals.rest, body.to_array(), env),
+      )
+    }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -1716,21 +1717,26 @@ fn guard_start(
     // decreases : clauses.length() - i
     // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
-    if parts.is_empty() {
-      continue i + 1
-    } else {
-      let head = @runtime.symbol_name(parts[0])
-      if head is Some("else") {
-        let body = parts.sub(start=1).to_array()
-        return eval_sequence_state(body, env, @core.Kont::GuardResult(info), handlers)
-      } else {
-        let rest = clauses.sub(start=i + 1).to_array()
-        return MachineState::Eval(
-          parts[0],
-          env,
-          @core.Kont::GuardCond(parts, rest, env, info),
-          handlers,
-        )
+    match parts {
+      [] => continue i + 1
+      [head_expr, ..body] => {
+        let head = @runtime.symbol_name(head_expr)
+        if head is Some("else") {
+          return eval_sequence_state(
+            body.to_array(),
+            env,
+            @core.Kont::GuardResult(info),
+            handlers,
+          )
+        } else {
+          let rest = clauses.sub(start=i + 1).to_array()
+          return MachineState::Eval(
+            head_expr,
+            env,
+            @core.Kont::GuardCond(parts, rest, env, info),
+            handlers,
+          )
+        }
       }
     }
   }
@@ -1967,13 +1973,19 @@ fn eval_define_state(
       Pair(head, tail) => {
         let name = parse_symbol(head.val)
         let formals = parse_formals(tail.val)
-        let body = args.sub(start=1).to_array()
-        @runtime.env_define(
-          env,
-          name,
-          @core.Value::Closure(make_closure(formals.params, formals.rest, body, env)),
-        )
-        MachineState::Apply(@core.Value::Void, kont, handlers)
+        match args {
+          [_, ..body] => {
+            @runtime.env_define(
+              env,
+              name,
+              @core.Value::Closure(
+                make_closure(formals.params, formals.rest, body.to_array(), env),
+              ),
+            )
+            MachineState::Apply(@core.Value::Void, kont, handlers)
+          }
+          _ => raise arity_mismatch(2, args.length())
+        }
       }
       _ => raise @core.EvalError("type error: symbol expected")
     }
@@ -2008,37 +2020,44 @@ fn eval_guard_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let spec = datum_list_to_array(args[0])
-    if spec.is_empty() {
-      raise @core.EvalError("invalid guard")
+  match args {
+    [spec_expr, ..body] if !body.is_empty() => {
+      let spec = datum_list_to_array(spec_expr)
+      match spec {
+        [] => raise @core.EvalError("invalid guard")
+        [name_expr, ..clauses] => {
+          let name = parse_symbol(name_expr)
+          let resume_value = @core.Value::Continuation(
+            capture_continuation(kont, handlers),
+          )
+          let guard_handlers : Array[@core.Value] = []
+          for item in handlers {
+            guard_handlers.push(item)
+          }
+          let handler = @core.Value::GuardHandler(
+            make_guard_handler(
+              name,
+              clauses.to_array(),
+              env,
+              resume_value,
+              guard_handlers,
+            ),
+          )
+          let next_handlers : Array[@core.Value] = []
+          for item in handlers {
+            next_handlers.push(item)
+          }
+          next_handlers.push(handler)
+          eval_sequence_state(
+            body.to_array(),
+            env,
+            @core.Kont::RestoreHandlers(handlers, kont),
+            next_handlers,
+          )
+        }
+      }
     }
-    let name = parse_symbol(spec[0])
-    let clauses = spec.sub(start=1).to_array()
-    let body = args.sub(start=1).to_array()
-    let resume_value = @core.Value::Continuation(
-      capture_continuation(kont, handlers),
-    )
-    let guard_handlers : Array[@core.Value] = []
-    for item in handlers {
-      guard_handlers.push(item)
-    }
-    let handler = @core.Value::GuardHandler(
-      make_guard_handler(name, clauses, env, resume_value, guard_handlers),
-    )
-    let next_handlers : Array[@core.Value] = []
-    for item in handlers {
-      next_handlers.push(item)
-    }
-    next_handlers.push(handler)
-    eval_sequence_state(
-      body,
-      env,
-      @core.Kont::RestoreHandlers(handlers, kont),
-      next_handlers,
-    )
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2049,22 +2068,23 @@ fn eval_parameterize_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_parameterize_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    if bindings.is_empty() {
-      eval_sequence_state(body, env, kont, handlers)
-    } else {
-      let (param_expr, _) = bindings[0]
-      MachineState::Eval(
-        param_expr,
-        env,
-        @core.Kont::ParameterizeParam(bindings, 0, [], [], env, body, kont),
-        handlers,
-      )
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_parameterize_bindings(bindings_expr)
+      let body = body.to_array()
+      if bindings.is_empty() {
+        eval_sequence_state(body, env, kont, handlers)
+      } else {
+        let (param_expr, _) = bindings[0]
+        MachineState::Eval(
+          param_expr,
+          env,
+          @core.Kont::ParameterizeParam(bindings, 0, [], [], env, body, kont),
+          handlers,
+        )
+      }
     }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2112,33 +2132,29 @@ fn eval_let_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    match args[0] {
-      Symbol(name) => {
-        if args.length() < 3 {
-          raise arity_mismatch(3, args.length())
-        }
-        let bindings = parse_bindings(args[1])
-        let body = args.sub(start=2).to_array()
-        let expanded = expand_named_let(name, bindings, body)
-        MachineState::Eval(expanded, env, kont, handlers)
+  match args {
+    [] | [_] => raise arity_mismatch(2, args.length())
+    [Symbol(name), bindings_expr, ..body] => {
+      if body.is_empty() {
+        raise arity_mismatch(3, args.length())
       }
-      _ => {
-        let bindings = parse_bindings(args[0])
-        let body = args.sub(start=1).to_array()
-        if bindings.is_empty() {
-          eval_sequence_state(body, env, kont, handlers)
-        } else {
-          let (_, expr) = bindings[0]
-          MachineState::Eval(
-            expr,
-            env,
-            @core.Kont::Let(bindings, 0, [], env, body, kont),
-            handlers,
-          )
-        }
+      let bindings = parse_bindings(bindings_expr)
+      let expanded = expand_named_let(name, bindings, body.to_array())
+      MachineState::Eval(expanded, env, kont, handlers)
+    }
+    [bindings_expr, ..body] => {
+      let bindings = parse_bindings(bindings_expr)
+      let body = body.to_array()
+      if bindings.is_empty() {
+        eval_sequence_state(body, env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          env,
+          @core.Kont::Let(bindings, 0, [], env, body, kont),
+          handlers,
+        )
       }
     }
   }
@@ -2153,22 +2169,23 @@ fn eval_let_values_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_value_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    if bindings.is_empty() {
-      eval_sequence_state(body, env, kont, handlers)
-    } else {
-      let (_, expr) = bindings[0]
-      MachineState::Eval(
-        expr,
-        env,
-        @core.Kont::LetValues(bindings, 0, [], env, body, kont),
-        handlers,
-      )
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_value_bindings(bindings_expr)
+      let body = body.to_array()
+      if bindings.is_empty() {
+        eval_sequence_state(body, env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          env,
+          @core.Kont::LetValues(bindings, 0, [], env, body, kont),
+          handlers,
+        )
+      }
     }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2179,22 +2196,23 @@ fn eval_let_star_values_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_value_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    if bindings.is_empty() {
-      eval_sequence_state(body, env, kont, handlers)
-    } else {
-      let (_, expr) = bindings[0]
-      MachineState::Eval(
-        expr,
-        env,
-        @core.Kont::LetStarValues(bindings, 0, env, body, kont),
-        handlers,
-      )
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_value_bindings(bindings_expr)
+      let body = body.to_array()
+      if bindings.is_empty() {
+        eval_sequence_state(body, env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          env,
+          @core.Kont::LetStarValues(bindings, 0, env, body, kont),
+          handlers,
+        )
+      }
     }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2205,22 +2223,23 @@ fn eval_let_star_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    if bindings.is_empty() {
-      eval_sequence_state(body, env, kont, handlers)
-    } else {
-      let (_, expr) = bindings[0]
-      MachineState::Eval(
-        expr,
-        env,
-        @core.Kont::LetStar(bindings, 0, env, body, kont),
-        handlers,
-      )
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_bindings(bindings_expr)
+      let body = body.to_array()
+      if bindings.is_empty() {
+        eval_sequence_state(body, env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          env,
+          @core.Kont::LetStar(bindings, 0, env, body, kont),
+          handlers,
+        )
+      }
     }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2231,27 +2250,28 @@ fn eval_letrec_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    let new_env = @runtime.env_extend(env)
-    for binding in bindings {
-      let (name, _) = binding
-      @runtime.env_define(new_env, name, @core.Value::Void)
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_bindings(bindings_expr)
+      let body = body.to_array()
+      let new_env = @runtime.env_extend(env)
+      for binding in bindings {
+        let (name, _) = binding
+        @runtime.env_define(new_env, name, @core.Value::Void)
+      }
+      if bindings.is_empty() {
+        eval_sequence_state(body, new_env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          new_env,
+          @core.Kont::LetRecInit(bindings, 0, [], new_env, body, kont),
+          handlers,
+        )
+      }
     }
-    if bindings.is_empty() {
-      eval_sequence_state(body, new_env, kont, handlers)
-    } else {
-      let (_, expr) = bindings[0]
-      MachineState::Eval(
-        expr,
-        new_env,
-        @core.Kont::LetRecInit(bindings, 0, [], new_env, body, kont),
-        handlers,
-      )
-    }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2262,27 +2282,28 @@ fn eval_letrec_star_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_bindings(args[0])
-    let body = args.sub(start=1).to_array()
-    let new_env = @runtime.env_extend(env)
-    for binding in bindings {
-      let (name, _) = binding
-      @runtime.env_define(new_env, name, @core.Value::Void)
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_bindings(bindings_expr)
+      let body = body.to_array()
+      let new_env = @runtime.env_extend(env)
+      for binding in bindings {
+        let (name, _) = binding
+        @runtime.env_define(new_env, name, @core.Value::Void)
+      }
+      if bindings.is_empty() {
+        eval_sequence_state(body, new_env, kont, handlers)
+      } else {
+        let (_, expr) = bindings[0]
+        MachineState::Eval(
+          expr,
+          new_env,
+          @core.Kont::LetRec(bindings, 0, new_env, body, kont),
+          handlers,
+        )
+      }
     }
-    if bindings.is_empty() {
-      eval_sequence_state(body, new_env, kont, handlers)
-    } else {
-      let (_, expr) = bindings[0]
-      MachineState::Eval(
-        expr,
-        new_env,
-        @core.Kont::LetRec(bindings, 0, new_env, body, kont),
-        handlers,
-      )
-    }
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2324,17 +2345,18 @@ fn eval_let_syntax_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let bindings = parse_syntax_bindings(args[0], env)
-    let body = args.sub(start=1).to_array()
-    let new_env = @runtime.env_extend(env)
-    for binding in bindings {
-      let (name, transformer) = binding
-      @runtime.env_define(new_env, name, @core.Value::Macro(transformer))
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let bindings = parse_syntax_bindings(bindings_expr, env)
+      let body = body.to_array()
+      let new_env = @runtime.env_extend(env)
+      for binding in bindings {
+        let (name, transformer) = binding
+        @runtime.env_define(new_env, name, @core.Value::Macro(transformer))
+      }
+      eval_sequence_state(body, new_env, kont, handlers)
     }
-    eval_sequence_state(body, new_env, kont, handlers)
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -2345,38 +2367,38 @@ fn eval_letrec_syntax_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
-  } else {
-    let new_env = @runtime.env_extend(env)
-    let binding_specs = datum_list_to_array(args[0])
-    for i = 0; i < binding_specs.length(); {
-      // invariant : i >= 0 && i <= binding_specs.length()
-      // decreases : binding_specs.length() - i
-      // assert : i <= binding_specs.length()
-      let name = match datum_list_to_array(binding_specs[i]) {
-        [name_expr, _] => parse_symbol(name_expr)
-        _ => raise @core.EvalError("type error: syntax binding expected")
+  match args {
+    [bindings_expr, ..body] if !body.is_empty() => {
+      let new_env = @runtime.env_extend(env)
+      let binding_specs = datum_list_to_array(bindings_expr)
+      for i = 0; i < binding_specs.length(); {
+        // invariant : i >= 0 && i <= binding_specs.length()
+        // decreases : binding_specs.length() - i
+        // assert : i <= binding_specs.length()
+        let name = match datum_list_to_array(binding_specs[i]) {
+          [name_expr, _] => parse_symbol(name_expr)
+          _ => raise @core.EvalError("type error: syntax binding expected")
+        }
+        let placeholder = @core.MacroTransformer::Rules(
+          @core.SyntaxRules::new(
+            [],
+            [],
+            "...",
+            @core.SyntaxRulesKind::SyntaxRules,
+            new_env,
+          ),
+        )
+        @runtime.env_define(new_env, name, @core.Value::Macro(placeholder))
+        continue i + 1
       }
-      let placeholder = @core.MacroTransformer::Rules(
-        @core.SyntaxRules::new(
-          [],
-          [],
-          "...",
-          @core.SyntaxRulesKind::SyntaxRules,
-          new_env,
-        ),
-      )
-      @runtime.env_define(new_env, name, @core.Value::Macro(placeholder))
-      continue i + 1
+      let bindings = parse_syntax_bindings(bindings_expr, new_env)
+      for binding in bindings {
+        let (name, transformer) = binding
+        @runtime.env_define(new_env, name, @core.Value::Macro(transformer))
+      }
+      eval_sequence_state(body.to_array(), new_env, kont, handlers)
     }
-    let bindings = parse_syntax_bindings(args[0], new_env)
-    let body = args.sub(start=1).to_array()
-    for binding in bindings {
-      let (name, transformer) = binding
-      @runtime.env_define(new_env, name, @core.Value::Macro(transformer))
-    }
-    eval_sequence_state(body, new_env, kont, handlers)
+    _ => raise arity_mismatch(2, args.length())
   }
 }
 
@@ -4225,12 +4247,16 @@ fn eval_case_state(
   kont : @core.Kont,
   handlers : Array[@core.Value],
 ) -> MachineState raise @core.EvalError {
-  if args.length() < 2 {
-    raise arity_mismatch(2, args.length())
+  match args {
+    [key_expr, ..clauses] if !clauses.is_empty() =>
+      MachineState::Eval(
+        key_expr,
+        env,
+        @core.Kont::Case(clauses.to_array(), env, kont),
+        handlers,
+      )
+    _ => raise arity_mismatch(2, args.length())
   }
-  let key_expr = args[0]
-  let clauses = args.sub(start=1).to_array()
-  MachineState::Eval(key_expr, env, @core.Kont::Case(clauses, env, kont), handlers)
 }
 
 ///|
@@ -4246,46 +4272,44 @@ fn case_dispatch(
     // decreases : clauses.length() - i
     // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
-    if parts.is_empty() {
-      continue i + 1
-    } else {
-      match @runtime.symbol_name(parts[0]) {
-        Some("else") => {
-          let body = parts.sub(start=1).to_array()
-          return eval_sequence_state(body, env, kont, handlers)
+    match parts {
+      [] => continue i + 1
+      [head_expr, ..body] => {
+        match @runtime.symbol_name(head_expr) {
+          Some("else") =>
+            return eval_sequence_state(body.to_array(), env, kont, handlers)
+          _ => ()
         }
-        _ => ()
-      }
-      let datums = datum_list_to_array(parts[0])
-      let matched = for j = 0; j < datums.length(); {
-        // invariant : j >= 0 && j <= datums.length()
-        // decreases : datums.length() - j
-        // assert : j <= datums.length()
-        if value_eqv(key, @core.Value::Datum(datums[j])) {
-          break true
+        let datums = datum_list_to_array(head_expr)
+        let matched = for j = 0; j < datums.length(); {
+          // invariant : j >= 0 && j <= datums.length()
+          // decreases : datums.length() - j
+          // assert : j <= datums.length()
+          if value_eqv(key, @core.Value::Datum(datums[j])) {
+            break true
+          }
+          continue j + 1
+        } else {
+          false
         }
-        continue j + 1
-      } else {
-        false
-      }
-      if matched {
-        match parts {
-          [_, arrow, proc] if @runtime.symbol_name(arrow) is Some("=>") =>
-            return MachineState::Eval(
-              proc,
-              env,
-              @core.Kont::CaseArrow(key, kont),
-              handlers,
-            )
-          [_, arrow, ..] if @runtime.symbol_name(arrow) is Some("=>") =>
-            raise @core.EvalError("invalid case")
-          _ => {
-            let body = parts.sub(start=1).to_array()
-            return eval_sequence_state(body, env, kont, handlers)
+        if matched {
+          match parts {
+            [_, arrow, proc] if @runtime.symbol_name(arrow) is Some("=>") =>
+              return MachineState::Eval(
+                proc,
+                env,
+                @core.Kont::CaseArrow(key, kont),
+                handlers,
+              )
+            [_, arrow, ..] if @runtime.symbol_name(arrow) is Some("=>") =>
+              raise @core.EvalError("invalid case")
+            [] => panic()
+            [_, ..rest_body] =>
+              return eval_sequence_state(rest_body.to_array(), env, kont, handlers)
           }
         }
+        continue i + 1
       }
-      continue i + 1
     }
   }
   MachineState::Apply(@core.Value::Void, kont, handlers)
@@ -4303,21 +4327,21 @@ fn cond_start(
     // decreases : clauses.length() - i
     // assert : i <= clauses.length()
     let parts = datum_list_to_array(clauses[i])
-    if parts.is_empty() {
-      continue i + 1
-    } else {
-      let head = @runtime.symbol_name(parts[0])
-      if head is Some("else") {
-        let body = parts.sub(start=1).to_array()
-        return eval_sequence_state(body, env, kont, handlers)
-      } else {
-        let rest = clauses.sub(start=i + 1).to_array()
-        return MachineState::Eval(
-          parts[0],
-          env,
-          @core.Kont::Cond(parts, rest, env, kont),
-          handlers,
-        )
+    match parts {
+      [] => continue i + 1
+      [head_expr, ..body] => {
+        let head = @runtime.symbol_name(head_expr)
+        if head is Some("else") {
+          return eval_sequence_state(body.to_array(), env, kont, handlers)
+        } else {
+          let rest = clauses.sub(start=i + 1).to_array()
+          return MachineState::Eval(
+            head_expr,
+            env,
+            @core.Kont::Cond(parts, rest, env, kont),
+            handlers,
+          )
+        }
       }
     }
   }
