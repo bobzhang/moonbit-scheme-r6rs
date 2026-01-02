@@ -394,6 +394,85 @@ test "parse number edge cases" {
       }
     _ => fail("expected complex")
   }
+  match parse_number_token("#x/") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#xA/Z") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("1+1/2i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Int(1), Rat(1, 2)) => ()
+        _ => fail("expected 1+1/2i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("#i1+i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Float(r), Float(i)) if r == 1.0 && i == 1.0 => ()
+        _ => fail("expected 1.0+1.0i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("#i1-i") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Float(r), Float(i)) if r == 1.0 && i == -1.0 => ()
+        _ => fail("expected 1.0-1.0i")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("a+1i") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("1+ai") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("1@2") {
+    Some(Complex(real, imag)) =>
+      match (real.val, imag.val) {
+        (Float(_), Float(_)) => ()
+        _ => fail("expected polar complex")
+      }
+    _ => fail("expected complex")
+  }
+  match parse_number_token("i@2") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("1@i") {
+    None => ()
+    _ => fail("expected None")
+  }
+}
+
+///|
+test "parse label edge cases" {
+  match parse_program("#12=(a) #12#") {
+    [Label(label1, cell1), Label(label2, cell2), ..] => {
+      inspect(label1 == label2, content="true")
+      cell1.val = @core.Datum::Symbol("y")
+      match cell2.val {
+        Symbol("y") => ()
+        _ => fail("expected shared label")
+      }
+    }
+    _ => fail("expected labels")
+  }
+  match parse_program("#1a#") {
+    [Symbol("#1a#"), ..] => ()
+    _ => fail("expected symbol")
+  }
+  match parse_program("#1") {
+    [Symbol("#1"), ..] => ()
+    _ => fail("expected symbol")
+  }
 }
 
 ///|
