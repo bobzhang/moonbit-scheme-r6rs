@@ -147,4 +147,76 @@ test "parse errors" {
   let result = try? parse_program("#| unterminated")
   inspect(result is Err(_), content="true")
 }
+
+///|
+test "parse number edge cases" {
+  match parse_number_token("#x10") {
+    Some(Int(16)) => ()
+    _ => fail("expected 16")
+  }
+  match parse_number_token("#x") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#b#x10") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#e#e1") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#i#e1") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#q10") {
+    None => ()
+    _ => fail("expected None")
+  }
+  match parse_number_token("#b101", radix=10) {
+    None => ()
+    _ => fail("expected None")
+  }
+}
+
+///|
+test "parse char edge cases" {
+  match parse_program("#\\linefeed #\\backspace") {
+    [Char('\n'), Char('\u{8}'), ..] => ()
+    _ => fail("expected named chars")
+  }
+  match parse_program("#\\unknown #\\xZZ #\\") {
+    [Symbol("#\\unknown"), Symbol("#\\xZZ"), Symbol("#\\"), ..] => ()
+    _ => fail("expected invalid char tokens as symbols")
+  }
+  match parse_program("#1x") {
+    [Symbol("#1x"), ..] => ()
+    _ => fail("expected invalid label token as symbol")
+  }
+}
+
+///|
+test "parse structural errors" {
+  let unexpected_eof = try? parse_program("(")
+  inspect(unexpected_eof is Err(_), content="true")
+  let unexpected_dot = try? parse_program("(.)")
+  inspect(unexpected_dot is Err(_), content="true")
+  let dotted_tail = try? parse_program("(1 . 2 3)")
+  inspect(dotted_tail is Err(_), content="true")
+  let improper_vector = try? parse_program("#(1 . 2)")
+  inspect(improper_vector is Err(_), content="true")
+  let bad_byte = try? parse_program("#vu8(256)")
+  inspect(bad_byte is Err(_), content="true")
+  let bad_byte_type = try? parse_program("#vu8(a)")
+  inspect(bad_byte_type is Err(_), content="true")
+  let unexpected_close = try? parse_program(")")
+  inspect(unexpected_close is Err(_), content="true")
+  let duplicate_label = try? parse_program("#1= #1= 1")
+  inspect(duplicate_label is Err(_), content="true")
+  let undefined_label = try? parse_program("#1#")
+  inspect(undefined_label is Err(_), content="true")
+  let comment_eof = try? parse_program("#;")
+  inspect(comment_eof is Err(_), content="true")
+}
 ```

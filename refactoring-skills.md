@@ -2935,6 +2935,16 @@ fn parse_number_prefix(view : StringView) -> (StringView, Int, Char?)? {
 }
 ```
 
+## Parser error coverage tips
+- `;` starts a line comment, so avoid `#\x;` in tests; prefer `#\xZZ` or `#\` when exercising invalid-char paths.
+- Label definitions are only recognized when the token ends with `=`, so use whitespace like `#1= #1= 1` to trigger duplicate-label errors.
+
+Example:
+```mbt
+let duplicate_label = try? parse_program("#1= #1= 1")
+inspect(duplicate_label is Err(_), content="true")
+```
+
 ## Cover printer branches with constructor-built values
 - Use core constructors (RecordType::new/Record::new/Condition::new) to exercise
   `Datum::Record` and `Datum::Condition` without touching registries.
