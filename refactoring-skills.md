@@ -3095,6 +3095,7 @@ Notes:
 - When internalizing a concrete package, update every importing `moon.pkg.json` entry to the new internal path (alias stays the same), then run `moon ide find-references` or `rg` to confirm no old path remains.
 - Update public-facing README examples to use facade functions instead of `@internal/...` packages so docs reinforce the minimal API surface.
 - Replace nested `match` chains with `is` pattern checks when you only need a single constructor, which keeps intent clear and removes one level of indentation.
+- Flatten double-dispatch matches by matching on tuples (e.g. `(pat, inp)`) and use `is` guards with precomputed head names to avoid repeated `symbol_name` calls.
 
 Tooling example:
 ```bash
@@ -3123,5 +3124,22 @@ let (car, cdr) = if @runtime.datum_unlabel(datum) is Pair(a, b) {
   (a.val, b.val)
 } else {
   raise @core.EvalError("type error: pair expected")
+}
+```
+
+Tuple + guard example:
+```mbt
+let head_name = match parts {
+  [head, ..] => @runtime.symbol_name(head)
+  _ => None
+}
+match (pat, inp) {
+  (Bool(a), Bool(b)) => a == b
+  (Bool(_), _) => false
+  _ => false
+}
+match parts {
+  [_, arg] if head_name is Some("parent") => parse_symbol(arg)
+  _ => ()
 }
 ```

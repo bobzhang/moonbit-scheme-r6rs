@@ -1028,9 +1028,9 @@ fn match_pattern(
 ) -> Bool {
   let pat = @runtime.datum_unlabel(datum_unwrap_syntax(pattern))
   let inp = @runtime.datum_unlabel(datum_unwrap_syntax(input))
-  match pat {
-    Label(_, _) => false
-    Symbol(name) =>
+  match (pat, inp) {
+    (Label(_, _), _) => false
+    (Symbol(name), _) =>
       if name == "_" {
         if is_literal(literals, name) {
           literal_matches(name, input, def_env, use_env)
@@ -1042,79 +1042,41 @@ fn match_pattern(
       } else {
         bind_var(name, wrap_pattern_datum(input, scope, use_env), bindings)
       }
-    Nil => inp is Nil
-    Bool(b) =>
-      match inp {
-        Bool(other) => other == b
-        _ => false
-      }
-    Int(n) =>
-      match inp {
-        Int(other) => other == n
-        _ => false
-      }
-    BigInt(n) =>
-      match inp {
-        BigInt(other) => other == n
-        _ => false
-      }
-    Rat(n, d) =>
-      match inp {
-        Rat(on, od) => on == n && od == d
-        _ => false
-      }
-    BigRat(n, d) =>
-      match inp {
-        BigRat(on, od) => on == n && od == d
-        _ => false
-      }
-    Complex(real, imag) =>
-      match inp {
-        Complex(other_real, other_imag) =>
-          datum_equal(real.val, other_real.val) &&
-          datum_equal(imag.val, other_imag.val)
-        _ => false
-      }
-    Float(f) =>
-      match inp {
-        Float(of) => of == f
-        _ => false
-      }
-    Char(ch) =>
-      match inp {
-        Char(other) => other == ch
-        _ => false
-      }
-    String(s) =>
-      match inp {
-        String(other) => other.val == s.val
-        _ => false
-      }
-    Vector(items) =>
-      match inp {
-        Vector(other) =>
-          match_pattern_list(
-            items, other, literals, ellipsis, bindings, scope, def_env, use_env,
-          )
-        _ => false
-      }
-    ByteVector(items) =>
-      match inp {
-        ByteVector(other) => array_int_equal(items, other)
-        _ => false
-      }
-    Record(rec) =>
-      match inp {
-        Record(other) => rec.id == other.id
-        _ => false
-      }
-    Condition(cond) =>
-      match inp {
-        Condition(other) => cond.id == other.id
-        _ => false
-      }
-    Value(value) => value_eqv(value, value_from_datum(inp))
-    Pair(pa, pb) =>
+    (Nil, Nil) => true
+    (Nil, _) => false
+    (Bool(b), Bool(other)) => other == b
+    (Bool(_), _) => false
+    (Int(n), Int(other)) => other == n
+    (Int(_), _) => false
+    (BigInt(n), BigInt(other)) => other == n
+    (BigInt(_), _) => false
+    (Rat(n, d), Rat(on, od)) => on == n && od == d
+    (Rat(_, _), _) => false
+    (BigRat(n, d), BigRat(on, od)) => on == n && od == d
+    (BigRat(_, _), _) => false
+    (Complex(real, imag), Complex(other_real, other_imag)) =>
+      datum_equal(real.val, other_real.val) &&
+      datum_equal(imag.val, other_imag.val)
+    (Complex(_, _), _) => false
+    (Float(f), Float(of)) => of == f
+    (Float(_), _) => false
+    (Char(ch), Char(other)) => other == ch
+    (Char(_), _) => false
+    (String(s), String(other)) => other.val == s.val
+    (String(_), _) => false
+    (Vector(items), Vector(other)) =>
+      match_pattern_list(
+        items, other, literals, ellipsis, bindings, scope, def_env, use_env,
+      )
+    (Vector(_), _) => false
+    (ByteVector(items), ByteVector(other)) => array_int_equal(items, other)
+    (ByteVector(_), _) => false
+    (Record(rec), Record(other)) => rec.id == other.id
+    (Record(_), _) => false
+    (Condition(cond), Condition(other)) => cond.id == other.id
+    (Condition(_), _) => false
+    (Value(value), _) => value_eqv(value, value_from_datum(inp))
+    (Pair(pa, pb), _) =>
       match (datum_list_to_array_opt(pat), datum_list_to_array_opt(inp)) {
         (Some(pats), Some(inputs)) =>
           match_pattern_list(

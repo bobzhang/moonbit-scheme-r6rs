@@ -2541,59 +2541,55 @@ fn eval_define_record_type_state(
       // assert : i <= raw_specs.length()
       let spec = raw_specs[i]
       let parts = datum_list_to_array(spec)
+      let head_name = match parts {
+        [head, ..] => @runtime.symbol_name(head)
+        _ => None
+      }
       match parts {
-        [head] =>
-          match @runtime.symbol_name(head) {
-            Some("sealed") => {
-              let is_sealed = true
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("opaque") => {
-              let is_opaque = true
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("nongenerative") => {
-              if uid is Some(_) {
-                raise @core.EvalError("invalid define-record-type")
-              }
-              let uid = Some(record_name)
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            _ => ()
+        [_] if head_name is Some("sealed") => {
+          let is_sealed = true
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_] if head_name is Some("opaque") => {
+          let is_opaque = true
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_] if head_name is Some("nongenerative") => {
+          if uid is Some(_) {
+            raise @core.EvalError("invalid define-record-type")
           }
-        [head, arg] =>
-          match @runtime.symbol_name(head) {
-            Some("parent") => {
-              if parent_name is Some(_) {
-                raise @core.EvalError("invalid define-record-type")
-              }
-              let parent_name = Some(parse_symbol(arg))
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("protocol") => {
-              if protocol_expr is Some(_) {
-                raise @core.EvalError("invalid define-record-type")
-              }
-              let protocol_expr = Some(arg)
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("sealed") => {
-              let is_sealed = parse_bool(arg)
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("opaque") => {
-              let is_opaque = parse_bool(arg)
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            Some("nongenerative") => {
-              if uid is Some(_) {
-                raise @core.EvalError("invalid define-record-type")
-              }
-              let uid = Some(parse_symbol(arg))
-              continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
-            }
-            _ => ()
+          let uid = Some(record_name)
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_, arg] if head_name is Some("parent") => {
+          if parent_name is Some(_) {
+            raise @core.EvalError("invalid define-record-type")
           }
+          let parent_name = Some(parse_symbol(arg))
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_, arg] if head_name is Some("protocol") => {
+          if protocol_expr is Some(_) {
+            raise @core.EvalError("invalid define-record-type")
+          }
+          let protocol_expr = Some(arg)
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_, arg] if head_name is Some("sealed") => {
+          let is_sealed = parse_bool(arg)
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_, arg] if head_name is Some("opaque") => {
+          let is_opaque = parse_bool(arg)
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
+        [_, arg] if head_name is Some("nongenerative") => {
+          if uid is Some(_) {
+            raise @core.EvalError("invalid define-record-type")
+          }
+          let uid = Some(parse_symbol(arg))
+          continue i + 1, parent_name, protocol_expr, is_sealed, is_opaque, uid
+        }
         _ => ()
       }
       field_specs.push(spec)
