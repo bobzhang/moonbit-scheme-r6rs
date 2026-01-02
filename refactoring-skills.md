@@ -3046,3 +3046,30 @@ let label = @core.Datum::Label(1, cell)
 cell.val = label
 inspect(value_to_string(@core.Value::Datum(label)), content="#1=#1#")
 ```
+
+## Coverage-guided black-box tests
+- Use `moon coverage analyze -p <pkg>` to find uncovered branches, then add `README.mbt.md` tests that exercise public APIs.
+- Prefer `try?` + `inspect(result is Err(_))` for error paths to avoid panics while keeping tests black-box.
+
+Example:
+```mbt
+test "parse number edge cases" {
+  match parse_number_token("0/5") {
+    Some(Int(0)) => ()
+    _ => fail("expected 0")
+  }
+  match parse_number_token("#i1/2") {
+    Some(Float(f)) if f == 0.5 => ()
+    _ => fail("expected inexact")
+  }
+  match parse_number_token("1e") {
+    None => ()
+    _ => fail("expected None")
+  }
+}
+
+test "bytevector arity errors" {
+  let result = try? eval_program("(bytevector-copy)")
+  inspect(result is Err(_), content="true")
+}
+```
