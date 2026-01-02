@@ -321,17 +321,18 @@ pub fn Reader::read_token(self : Reader) -> String raise @core.ParseError {
           } else if ch == '|' {
             continue true, started, fold_case
           } else if ch == '\\' {
-            if chars.length() == 1 && chars[0] == '#' {
-              chars.push(ch)
-            } else {
-              let escaped = self.read_identifier_escape()
-              chars.push(
-                if fold_case {
-                  @core.UnicodeChar::new(escaped).foldcase()
-                } else {
-                  escaped
-                },
-              )
+            match chars {
+              ['#'] => chars.push(ch)
+              _ => {
+                let escaped = self.read_identifier_escape()
+                chars.push(
+                  if fold_case {
+                    @core.UnicodeChar::new(escaped).foldcase()
+                  } else {
+                    escaped
+                  },
+                )
+              }
             }
             continue in_bar, started, fold_case
           } else {

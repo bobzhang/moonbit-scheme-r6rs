@@ -696,27 +696,28 @@ fn parse_real_token_with_settings(
 
 ///|
 fn find_complex_split(core_chars : Array[Char], radix : Int) -> Int? {
-  if core_chars.length() <= 1 {
-    return None
-  }
-  for i = core_chars.length(); i > 1; {
-    // invariant : i >= 1 && i <= core_chars.length()
-    // decreases : i - 1
-    // assert : i <= core_chars.length()
-    let idx = i - 1
-    let ch = core_chars[idx]
-    if ch == '+' || ch == '-' {
-      if radix == 10 {
-        let prev = core_chars[idx - 1]
-        if prev == 'e' || prev == 'E' {
-          continue i - 1
+  match core_chars {
+    [] | [_] => None
+    _ =>
+      for i = core_chars.length(); i > 1; {
+        // invariant : i >= 1 && i <= core_chars.length()
+        // decreases : i - 1
+        // assert : i <= core_chars.length()
+        let idx = i - 1
+        let ch = core_chars[idx]
+        if ch == '+' || ch == '-' {
+          if radix == 10 {
+            let prev = core_chars[idx - 1]
+            if prev == 'e' || prev == 'E' {
+              continue i - 1
+            }
+          }
+          return Some(idx)
         }
+        continue i - 1
+      } else {
+        None
       }
-      return Some(idx)
-    }
-    continue i - 1
-  } else {
-    None
   }
 }
 
