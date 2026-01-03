@@ -59,3 +59,59 @@ test "r6rs cond-expand" {
     content="10",
   )
 }
+
+///|
+test "r6rs cond-expand: feature and error branches" {
+  inspect(
+    value_to_string(
+      eval_program(
+        (
+          #|(cond-expand (full-unicode 1) (else 2))
+        ),
+      ),
+    ),
+    content="1",
+  )
+  inspect(
+    value_to_string(
+      eval_program(
+        (
+          #|(cond-expand (exact-complex 1) (else 2))
+        ),
+      ),
+    ),
+    content="2",
+  )
+  inspect(
+    value_to_string(
+      eval_program(
+        (
+          #|(cond-expand ((and r6rs no-such) 1) (else 2))
+        ),
+      ),
+    ),
+    content="2",
+  )
+  inspect(
+    value_to_string(
+      eval_program(
+        (
+          #|(cond-expand ((or no-such) 1) (else 2))
+        ),
+      ),
+    ),
+    content="2",
+  )
+  let bad_lib = try? eval_program(
+    (
+      #|(cond-expand ((library)) (else 1))
+    ),
+  )
+  inspect(bad_lib is Err(_), content="true")
+  let bad_not = try? eval_program(
+    (
+      #|(cond-expand ((not a b) 1) (else 2))
+    ),
+  )
+  inspect(bad_not is Err(_), content="true")
+}

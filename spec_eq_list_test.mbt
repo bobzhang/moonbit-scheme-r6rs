@@ -522,3 +522,19 @@ test "r6rs list utilities: errors" {
     _ => fail("expected EvalError for improper list in list-copy")
   }
 }
+
+///|
+test "r6rs equality predicates: arity" {
+  inspect(value_to_string(eval_program("(boolean=?)")), content="#t")
+  inspect(value_to_string(eval_program("(boolean=? #t)")), content="#t")
+  inspect(value_to_string(eval_program("(symbol=?)")), content="#t")
+  inspect(value_to_string(eval_program("(symbol=? 'a)")), content="#t")
+}
+
+///|
+test "r6rs equality predicates: type errors" {
+  let bad_bool = try? eval_program("(boolean=? #t 1)")
+  inspect(bad_bool is Err(_), content="true")
+  let bad_symbol = try? eval_program("(symbol=? 'a 1)")
+  inspect(bad_symbol is Err(_), content="true")
+}

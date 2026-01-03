@@ -34,3 +34,13 @@ test "r6rs values: define-values" {
     #|  (+ x y))
   inspect(value_to_string(eval_program(program)), content="30")
 }
+
+///|
+test "r6rs values: single-value contexts" {
+  let program =
+    #|(if (values #t) 1 2)
+  inspect(value_to_string(eval_program(program)), content="1")
+  let program2 =
+    #|(list (and) (or))
+  inspect(value_to_string(eval_program(program2)), content="(#t #f)")
+}

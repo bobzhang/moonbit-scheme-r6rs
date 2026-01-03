@@ -1962,3 +1962,58 @@ test "r6rs numeric: quotient errors" {
     _ => fail("expected EvalError for modulo by zero")
   }
 }
+
+///|
+test "r6rs numeric: conversion and arity errors" {
+  let expect_err = (expr : String) => {
+    let err = try? eval_program(expr)
+    inspect(err is Err(_), content="true")
+  }
+  expect_err("(number->string 1 1)")
+  expect_err("(number->string 1 37)")
+  expect_err("(number->string 1+2i 16)")
+  expect_err("(number->string 'a)")
+  expect_err("(string->number \"1\" 1)")
+  expect_err("(string->number 1)")
+  expect_err("(imag-part 'a)")
+  expect_err("(magnitude 'a)")
+  expect_err("(angle 'a)")
+  expect_err("(numerator)")
+  expect_err("(denominator 1 2)")
+  expect_err("(max)")
+  expect_err("(min)")
+  expect_err("(exact-integer-sqrt 1.2)")
+}
+
+///|
+test "r6rs numeric: trig and gcd/lcm edges" {
+  let expect_err = (expr : String) => {
+    let err = try? eval_program(expr)
+    inspect(err is Err(_), content="true")
+  }
+  expect_err("(sin)")
+  expect_err("(cos)")
+  expect_err("(tan)")
+  expect_err("(asin)")
+  expect_err("(acos)")
+  expect_err("(atan)")
+  expect_err("(atan 1 2 3)")
+  expect_err("(floor)")
+  expect_err("(ceiling)")
+  expect_err("(truncate)")
+  expect_err("(round)")
+  expect_err("(gcd 1 1.2)")
+  expect_err("(lcm 1 1.2)")
+  let big_program =
+    #|(list (numerator 3)
+    #|      (denominator 3)
+    #|      (gcd 100000000000000000000 10)
+    #|      (lcm 100000000000000000000 6))
+  inspect(value_to_string(eval_program(big_program)), content="(3 1 10 300000000000000000000)")
+  let big_div = try? eval_program("(quotient 12345678901234567890 0)")
+  inspect(big_div is Err(_), content="true")
+  let big_rem = try? eval_program("(remainder 12345678901234567890 0)")
+  inspect(big_rem is Err(_), content="true")
+  let big_mod = try? eval_program("(modulo 12345678901234567890 0)")
+  inspect(big_mod is Err(_), content="true")
+}

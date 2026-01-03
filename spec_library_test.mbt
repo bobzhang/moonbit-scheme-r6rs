@@ -195,3 +195,24 @@ test "r6rs libraries: base excludes syntax-case" {
     _ => fail("expected import error for syntax-case")
   }
 }
+
+///|
+test "r6rs libraries: import error cases" {
+  let unknown_lib = try? eval_program("(import (no-such-lib))")
+  inspect(unknown_lib is Err(_), content="true")
+  let unknown_only =
+    try? eval_program("(import (only (rnrs base) no-such-binding))")
+  inspect(unknown_only is Err(_), content="true")
+  let dup_rename = try? eval_program(
+    (
+      #|(import (rename (rnrs base) (car x) (car y)))
+    ),
+  )
+  inspect(dup_rename is Err(_), content="true")
+  let dup_target = try? eval_program(
+    (
+      #|(import (rename (rnrs base) (car x) (cdr x)))
+    ),
+  )
+  inspect(dup_target is Err(_), content="true")
+}

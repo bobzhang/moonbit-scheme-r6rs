@@ -822,3 +822,27 @@ test "r6rs char/string compare: errors" {
     _ => fail("expected EvalError for invalid integer->char")
   }
 }
+
+///|
+test "r6rs char/string compare: arity" {
+  inspect(value_to_string(eval_program("(char=?)")), content="#t")
+  inspect(value_to_string(eval_program("(char=? #\\a)")), content="#t")
+  inspect(value_to_string(eval_program("(string=?)")), content="#t")
+  inspect(value_to_string(eval_program("(string=? \"a\")")), content="#t")
+}
+
+///|
+test "r6rs symbol/string conversion: errors" {
+  let bad_sym = try? eval_program("(symbol->string 1)")
+  inspect(bad_sym is Err(_), content="true")
+  let bad_str = try? eval_program("(string->symbol 1)")
+  inspect(bad_str is Err(_), content="true")
+}
+
+///|
+test "r6rs strings: large index errors" {
+  let big_idx = try? eval_program(
+    "(string-ref \"a\" 123456789012345678901234567890)",
+  )
+  inspect(big_idx is Err(_), content="true")
+}

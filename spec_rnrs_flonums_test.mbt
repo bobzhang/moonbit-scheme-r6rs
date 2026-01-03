@@ -109,3 +109,21 @@ test "r6rs libraries: flonums condition types" {
     #|      (no-nans-violation? (make-no-nans-violation)))
   inspect(value_to_string(eval_program(program)), content="(#t #t)")
 }
+
+///|
+test "r6rs libraries: flonum arity and type errors" {
+  let expect_err = (expr : String) => {
+    let err = try? eval_program(expr)
+    inspect(err is Err(_), content="true")
+  }
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flsqrt))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flatan))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flatan 1.0 2.0 3.0))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flfinite?))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flinteger? 1.0 2.0))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (fl+ 1))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flfloor 'a))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flceiling 'a))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (fltruncate 'a))")
+  expect_err("(begin (import (rnrs arithmetic flonums)) (flround 'a))")
+}

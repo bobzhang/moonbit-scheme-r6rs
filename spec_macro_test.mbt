@@ -427,3 +427,30 @@ test "r6rs macro: syntax-case literal pattern matrix" {
     content="(\"one\" \"big\" \"rat\" \"bigrat\" \"complex\" \"float\" \"char\" \"string\" \"vector\" \"bytevector\" \"pair\" \"sym\")",
   )
 }
+
+///|
+test "r6rs macro: quasisyntax vector ellipsis" {
+  let program =
+    #|(define-syntax qvec
+    #|  (lambda (stx)
+    #|    (syntax-case stx ()
+    #|      ((_ (x ...) y)
+    #|       (quasisyntax #(x ... y))))))
+    #|(qvec (1 2 3) 4)
+  inspect(value_to_string(eval_program(program)), content="#(1 2 3 4)")
+}
+
+///|
+test "r6rs macro: syntax-case clause error" {
+  let err = try? eval_program(
+    (
+      #|(begin
+      #|  (define-syntax bad
+      #|    (lambda (stx)
+      #|      (syntax-case stx ()
+      #|        ((_) ))))
+      #|  (bad 1))
+    ),
+  )
+  inspect(err is Err(_), content="true")
+}

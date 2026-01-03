@@ -141,3 +141,40 @@ test "r6rs libraries: fixnum errors" {
     _ => fail("expected fixnum type error")
   }
 }
+
+///|
+test "r6rs libraries: fixnum arity and edge cases" {
+  let program =
+    #|(import (rnrs arithmetic fixnums))
+    #|(list (fx=?)
+    #|      (fx=? 1)
+    #|      (fx<? 1)
+    #|      (fx>? 1)
+    #|      (fx<=? 1)
+    #|      (fx>=? 1)
+    #|      (fxdiv 6 3)
+    #|      (fxmod 6 3))
+  inspect(
+    value_to_string(eval_program(program)),
+    content="(#t #t #t #t #t #t 2 0)",
+  )
+  let expect_err = (expr : String) => {
+    let err = try? eval_program(expr)
+    inspect(err is Err(_), content="true")
+  }
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fixnum? 1 2))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fixnum-width 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (least-fixnum 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (greatest-fixnum 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxzero?))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxpositive?))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxnegative?))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxodd?))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxeven?))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxdiv 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxmod 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxdiv0 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxmod0 1))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fx+/carry 1 2))")
+  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxif 1 2))")
+}

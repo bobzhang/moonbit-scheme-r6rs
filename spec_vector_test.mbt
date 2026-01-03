@@ -268,6 +268,26 @@ test "r6rs vectors: equal? comparisons" {
 }
 
 ///|
+test "r6rs vectors: type errors" {
+  let err_len = try? eval_program("(vector-length 'a)")
+  inspect(err_len is Err(_), content="true")
+  let err_ref = try? eval_program("(vector-ref 'a 0)")
+  inspect(err_ref is Err(_), content="true")
+  let err_bv = try? eval_program("(bytevector-length 'a)")
+  inspect(err_bv is Err(_), content="true")
+  let err_bv_ref = try? eval_program("(bytevector-u8-ref 'a 0)")
+  inspect(err_bv_ref is Err(_), content="true")
+  let err_big = try? eval_program(
+    "(vector-ref #(1 2) 123456789012345678901234567890)",
+  )
+  inspect(err_big is Err(_), content="true")
+  let err_bv_big = try? eval_program(
+    "(bytevector-u8-ref #vu8(1 2) 123456789012345678901234567890)",
+  )
+  inspect(err_bv_big is Err(_), content="true")
+}
+
+///|
 test "r6rs bytevectors" {
   inspect(
     value_to_string(

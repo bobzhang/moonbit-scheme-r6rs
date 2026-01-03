@@ -83,3 +83,14 @@ test "r6rs hashtable: invalid equivalence function" {
   let result = try? eval_program(program)
   inspect(result is Err(_), content="true")
 }
+
+///|
+test "r6rs hashtable: immutable update error" {
+  let program =
+    #|(define ht (make-eq-hashtable))
+    #|(hashtable-set! ht 'a 1)
+    #|(define imm (hashtable-copy ht #f))
+    #|(hashtable-update! imm 'a (lambda (x) (+ x 1)) 0)
+  let result = try? eval_program(program)
+  inspect(result is Err(_), content="true")
+}
