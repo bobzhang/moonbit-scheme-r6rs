@@ -17,12 +17,8 @@ fn apply_vector_primitive(
             let len = value_as_nonnegative_int(len_value)
             let fill = @core.Datum::Nil
             let items : Array[@core.Datum] = []
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
+            for i in 0..<len {
               items.push(fill)
-              continue i + 1
             }
             @core.Value::Datum(Vector(items))
           })
@@ -31,12 +27,8 @@ fn apply_vector_primitive(
             let len = value_as_nonnegative_int(len_value)
             let fill = value_to_datum_element(fill_value)
             let items : Array[@core.Datum] = []
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
+            for i in 0..<len {
               items.push(fill)
-              continue i + 1
             }
             @core.Value::Datum(Vector(items))
           })
@@ -89,12 +81,8 @@ fn apply_vector_primitive(
             let start = 0
             let end = items.length()
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -105,12 +93,8 @@ fn apply_vector_primitive(
             let start = value_as_int_index(start_value)
             let end = items.length()
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -121,12 +105,8 @@ fn apply_vector_primitive(
             let start = value_as_int_index(start_value)
             let end = value_as_int_index(end_value)
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -186,19 +166,11 @@ fn apply_vector_primitive(
               to_items.length(),
             )
             let temp : Array[@core.Datum] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })
@@ -217,19 +189,11 @@ fn apply_vector_primitive(
               to_items.length(),
             )
             let temp : Array[@core.Datum] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })
@@ -248,19 +212,11 @@ fn apply_vector_primitive(
               to_items.length(),
             )
             let temp : Array[@core.Datum] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })

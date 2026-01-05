@@ -16,12 +16,8 @@ fn apply_bytevector_primitive(
             let len = value_as_nonnegative_int(len_value)
             let fill = 0
             let items : Array[Int] = []
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
+            for i in 0..<len {
               items.push(fill)
-              continue i + 1
             }
             @core.Value::Datum(ByteVector(items))
           })
@@ -30,12 +26,8 @@ fn apply_bytevector_primitive(
             let len = value_as_nonnegative_int(len_value)
             let fill = value_as_byte(fill_value)
             let items : Array[Int] = []
-            for i = 0; i < len; {
-              // invariant : i >= 0 && i <= len
-              // decreases : len - i
-              // assert : i <= len
+            for i in 0..<len {
               items.push(fill)
-              continue i + 1
             }
             @core.Value::Datum(ByteVector(items))
           })
@@ -157,19 +149,11 @@ fn apply_bytevector_primitive(
               to_items.length(),
             )
             let temp : Array[Int] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })
@@ -188,19 +172,11 @@ fn apply_bytevector_primitive(
               to_items.length(),
             )
             let temp : Array[Int] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })
@@ -219,19 +195,11 @@ fn apply_bytevector_primitive(
               to_items.length(),
             )
             let temp : Array[Int] = []
-            for i = 0; i < count; {
-              // invariant : i >= 0 && i <= count
-              // decreases : count - i
-              // assert : i <= count
+            for i in 0..<count {
               temp.push(from_items[start + i])
-              continue i + 1
             }
-            for j = 0; j < count; {
-              // invariant : j >= 0 && j <= count
-              // decreases : count - j
-              // assert : j <= count
+            for j in 0..<count {
               to_items[at + j] = temp[j]
-              continue j + 1
             }
             @core.Value::Void
           })
@@ -257,12 +225,8 @@ fn apply_bytevector_primitive(
             let start = 0
             let end = items.length()
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -273,12 +237,8 @@ fn apply_bytevector_primitive(
             let start = value_as_int_index(start_value)
             let end = items.length()
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -289,12 +249,8 @@ fn apply_bytevector_primitive(
             let start = value_as_int_index(start_value)
             let end = value_as_int_index(end_value)
             check_slice_range(start, end, items.length())
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               items[i] = fill
-              continue i + 1
             }
             @core.Value::Void
           })
@@ -312,12 +268,8 @@ fn apply_bytevector_primitive(
             let end = items.length()
             check_slice_range(start, end, items.length())
             let datums : Array[@core.Datum] = []
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               datums.push(Int(items[i]))
-              continue i + 1
             }
             @core.Value::Datum(list_from_array(datums))
           })
@@ -328,12 +280,8 @@ fn apply_bytevector_primitive(
             let end = items.length()
             check_slice_range(start, end, items.length())
             let datums : Array[@core.Datum] = []
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               datums.push(Int(items[i]))
-              continue i + 1
             }
             @core.Value::Datum(list_from_array(datums))
           })
@@ -344,12 +292,8 @@ fn apply_bytevector_primitive(
             let end = value_as_int_index(end_value)
             check_slice_range(start, end, items.length())
             let datums : Array[@core.Datum] = []
-            for i = start; i < end; {
-              // invariant : i >= start && i <= end
-              // decreases : end - i
-              // assert : i <= end
+            for i in start..<end {
               datums.push(Int(items[i]))
-              continue i + 1
             }
             @core.Value::Datum(list_from_array(datums))
           })
