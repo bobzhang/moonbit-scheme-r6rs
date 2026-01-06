@@ -223,6 +223,16 @@ match prim { @core.Primitive::Vector => ... }
 match prim { Vector => ... }
 ```
 
+Entry:
+```
+## 2026-01-06: Target coverage with end-to-end error cases
+- Problem: Coverage gaps were mostly in parser/eval error branches.
+- Change: Add black-box `eval_program` tests that exercise invalid forms.
+- Result: Eval coverage reached 90% without touching internals.
+- Example:
+let bad = try? eval_program("(import (1))")
+```
+
 ## Moon IDE commands
 ```bash
 moon doc "<query>"

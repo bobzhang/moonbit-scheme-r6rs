@@ -148,6 +148,61 @@ test "r6rs libraries: version references" {
 }
 
 ///|
+test "r6rs libraries: version reference operators" {
+  let gt_prog =
+    #|(library (ver-gt (1 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 10))
+    #|(library (ver-gt (2 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 20))
+    #|(import (ver-gt (> (1 0))))
+    #|val
+  inspect(value_to_string(eval_program(gt_prog)), content="20")
+
+  let le_prog =
+    #|(library (ver-le (1 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 11))
+    #|(library (ver-le (2 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 22))
+    #|(import (ver-le (<= (1 0))))
+    #|val
+  inspect(value_to_string(eval_program(le_prog)), content="11")
+
+  let not_prog =
+    #|(library (ver-not (1 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 30))
+    #|(library (ver-not (2 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 40))
+    #|(import (ver-not (not (1 0))))
+    #|val
+  inspect(value_to_string(eval_program(not_prog)), content="40")
+
+  let lt_prog =
+    #|(library (ver-lt (1 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 12))
+    #|(library (ver-lt (2 0))
+    #|  (export val)
+    #|  (import)
+    #|  (define val 24))
+    #|(import (ver-lt (< (2 0))))
+    #|val
+  inspect(value_to_string(eval_program(lt_prog)), content="12")
+}
+
+///|
 test "r6rs libraries: base syntax keyword import" {
   let program =
     #|(import (only (rnrs base)
