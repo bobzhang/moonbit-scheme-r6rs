@@ -1,15 +1,15 @@
 ///|
-/// @core.Primitive::Apply bytevector primitives.
+/// Apply bytevector primitives.
 fn apply_bytevector_primitive(
   prim : @core.Primitive,
   args : Array[@core.Value],
 ) -> @core.Value? raise @core.EvalError {
   match prim {
-    @core.Primitive::ByteVector => {
+    ByteVector => {
       let items : Array[Int] = args.map((arg) => value_as_byte(arg))
       Some(@core.Value::Datum(ByteVector(items)))
     }
-    @core.Primitive::MakeByteVector =>
+    MakeByteVector =>
       match args {
         [len_value] =>
           Some({
@@ -36,13 +36,13 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 1 or 2 got \{args.length()}",
           )
       }
-    @core.Primitive::ByteVectorP =>
+    ByteVectorP =>
       match args {
         [Datum(ByteVector(_))] => Some(bool_value(true))
         [_] => Some(bool_value(false))
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Primitive::ByteVectorLength =>
+    ByteVectorLength =>
       match args {
         [vec_value] => {
           let items = value_as_bytevector(vec_value)
@@ -50,7 +50,7 @@ fn apply_bytevector_primitive(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Primitive::ByteVectorEq =>
+    ByteVectorEq =>
       match args {
         [left_value, right_value] =>
           Some({
@@ -75,7 +75,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Primitive::ByteVectorU8Ref =>
+    ByteVectorU8Ref =>
       match args {
         [vec_value, idx_value] =>
           Some({
@@ -86,7 +86,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Primitive::ByteVectorU8Set =>
+    ByteVectorU8Set =>
       match args {
         [vec_value, idx_value, item_value] =>
           Some({
@@ -98,7 +98,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(3, args.length())
       }
-    @core.Primitive::ByteVectorCopy =>
+    ByteVectorCopy =>
       match args {
         [vec_value] =>
           Some({
@@ -132,7 +132,7 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::ByteVectorCopyBang =>
+    ByteVectorCopyBang =>
       match args {
         [to_value, at_value, from_value] =>
           Some({
@@ -208,7 +208,7 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 3 to 5 got \{args.length()}",
           )
       }
-    @core.Primitive::ByteVectorAppend => {
+    ByteVectorAppend => {
       let items : Array[Int] = []
       for arg in args {
         let vec = value_as_bytevector(arg)
@@ -216,7 +216,7 @@ fn apply_bytevector_primitive(
       }
       Some(@core.Value::Datum(ByteVector(items)))
     }
-    @core.Primitive::ByteVectorFill =>
+    ByteVectorFill =>
       match args {
         [vec_value, fill_value] =>
           Some({
@@ -259,7 +259,7 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 2 to 4 got \{args.length()}",
           )
       }
-    @core.Primitive::ByteVectorToU8List =>
+    ByteVectorToU8List =>
       match args {
         [vec_value] =>
           Some({
@@ -302,7 +302,7 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::U8ListToByteVector =>
+    U8ListToByteVector =>
       match args {
         [datum_value] =>
           Some({
@@ -323,7 +323,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Primitive::StringToUtf8 =>
+    StringToUtf8 =>
       match args {
         [string_value] =>
           Some({
@@ -354,7 +354,7 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::Utf8ToString =>
+    Utf8ToString =>
       match args {
         [vec_value] =>
           Some({
@@ -385,12 +385,12 @@ fn apply_bytevector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::NativeEndianness =>
+    NativeEndianness =>
       match args {
         [] => Some(native_endianness_value())
         _ => raise arity_mismatch(0, args.length())
       }
-    @core.Primitive::ByteVectorUintRef =>
+    ByteVectorUintRef =>
       match args {
         [vec_value, start_value, endian_value, size_value] =>
           Some({
@@ -404,7 +404,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(4, args.length())
       }
-    @core.Primitive::ByteVectorSintRef =>
+    ByteVectorSintRef =>
       match args {
         [vec_value, start_value, endian_value, size_value] =>
           Some({
@@ -418,7 +418,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(4, args.length())
       }
-    @core.Primitive::ByteVectorUintSet =>
+    ByteVectorUintSet =>
       match args {
         [vec_value, start_value, endian_value, size_value, value_value] =>
           Some({
@@ -433,7 +433,7 @@ fn apply_bytevector_primitive(
           })
         _ => raise arity_mismatch(5, args.length())
       }
-    @core.Primitive::ByteVectorSintSet =>
+    ByteVectorSintSet =>
       match args {
         [vec_value, start_value, endian_value, size_value, value_value] =>
           Some({

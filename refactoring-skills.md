@@ -210,6 +210,19 @@ fn apply_pair_list_primitive(...) -> @core.Value? { ... Some(@core.Value::Void) 
 fn apply_pair_list_primitive(...) -> @core.Value { ... @core.Value::Void ... }
 ```
 
+Entry:
+```
+## 2026-01-06: Drop redundant type paths in pattern matches
+- Problem: Fully qualified enum variants reduced readability when the type is already known.
+- Change: Use unqualified variants in `match` on a known enum type.
+- Result: Shorter, clearer patterns without changing behavior.
+- Example:
+// Before
+match prim { @core.Primitive::Vector => ... }
+// After
+match prim { Vector => ... }
+```
+
 ## Moon IDE commands
 ```bash
 moon doc "<query>"

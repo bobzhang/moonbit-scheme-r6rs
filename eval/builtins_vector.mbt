@@ -1,16 +1,16 @@
 ///|
-/// @core.Primitive::Apply vector primitives.
+/// Apply vector primitives.
 fn apply_vector_primitive(
   prim : @core.Primitive,
   args : Array[@core.Value],
 ) -> @core.Value? raise @core.EvalError {
   match prim {
-    @core.Primitive::Vector => {
+    Vector => {
       let items : Array[@core.Datum] =
         args.map((arg) => value_to_datum_element(arg))
       Some(@core.Value::Datum(Vector(items)))
     }
-    @core.Primitive::MakeVector =>
+    MakeVector =>
       match args {
         [len_value] =>
           Some({
@@ -37,13 +37,13 @@ fn apply_vector_primitive(
             "arity mismatch: expected 1 or 2 got \{args.length()}",
           )
       }
-    @core.Primitive::VectorP =>
+    VectorP =>
       match args {
         [Datum(Vector(_))] => Some(bool_value(true))
         [_] => Some(bool_value(false))
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Primitive::VectorLength =>
+    VectorLength =>
       match args {
         [vec_value] => {
           let items = value_as_vector(vec_value)
@@ -51,7 +51,7 @@ fn apply_vector_primitive(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    @core.Primitive::VectorRef =>
+    VectorRef =>
       match args {
         [vec_value, idx_value] => {
           let items = value_as_vector(vec_value)
@@ -61,7 +61,7 @@ fn apply_vector_primitive(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    @core.Primitive::VectorSet =>
+    VectorSet =>
       match args {
         [vec_value, idx_value, item_value] => {
           let items = value_as_vector(vec_value)
@@ -72,7 +72,7 @@ fn apply_vector_primitive(
         }
         _ => raise arity_mismatch(3, args.length())
       }
-    @core.Primitive::VectorFill =>
+    VectorFill =>
       match args {
         [vec_value, fill_value] =>
           Some({
@@ -115,7 +115,7 @@ fn apply_vector_primitive(
             "arity mismatch: expected 2 to 4 got \{args.length()}",
           )
       }
-    @core.Primitive::VectorCopy =>
+    VectorCopy =>
       match args {
         [vec_value] =>
           Some({
@@ -149,7 +149,7 @@ fn apply_vector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::VectorCopyBang =>
+    VectorCopyBang =>
       match args {
         [to_value, at_value, from_value] =>
           Some({
@@ -225,7 +225,7 @@ fn apply_vector_primitive(
             "arity mismatch: expected 3 to 5 got \{args.length()}",
           )
       }
-    @core.Primitive::VectorAppend => {
+    VectorAppend => {
       let items : Array[@core.Datum] = []
       for arg in args {
         let vec = value_as_vector(arg)
@@ -233,7 +233,7 @@ fn apply_vector_primitive(
       }
       Some(@core.Value::Datum(Vector(items)))
     }
-    @core.Primitive::VectorToList =>
+    VectorToList =>
       match args {
         [vec_value] =>
           Some({
@@ -264,7 +264,7 @@ fn apply_vector_primitive(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
           )
       }
-    @core.Primitive::ListToVector =>
+    ListToVector =>
       match args {
         [datum_value] => {
           let datum = value_as_datum(datum_value)
