@@ -197,6 +197,19 @@ for i in 0..<len {
 }
 ```
 
+Entry:
+```
+## 2026-01-06: Return direct values for fixed primitive families
+- Problem: Option-based dispatch hid the fact that a primitive family is closed.
+- Change: Guard on the primitive kind, then return `@core.Value` directly instead of `@core.Value?`.
+- Result: Cleaner match bodies and less `Some(...)` boilerplate.
+- Example:
+// Before
+fn apply_pair_list_primitive(...) -> @core.Value? { ... Some(@core.Value::Void) ... }
+// After
+fn apply_pair_list_primitive(...) -> @core.Value { ... @core.Value::Void ... }
+```
+
 ## Moon IDE commands
 ```bash
 moon doc "<query>"

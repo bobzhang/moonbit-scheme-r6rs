@@ -15,23 +15,24 @@ fn apply_primitive(
             None =>
               match apply_hashtable_enumset_primitive(prim, args) {
                 Some(value) => value
-                None =>
-                  match apply_pair_list_primitive(prim, args) {
-                    Some(value) => value
-                    None =>
-                      match apply_char_string_primitive(prim, args) {
-                        Some(value) => value
-                        None =>
-                          match apply_vector_primitive(prim, args) {
-                            Some(value) => value
-                            None =>
-                              match apply_bytevector_primitive(prim, args) {
-                                Some(value) => value
-                                None => apply_primitive_core(prim, args)
-                              }
-                          }
-                      }
+                None => {
+                  if is_pair_list_primitive(prim) {
+                    apply_pair_list_primitive(prim, args)
+                  } else {
+                    match apply_char_string_primitive(prim, args) {
+                      Some(value) => value
+                      None =>
+                        match apply_vector_primitive(prim, args) {
+                          Some(value) => value
+                          None =>
+                            match apply_bytevector_primitive(prim, args) {
+                              Some(value) => value
+                              None => apply_primitive_core(prim, args)
+                            }
+                        }
+                    }
                   }
+                }
               }
           }
       }
