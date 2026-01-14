@@ -22,7 +22,10 @@
 ///   }
 /// }
 /// ```
-pub fn parse_program(src : String, fold_case? : Bool) -> Array[@core.Datum] raise @core.ParseError {
+pub fn parse_program(
+  src : String,
+  fold_case? : Bool,
+) -> Array[@core.Datum] raise @core.ParseError {
   match fold_case {
     Some(value) => @parser.parse_program(src, fold_case=value)
     None => @parser.parse_program(src)

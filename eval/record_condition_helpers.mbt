@@ -3,8 +3,9 @@
 fn default_constructor_descriptor(
   record_type : @core.RecordType,
 ) -> @core.RecordConstructorDescriptor {
-  let parent_desc =
-    record_type.parent.map((parent) => default_constructor_descriptor(parent))
+  let parent_desc = record_type.parent.map(parent => default_constructor_descriptor(
+    parent,
+  ))
   @runtime.make_record_constructor_descriptor(record_type, parent_desc, None)
 }
 
@@ -80,8 +81,7 @@ fn condition_components_opt(
 ) -> Array[@core.Record]? {
   match value {
     Datum(Condition(cond)) => Some(cond.components)
-    _ =>
-      value_as_condition_record(value, base).map((record) => [record])
+    _ => value_as_condition_record(value, base).map(record => [record])
   }
 }
 

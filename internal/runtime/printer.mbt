@@ -33,7 +33,11 @@ fn PrinterState::label_flags(self : PrinterState, id : Int) -> Int {
 }
 
 ///|
-fn PrinterState::set_label_flags(self : PrinterState, id : Int, flags : Int) -> Unit {
+fn PrinterState::set_label_flags(
+  self : PrinterState,
+  id : Int,
+  flags : Int,
+) -> Unit {
   self.labels[id] = flags
 }
 
@@ -74,8 +78,7 @@ fn datum_to_string_state(datum : @core.Datum, state : PrinterState) -> String {
     Rat(n, d) => "\{n}/\{d}"
     BigRat(n, d) => "\{n.to_string()}/\{d.to_string()}"
     Float(f) => f.to_string()
-    Complex(real, imag) =>
-      complex_to_string_state(real.val, imag.val, state)
+    Complex(real, imag) => complex_to_string_state(real.val, imag.val, state)
     Char(ch) => char_to_string(ch)
     String(s) => "\"\{escape_string(s.val)}\""
     Symbol(name) => name
@@ -111,12 +114,7 @@ fn datum_abs(value : @core.Datum) -> @core.Datum {
   match datum_unlabel(value) {
     Int(n) => Int(if n < 0 { -n } else { n })
     Rat(n, d) => Rat(if n < 0 { -n } else { n }, d)
-    BigInt(n) =>
-      if n.compare_int(0) < 0 {
-        BigInt(-n)
-      } else {
-        BigInt(n)
-      }
+    BigInt(n) => if n.compare_int(0) < 0 { BigInt(-n) } else { BigInt(n) }
     BigRat(n, d) =>
       if n.compare_int(0) < 0 {
         BigRat(-n, d)
@@ -143,19 +141,25 @@ fn complex_to_string_state(
 }
 
 ///|
-fn vector_to_string_state(items : Array[@core.Datum], state : PrinterState) -> String {
-  let joined = items.map((item) => datum_to_string_state(item, state)).join(" ")
+fn vector_to_string_state(
+  items : Array[@core.Datum],
+  state : PrinterState,
+) -> String {
+  let joined = items.map(item => datum_to_string_state(item, state)).join(" ")
   "#(\{joined})"
 }
 
 ///|
 fn bytevector_to_string(items : Array[Int]) -> String {
-  let joined = items.map((item) => item.to_string()).join(" ")
+  let joined = items.map(item => item.to_string()).join(" ")
   "#vu8(\{joined})"
 }
 
 ///|
-fn datum_list_to_string_state(list : @core.Datum, state : PrinterState) -> String {
+fn datum_list_to_string_state(
+  list : @core.Datum,
+  state : PrinterState,
+) -> String {
   let parts : Array[String] = []
   for cur = list; true; {
     // invariant : parts.length() >= 0
@@ -195,15 +199,15 @@ pub fn value_to_string(value : @core.Value) -> String {
   match value {
     Void => "#<void>"
     Datum(d) => datum_to_string(d)
-    Primitive(_) |
-    Closure(_) |
-    CaseClosure(_) |
-    GuardHandler(_) |
-    Parameter(_) |
-    Continuation(_) |
-    RecordProc(_) |
-    ConditionProc(_) |
-    EnumSetProc(_) => "#<procedure>"
+    Primitive(_)
+    | Closure(_)
+    | CaseClosure(_)
+    | GuardHandler(_)
+    | Parameter(_)
+    | Continuation(_)
+    | RecordProc(_)
+    | ConditionProc(_)
+    | EnumSetProc(_) => "#<procedure>"
     Values(_) => "#<values>"
     Promise(_) => "#<promise>"
     EvalEnv(_) => "#<environment>"

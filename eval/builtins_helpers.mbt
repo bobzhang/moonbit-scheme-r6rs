@@ -46,6 +46,7 @@ fn compare_ok(mode : CompareMode, cmp : Int) -> Bool {
 }
 
 ///|
+
 ///|
 fn scopes_equal(left : Array[Int], right : Array[Int]) -> Bool {
   if left.length() != right.length() {
@@ -85,8 +86,7 @@ fn strip_gensym_suffix(name : String) -> String? {
   if i == len || i < 4 {
     return None
   }
-  if
-    view[i - 1].to_int() != 's'.to_int() ||
+  if view[i - 1].to_int() != 's'.to_int() ||
     view[i - 2].to_int() != 'g'.to_int() ||
     view[i - 3].to_int() != '_'.to_int() ||
     view[i - 4].to_int() != '_'.to_int() {
@@ -139,12 +139,9 @@ fn value_eqv(left : @core.Value, right : @core.Value) -> Bool {
     (Hashtable(a), Hashtable(b)) => a.id == b.id
     (EnumSet(a), EnumSet(b)) => a.id == b.id
     (EnumSetProc(a), EnumSetProc(b)) => a.id == b.id
-    (RecordTypeDescriptor(a), RecordTypeDescriptor(b)) =>
+    (RecordTypeDescriptor(a), RecordTypeDescriptor(b)) => a.id == b.id
+    (RecordConstructorDescriptor(a), RecordConstructorDescriptor(b)) =>
       a.id == b.id
-    (
-      RecordConstructorDescriptor(a),
-      RecordConstructorDescriptor(b),
-    ) => a.id == b.id
     (SyntaxObject(a), SyntaxObject(b)) =>
       scopes_equal(a.scopes, b.scopes) && datum_equal(a.datum, b.datum)
     (SyntaxKeyword(a), SyntaxKeyword(b)) => a == b
@@ -160,7 +157,9 @@ fn value_equal(left : @core.Value, right : @core.Value) -> Bool {
 }
 
 ///|
-fn identifier_info(value : @core.Value) -> (String, Array[Int], Int?) raise @core.EvalError {
+fn identifier_info(
+  value : @core.Value,
+) -> (String, Array[Int], Int?) raise @core.EvalError {
   match value {
     Datum(d) =>
       if @runtime.datum_unlabel(d) is Symbol(name) {
@@ -219,7 +218,9 @@ fn value_to_datum_element(value : @core.Value) -> @core.Datum {
 }
 
 ///|
-fn value_as_pair(value : @core.Value) -> (@core.Datum,@core.Datum) raise @core.EvalError {
+fn value_as_pair(
+  value : @core.Value,
+) -> (@core.Datum, @core.Datum) raise @core.EvalError {
   match value {
     Datum(datum) =>
       if @runtime.datum_unlabel(datum) is Pair(a, b) {
@@ -247,8 +248,10 @@ fn value_as_pair_cells(
 }
 
 ///|
-fn datum_list_to_value_array(list : @core.Datum) -> Array[@core.Value] raise @core.EvalError {
-  datum_list_to_array(list).map((item) => value_from_datum(item))
+fn datum_list_to_value_array(
+  list : @core.Datum,
+) -> Array[@core.Value] raise @core.EvalError {
+  datum_list_to_array(list).map(item => value_from_datum(item))
 }
 
 ///|
@@ -434,17 +437,16 @@ fn normalize_rat(num : Int, den : Int) -> @core.Datum? {
 
 ///|
 /// Normalize a BigInt rational into a@core.Datum.
-fn normalize_big_rat(num : @bigint.BigInt, den : @bigint.BigInt) -> @core.Datum? {
+fn normalize_big_rat(
+  num : @bigint.BigInt,
+  den : @bigint.BigInt,
+) -> @core.Datum? {
   if bigint_is_zero(den) {
     None
   } else if bigint_is_zero(num) {
     Some(Int(0))
   } else {
-    let (n, d) = if den.compare_int(0) < 0 {
-      (-num, -den)
-    } else {
-      (num, den)
-    }
+    let (n, d) = if den.compare_int(0) < 0 { (-num, -den) } else { (num, den) }
     let g = bigint_gcd(n, d)
     let nn = n / g
     let dd = d / g
@@ -505,17 +507,21 @@ fn float_to_exact_datum(value : Float) -> @core.Datum raise @core.EvalError {
 }
 
 ///|
-fn inexact_component_to_exact(value : @core.Datum) -> @core.Datum raise @core.EvalError {
+fn inexact_component_to_exact(
+  value : @core.Datum,
+) -> @core.Datum raise @core.EvalError {
   match value {
     Float(f) => float_to_exact_datum(f)
-    Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) =>
-      value
+    Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) => value
     _ => raise @core.EvalError("type error: number expected")
   }
 }
 
 ///|
-fn normalize_rat_or_error(num : Int, den : Int) -> @core.Datum raise @core.EvalError {
+fn normalize_rat_or_error(
+  num : Int,
+  den : Int,
+) -> @core.Datum raise @core.EvalError {
   match normalize_rat(num, den) {
     Some(result) => result
     None => raise @core.EvalError("division by zero")
@@ -587,8 +593,7 @@ fn datum_is_integer_valued(value : @core.Datum) -> Bool {
 ///|
 fn datum_is_rational_valued(value : @core.Datum) -> Bool {
   match @runtime.datum_unlabel(value) {
-    Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) =>
-      true
+    Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) => true
     Float(f) => float_is_finite(f)
     Complex(real, imag) =>
       datum_is_zero(imag.val) && datum_is_rational_valued(real.val)
@@ -610,7 +615,7 @@ fn datum_to_real(value : @core.Datum) -> @core.Datum raise @core.EvalError {
 }
 
 ///|
-fn datum_to_complex_parts(value : @core.Datum) -> (@core.Datum,@core.Datum) {
+fn datum_to_complex_parts(value : @core.Datum) -> (@core.Datum, @core.Datum) {
   match @runtime.datum_unlabel(value) {
     Complex(real, imag) => (real.val, imag.val)
     _ => (value, Int(0))
@@ -618,7 +623,9 @@ fn datum_to_complex_parts(value : @core.Datum) -> (@core.Datum,@core.Datum) {
 }
 
 ///|
-fn datum_to_complex_float(value : @core.Datum) -> (Float, Float) raise @core.EvalError {
+fn datum_to_complex_float(
+  value : @core.Datum,
+) -> (Float, Float) raise @core.EvalError {
   match @runtime.datum_unlabel(value) {
     Complex(real, imag) =>
       (number_to_float(real.val), number_to_float(imag.val))
@@ -632,13 +639,10 @@ fn make_complex(real : @core.Datum, imag : @core.Datum) -> @core.Datum {
     if datum_is_inexact(imag) && !datum_is_inexact(real) {
       match real {
         Int(n) => Float(Float::from_int(n))
-        Rat(n, d) =>
-          Float(Float::from_int(n) / Float::from_int(d))
+        Rat(n, d) => Float(Float::from_int(n) / Float::from_int(d))
         BigInt(n) => Float(bigint_to_float_unchecked(n))
         BigRat(n, d) =>
-          Float(
-            bigint_to_float_unchecked(n) / bigint_to_float_unchecked(d),
-          )
+          Float(bigint_to_float_unchecked(n) / bigint_to_float_unchecked(d))
         Float(f) => Float(f)
         _ => real
       }
@@ -811,7 +815,10 @@ fn complex_cos_f(ar : Float, ai : Float) -> (Float, Float) {
 }
 
 ///|
-fn complex_tan_f(ar : Float, ai : Float) -> (Float, Float) raise @core.EvalError {
+fn complex_tan_f(
+  ar : Float,
+  ai : Float,
+) -> (Float, Float) raise @core.EvalError {
   let (sr, si) = complex_sin_f(ar, ai)
   let (cr, ci) = complex_cos_f(ar, ai)
   complex_div_f(sr, si, cr, ci)
@@ -860,7 +867,10 @@ fn complex_expt_f(
 }
 
 ///|
-fn num_add(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.EvalError {
+fn num_add(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> @core.Datum raise @core.EvalError {
   if left is Complex(_, _) || right is Complex(_, _) {
     let (lr, li) = datum_to_complex_parts(left)
     let (rr, ri) = datum_to_complex_parts(right)
@@ -882,7 +892,10 @@ fn num_add(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.E
 }
 
 ///|
-fn num_sub(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.EvalError {
+fn num_sub(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> @core.Datum raise @core.EvalError {
   if left is Complex(_, _) || right is Complex(_, _) {
     let (lr, li) = datum_to_complex_parts(left)
     let (rr, ri) = datum_to_complex_parts(right)
@@ -904,7 +917,10 @@ fn num_sub(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.E
 }
 
 ///|
-fn num_mul(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.EvalError {
+fn num_mul(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> @core.Datum raise @core.EvalError {
   if left is Complex(_, _) || right is Complex(_, _) {
     let (lr, li) = datum_to_complex_parts(left)
     let (rr, ri) = datum_to_complex_parts(right)
@@ -926,7 +942,10 @@ fn num_mul(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.E
 }
 
 ///|
-fn num_div(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.EvalError {
+fn num_div(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> @core.Datum raise @core.EvalError {
   if left is Complex(_, _) || right is Complex(_, _) {
     let (lr, li) = datum_to_complex_parts(left)
     let (rr, ri) = datum_to_complex_parts(right)
@@ -961,7 +980,10 @@ fn num_div(left : @core.Datum, right : @core.Datum) -> @core.Datum raise @core.E
 }
 
 ///|
-fn num_equal(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalError {
+fn num_equal(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> Bool raise @core.EvalError {
   if left is Complex(_, _) || right is Complex(_, _) {
     let (lr, li) = datum_to_complex_parts(left)
     let (rr, ri) = datum_to_complex_parts(right)
@@ -981,7 +1003,10 @@ fn num_equal(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalEr
 }
 
 ///|
-fn num_less(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalError {
+fn num_less(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> Bool raise @core.EvalError {
   let lreal = datum_to_real(left)
   let rreal = datum_to_real(right)
   if lreal is Float(_) || rreal is Float(_) {
@@ -998,7 +1023,10 @@ fn num_less(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalErr
 }
 
 ///|
-fn num_greater(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalError {
+fn num_greater(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> Bool raise @core.EvalError {
   let lreal = datum_to_real(left)
   let rreal = datum_to_real(right)
   if lreal is Float(_) || rreal is Float(_) {
@@ -1015,12 +1043,18 @@ fn num_greater(left : @core.Datum, right : @core.Datum) -> Bool raise @core.Eval
 }
 
 ///|
-fn num_less_eq(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalError {
+fn num_less_eq(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> Bool raise @core.EvalError {
   num_less(left, right) || num_equal(left, right)
 }
 
 ///|
-fn num_greater_eq(left : @core.Datum, right : @core.Datum) -> Bool raise @core.EvalError {
+fn num_greater_eq(
+  left : @core.Datum,
+  right : @core.Datum,
+) -> Bool raise @core.EvalError {
   num_greater(left, right) || num_equal(left, right)
 }
 
@@ -1258,7 +1292,9 @@ fn value_as_string(value : @core.Value) -> String raise @core.EvalError {
 }
 
 ///|
-fn value_as_string_ref(value : @core.Value) -> Ref[String] raise @core.EvalError {
+fn value_as_string_ref(
+  value : @core.Value,
+) -> Ref[String] raise @core.EvalError {
   match value {
     Datum(datum) =>
       match @runtime.datum_unlabel(datum) {
@@ -1388,28 +1424,28 @@ fn rationalize_float(value : Float, tol : Float) -> (Int, Int) {
   let x = if value < 0.0 { -value } else { value }
   let a0 = float_floor_int(x)
   let frac0 = x - Float::from_int(a0)
-  let (p1, q1) = for iter = 0, p0 = 1, q0 = 0, p1 = a0, q1 = 1, frac = frac0;
-    iter < 64; {
-      // invariant : iter >= 0 && iter <= 64
-      // decreases : 64 - iter
-      // assert : iter <= 64
-      let approx = Float::from_int(p1) / Float::from_int(q1)
-      let diff = if x >= approx { x - approx } else { approx - x }
-      if diff <= tol || frac == 0.0 {
-        break (p1, q1)
-      }
-      let frac_inv = Float::from_int(1) / frac
-      let a = float_floor_int(frac_inv)
-      let p2 = a * p1 + p0
-      let q2 = a * q1 + q0
-      if q2 == 0 {
-        break (p1, q1)
-      }
-      let frac_next = frac_inv - Float::from_int(a)
-      continue iter + 1, p1, q1, p2, q2, frac_next
-    } else {
-      (p1, q1)
+  let (p1, q1) = for iter = 0, p0 = 1, q0 = 0, p1 = a0, q1 = 1, frac = frac0; iter <
+                    64; {
+    // invariant : iter >= 0 && iter <= 64
+    // decreases : 64 - iter
+    // assert : iter <= 64
+    let approx = Float::from_int(p1) / Float::from_int(q1)
+    let diff = if x >= approx { x - approx } else { approx - x }
+    if diff <= tol || frac == 0.0 {
+      break (p1, q1)
     }
+    let frac_inv = Float::from_int(1) / frac
+    let a = float_floor_int(frac_inv)
+    let p2 = a * p1 + p0
+    let q2 = a * q1 + q0
+    if q2 == 0 {
+      break (p1, q1)
+    }
+    let frac_next = frac_inv - Float::from_int(a)
+    continue iter + 1, p1, q1, p2, q2, frac_next
+  } else {
+    (p1, q1)
+  }
   (sign * p1, q1)
 }
 
@@ -1445,7 +1481,9 @@ fn value_as_int_index(value : @core.Value) -> Int raise @core.EvalError {
 }
 
 ///|
-fn value_as_exact_integer(value : @core.Value) -> @core.Datum raise @core.EvalError {
+fn value_as_exact_integer(
+  value : @core.Value,
+) -> @core.Datum raise @core.EvalError {
   match value {
     Datum(datum) =>
       match @runtime.datum_unlabel(datum) {
@@ -1564,16 +1602,16 @@ fn fixnum_width_value() -> Int {
     return cached
   }
   let two = bigint_from_int(2)
-  let exp = for exp = 0, value = bigint_from_int(1);
-    bigint_to_int_option(value) is Some(_); {
-      // invariant : exp >= 0
-      // invariant : value.compare_int(1) >= 0
-      // TODO(decreases) : value grows; bound to Int range not explicit
-      // assert : exp >= 0
-      continue exp + 1, value * two
-    } else {
-      exp
-    }
+  let exp = for exp = 0, value = bigint_from_int(1); bigint_to_int_option(value)
+               is Some(_); {
+    // invariant : exp >= 0
+    // invariant : value.compare_int(1) >= 0
+    // TODO(decreases) : value grows; bound to Int range not explicit
+    // assert : exp >= 0
+    continue exp + 1, value * two
+  } else {
+    exp
+  }
   let width = exp + 1
   fixnum_width_cache.val = width
   width
@@ -1617,7 +1655,9 @@ fn value_is_fixnum(value : @core.Value) -> Bool {
 }
 
 ///|
-fn value_as_fixnum_bigint(value : @core.Value) -> @bigint.BigInt raise @core.EvalError {
+fn value_as_fixnum_bigint(
+  value : @core.Value,
+) -> @bigint.BigInt raise @core.EvalError {
   match value {
     Datum(datum) =>
       match datum_fixnum_bigint(datum) {
@@ -1629,7 +1669,9 @@ fn value_as_fixnum_bigint(value : @core.Value) -> @bigint.BigInt raise @core.Eva
 }
 
 ///|
-fn value_as_fixnum_datum(value : @core.Value) -> @core.Datum raise @core.EvalError {
+fn value_as_fixnum_datum(
+  value : @core.Value,
+) -> @core.Datum raise @core.EvalError {
   fixnum_from_bigint(value_as_fixnum_bigint(value))
 }
 
@@ -1643,7 +1685,9 @@ fn value_as_fixnum_int(value : @core.Value) -> Int raise @core.EvalError {
 }
 
 ///|
-fn value_as_nonnegative_fixnum_int(value : @core.Value) -> Int raise @core.EvalError {
+fn value_as_nonnegative_fixnum_int(
+  value : @core.Value,
+) -> Int raise @core.EvalError {
   let n = value_as_fixnum_int(value)
   if n < 0 {
     raise @core.EvalError("type error: exact nonnegative integer expected")
@@ -1652,7 +1696,9 @@ fn value_as_nonnegative_fixnum_int(value : @core.Value) -> Int raise @core.EvalE
 }
 
 ///|
-fn fixnum_from_bigint(value : @bigint.BigInt) -> @core.Datum raise @core.EvalError {
+fn fixnum_from_bigint(
+  value : @bigint.BigInt,
+) -> @core.Datum raise @core.EvalError {
   match bigint_to_int_option(value) {
     Some(v) => Int(v)
     None => raise @core.EvalError("fixnum overflow")
@@ -1844,31 +1890,30 @@ fn bigint_bitwise_nonneg(
   op : BitOp,
 ) -> @bigint.BigInt {
   let two = bigint_from_int(2)
-  for a = left,
-    b = right,
-    bit = bigint_from_int(1),
-    result = bigint_from_int(0);
-    !bigint_is_zero(a) || !bigint_is_zero(b); {
-      // invariant : a.compare_int(0) >= 0
-      // invariant : b.compare_int(0) >= 0
-      // invariant : bit.compare_int(0) > 0
-      // invariant : result.compare_int(0) >= 0
-      // decreases : bigint_bit_length_nonneg(a) + bigint_bit_length_nonneg(b)
-      // assert : !bigint_is_zero(a) || !bigint_is_zero(b)
-      let a_bit = a % two
-      let b_bit = b % two
-      let a_one = !bigint_is_zero(a_bit)
-      let b_one = !bigint_is_zero(b_bit)
-      let out_one = match op {
-        BitAnd => a_one && b_one
-        BitOr => a_one || b_one
-        BitXor => a_one != b_one
-      }
-      let next_result = if out_one { result + bit } else { result }
-      continue a / two, b / two, bit * two, next_result
-    } else {
-      result
+  for a = left, b = right, bit = bigint_from_int(1), result = bigint_from_int(0); !bigint_is_zero(
+       a,
+     ) ||
+     !bigint_is_zero(b); {
+    // invariant : a.compare_int(0) >= 0
+    // invariant : b.compare_int(0) >= 0
+    // invariant : bit.compare_int(0) > 0
+    // invariant : result.compare_int(0) >= 0
+    // decreases : bigint_bit_length_nonneg(a) + bigint_bit_length_nonneg(b)
+    // assert : !bigint_is_zero(a) || !bigint_is_zero(b)
+    let a_bit = a % two
+    let b_bit = b % two
+    let a_one = !bigint_is_zero(a_bit)
+    let b_one = !bigint_is_zero(b_bit)
+    let out_one = match op {
+      BitAnd => a_one && b_one
+      BitOr => a_one || b_one
+      BitXor => a_one != b_one
     }
+    let next_result = if out_one { result + bit } else { result }
+    continue a / two, b / two, bit * two, next_result
+  } else {
+    result
+  }
 }
 
 ///|
@@ -1904,7 +1949,10 @@ fn datum_bitwise_not(value : @core.Datum) -> @core.Datum raise @core.EvalError {
 }
 
 ///|
-fn datum_arithmetic_shift(value : @core.Datum, shift : Int) -> @core.Datum raise @core.EvalError {
+fn datum_arithmetic_shift(
+  value : @core.Datum,
+  shift : Int,
+) -> @core.Datum raise @core.EvalError {
   let big = datum_to_bigint(value)
   if shift == 0 {
     return bigint_to_integer_datum(big)
@@ -1945,7 +1993,10 @@ fn datum_bitwise_bit_count(value : @core.Datum) -> Int raise @core.EvalError {
 }
 
 ///|
-fn datum_bitwise_bit_set(value : @core.Datum, index : Int) -> Bool raise @core.EvalError {
+fn datum_bitwise_bit_set(
+  value : @core.Datum,
+  index : Int,
+) -> Bool raise @core.EvalError {
   let big = datum_to_bigint(value)
   let mask = bigint_pow2(index)
   let res = bigint_bitwise_binop(big, mask, BitAnd)
@@ -1995,11 +2046,7 @@ fn datum_bitwise_copy_bit_field(
     BitAnd,
   )
   let from_shifted = datum_arithmetic_shift(from, start)
-  let insert = bigint_bitwise_binop(
-    datum_to_bigint(from_shifted),
-    mask,
-    BitAnd,
-  )
+  let insert = bigint_bitwise_binop(datum_to_bigint(from_shifted), mask, BitAnd)
   let result = bigint_bitwise_binop(cleared_value, insert, BitOr)
   bigint_to_integer_datum(result)
 }
@@ -2053,12 +2100,11 @@ fn datum_bitwise_reverse_bit_field(
     // invariant : i >= 0 && i <= width
     // decreases : width - i
     // assert : i <= width
-    let next =
-      if datum_bitwise_bit_set(field, i) {
-        reversed + bigint_pow2(width - 1 - i)
-      } else {
-        reversed
-      }
+    let next = if datum_bitwise_bit_set(field, i) {
+      reversed + bigint_pow2(width - 1 - i)
+    } else {
+      reversed
+    }
     continue i + 1, next
   } else {
     reversed
@@ -2079,7 +2125,11 @@ fn check_index(idx : Int, len : Int) -> Unit raise @core.EvalError {
 }
 
 ///|
-fn check_slice_range(start : Int, end : Int, len : Int) -> Unit raise @core.EvalError {
+fn check_slice_range(
+  start : Int,
+  end : Int,
+  len : Int,
+) -> Unit raise @core.EvalError {
   if start < 0 || end < start || end > len {
     raise @core.EvalError("index out of range")
   }
@@ -2107,12 +2157,20 @@ fn check_copy_range(
 
 ///|
 fn foldcase_char_if(ch : Char, case_insensitive : Bool) -> Char {
-  if case_insensitive { @core.UnicodeChar::new(ch).foldcase() } else { ch }
+  if case_insensitive {
+    @core.UnicodeChar::new(ch).foldcase()
+  } else {
+    ch
+  }
 }
 
 ///|
 fn foldcase_string_if(s : String, case_insensitive : Bool) -> String {
-  if case_insensitive { @core.UnicodeString::new(s).foldcase().into_string() } else { s }
+  if case_insensitive {
+    @core.UnicodeString::new(s).foldcase().into_string()
+  } else {
+    s
+  }
 }
 
 ///|
@@ -2123,7 +2181,7 @@ fn compare_chain_char(
 ) -> Bool raise @core.EvalError {
   match args {
     [] | [_] => true
-    [first, ..rest] => {
+    [first, .. rest] => {
       let prev = foldcase_char_if(value_as_char(first), case_insensitive)
       for i = 0, prev = prev; i < rest.length(); {
         // invariant : i >= 0 && i <= rest.length()
@@ -2150,7 +2208,7 @@ fn compare_chain_string(
 ) -> Bool raise @core.EvalError {
   match args {
     [] | [_] => true
-    [first, ..rest] => {
+    [first, .. rest] => {
       let prev = foldcase_string_if(value_as_string(first), case_insensitive)
       for i = 0, prev = prev; i < rest.length(); {
         // invariant : i >= 0 && i <= rest.length()
@@ -2173,7 +2231,7 @@ fn compare_chain_string(
 fn compare_chain_bool(args : Array[@core.Value]) -> Bool raise @core.EvalError {
   match args {
     [] | [_] => true
-    [first, ..rest] => {
+    [first, .. rest] => {
       let prev = value_as_bool(first)
       for i = 0, prev = prev; i < rest.length(); {
         // invariant : i >= 0 && i <= rest.length()
@@ -2192,10 +2250,12 @@ fn compare_chain_bool(args : Array[@core.Value]) -> Bool raise @core.EvalError {
 }
 
 ///|
-fn compare_chain_symbol(args : Array[@core.Value]) -> Bool raise @core.EvalError {
+fn compare_chain_symbol(
+  args : Array[@core.Value],
+) -> Bool raise @core.EvalError {
   match args {
     [] | [_] => true
-    [first, ..rest] => {
+    [first, .. rest] => {
       let prev = value_as_symbol(first)
       for i = 0, prev = prev; i < rest.length(); {
         // invariant : i >= 0 && i <= rest.length()
@@ -2241,7 +2301,11 @@ priv enum EqualityMode {
 }
 
 ///|
-fn equality_match(mode : EqualityMode, left : @core.Value, right : @core.Value) -> Bool {
+fn equality_match(
+  mode : EqualityMode,
+  left : @core.Value,
+  right : @core.Value,
+) -> Bool {
   match mode {
     EqvMode => value_eqv(left, right)
     EqualMode => value_equal(left, right)
@@ -2312,7 +2376,9 @@ fn list_assoc(
 }
 
 ///|
-fn value_as_vector(value : @core.Value) -> Array[@core.Datum] raise @core.EvalError {
+fn value_as_vector(
+  value : @core.Value,
+) -> Array[@core.Datum] raise @core.EvalError {
   match value {
     Datum(datum) =>
       match @runtime.datum_unlabel(datum) {
@@ -2344,10 +2410,13 @@ fn value_as_symbol(value : @core.Value) -> String raise @core.EvalError {
 }
 
 ///|
-fn parse_field_spec(item : @core.Datum) -> @core.RecordField raise @core.EvalError {
+fn parse_field_spec(
+  item : @core.Datum,
+) -> @core.RecordField raise @core.EvalError {
   match datum_list_to_array(item) {
     [mutability, name_datum] =>
-      match (@runtime.symbol_name(mutability), @runtime.symbol_name(name_datum)) {
+      match
+        (@runtime.symbol_name(mutability), @runtime.symbol_name(name_datum)) {
         (Some("mutable"), Some(field_name)) =>
           @core.RecordField::new(field_name, true)
         (Some("immutable"), Some(field_name)) =>
@@ -2362,7 +2431,7 @@ fn parse_field_spec(item : @core.Datum) -> @core.RecordField raise @core.EvalErr
 fn parse_field_specs(
   items : Array[@core.Datum],
 ) -> Array[@core.RecordField] raise @core.EvalError {
-  items.map((item) => parse_field_spec(item))
+  items.map(item => parse_field_spec(item))
 }
 
 ///|
@@ -2604,18 +2673,16 @@ fn bytevector_uint_ref(
         result
       }
     LittleEndian =>
-      for i = 0,
-        result = bigint_from_int(0),
-        factor = bigint_from_int(1);
-        i < size; {
-          // invariant : i >= 0 && i <= size
-          // decreases : size - i
-          // assert : i < size
-          let next = result + bigint_from_int(items[start + i]) * factor
-          continue i + 1, next, factor * base
-        } else {
-          result
-        }
+      for i = 0, result = bigint_from_int(0), factor = bigint_from_int(1); i <
+         size; {
+        // invariant : i >= 0 && i <= size
+        // decreases : size - i
+        // assert : i < size
+        let next = result + bigint_from_int(items[start + i]) * factor
+        continue i + 1, next, factor * base
+      } else {
+        result
+      }
   }
 }
 
@@ -2646,7 +2713,7 @@ fn bytevector_uint_set(
     continue i + 1, v / base
   }
   match endian {
-    BigEndian => {
+    BigEndian =>
       for j = 0; j < size; {
         // invariant : j >= 0 && j <= size
         // decreases : size - j
@@ -2654,8 +2721,7 @@ fn bytevector_uint_set(
         items[start + j] = bytes[size - 1 - j]
         continue j + 1
       }
-    }
-    LittleEndian => {
+    LittleEndian =>
       for j = 0; j < size; {
         // invariant : j >= 0 && j <= size
         // decreases : size - j
@@ -2663,7 +2729,6 @@ fn bytevector_uint_set(
         items[start + j] = bytes[j]
         continue j + 1
       }
-    }
   }
 }
 
@@ -2733,7 +2798,9 @@ fn value_as_record_constructor_descriptor(
 }
 
 ///|
-fn value_as_hashtable(value : @core.Value) -> @core.Hashtable raise @core.EvalError {
+fn value_as_hashtable(
+  value : @core.Value,
+) -> @core.Hashtable raise @core.EvalError {
   match value {
     Hashtable(table) => table
     _ => raise @core.EvalError("type error: hashtable expected")
@@ -2741,7 +2808,9 @@ fn value_as_hashtable(value : @core.Value) -> @core.Hashtable raise @core.EvalEr
 }
 
 ///|
-fn value_as_enum_set(value : @core.Value) -> @core.EnumSet raise @core.EvalError {
+fn value_as_enum_set(
+  value : @core.Value,
+) -> @core.EnumSet raise @core.EvalError {
   match value {
     EnumSet(set) => set
     _ => raise @core.EvalError("type error: enum-set expected")
@@ -2749,7 +2818,9 @@ fn value_as_enum_set(value : @core.Value) -> @core.EnumSet raise @core.EvalError
 }
 
 ///|
-fn hashtable_equiv_from_value(value : @core.Value) -> @core.HashtableEquiv raise @core.EvalError {
+fn hashtable_equiv_from_value(
+  value : @core.Value,
+) -> @core.HashtableEquiv raise @core.EvalError {
   match value {
     Primitive(Eq) => @core.HashtableEquiv::Eq
     Primitive(Eqv) => @core.HashtableEquiv::Eqv
@@ -2774,7 +2845,9 @@ fn hashtable_equiv_to_value(equiv : @core.HashtableEquiv) -> @core.Value {
 }
 
 ///|
-fn validate_hashtable_size_arg(value : @core.Value) -> Unit raise @core.EvalError {
+fn validate_hashtable_size_arg(
+  value : @core.Value,
+) -> Unit raise @core.EvalError {
   let n = value_as_int_index(value)
   if n < 0 {
     raise @core.EvalError("type error: non-negative integer expected")
@@ -2792,7 +2865,9 @@ fn enum_set_require_same_universe(
 }
 
 ///|
-fn enum_set_symbol_list(value : @core.Value) -> Array[String] raise @core.EvalError {
+fn enum_set_symbol_list(
+  value : @core.Value,
+) -> Array[String] raise @core.EvalError {
   let datum = value_as_datum(value)
   let items = datum_list_to_array(datum)
   parse_symbol_list(items)
@@ -2822,7 +2897,9 @@ fn value_as_condition_type_descriptor(
 }
 
 ///|
-fn record_accessor_info(value : @core.Value) -> (@core.RecordType, Int) raise @core.EvalError {
+fn record_accessor_info(
+  value : @core.Value,
+) -> (@core.RecordType, Int) raise @core.EvalError {
   match value {
     RecordProc(proc) =>
       match proc.kind {

@@ -16,16 +16,15 @@ test "r6rs eval: empty binding forms" {
 test "r6rs eval: invalid binding shapes" {
   let bad_let = try? eval_program("(let ((x)) x)")
   match bad_let {
-    Err(err) => inspect(err, content="EvalError(\"type error: binding expected\")")
+    Err(err) =>
+      inspect(err, content="EvalError(\"type error: binding expected\")")
     _ => fail("expected binding error")
   }
-
   let bad_values = try? eval_program("(let-values ((x 1 2)) x)")
   match bad_values {
     Err(err) => inspect(err, content="EvalError(\"invalid let-values\")")
     _ => fail("expected let-values error")
   }
-
   let bad_param = try? eval_program("(parameterize ((current-output-port)) 1)")
   match bad_param {
     Err(err) => inspect(err, content="EvalError(\"invalid parameterize\")")
@@ -40,7 +39,6 @@ test "r6rs eval: invalid guard and case" {
     Err(err) => inspect(err, content="EvalError(\"invalid guard\")")
     _ => fail("expected guard error")
   }
-
   let bad_case = try? eval_program(
     "(case 1 ((1) => (lambda (x) x) 2) (else 0))",
   )
@@ -55,7 +53,10 @@ test "r6rs eval: invalid quasisyntax splicing" {
   let bad = try? eval_program("(quasisyntax (unsyntax-splicing 1))")
   match bad {
     Err(err) =>
-      inspect(err, content="EvalError(\"unsyntax-splicing not in list context\")")
+      inspect(
+        err,
+        content="EvalError(\"unsyntax-splicing not in list context\")",
+      )
     _ => fail("expected unsyntax-splicing error")
   }
 }

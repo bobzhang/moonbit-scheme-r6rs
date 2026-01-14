@@ -43,9 +43,10 @@ pub fn env_extend(env : @core.Env) -> @core.Env {
 /// }
 /// ```
 pub fn env_clone(env : @core.Env) -> @core.Env {
-  env.map((frame) =>
-    frame.map((_, binding) => @core.Binding::new(binding.id(), binding.value()))
-  )
+  env.map(frame => frame.map((_, binding) => @core.Binding::new(
+    binding.id(),
+    binding.value(),
+  )))
 }
 
 ///|
@@ -113,17 +114,22 @@ pub fn make_binding(value : @core.Value) -> @core.Binding {
   @core.Binding::new(next_binding_id(), value)
 }
 
+///|
 /// Look up a binding by name or raise if it is unbound.
-pub fn env_lookup_binding(env : @core.Env, name : String) -> @core.Binding raise @core.EvalError {
+pub fn env_lookup_binding(
+  env : @core.Env,
+  name : String,
+) -> @core.Binding raise @core.EvalError {
   match env.get_binding(name) {
     Some(binding) => binding
     None => raise @core.EvalError("unbound variable: \{name}")
   }
 }
 
+///|
 /// Look up a binding id by name, returning None if missing.
 pub fn env_binding_id_optional(env : @core.Env, name : String) -> Int? {
-  env.get_binding(name).map((binding) => binding.id())
+  env.get_binding(name).map(binding => binding.id())
 }
 
 ///|
@@ -140,14 +146,17 @@ pub fn env_binding_id_optional(env : @core.Env, name : String) -> Int? {
 ///   }
 /// }
 /// ```
-pub fn env_lookup(env : @core.Env, name : String) -> @core.Value raise @core.EvalError {
+pub fn env_lookup(
+  env : @core.Env,
+  name : String,
+) -> @core.Value raise @core.EvalError {
   env_lookup_binding(env, name).value()
 }
 
 ///|
 /// Look up a binding value, returning None if missing.
 pub fn env_lookup_optional(env : @core.Env, name : String) -> @core.Value? {
-  env.get_binding(name).map((binding) => binding.value())
+  env.get_binding(name).map(binding => binding.value())
 }
 
 ///|
@@ -165,7 +174,11 @@ pub fn env_lookup_optional(env : @core.Env, name : String) -> @core.Value? {
 ///   }
 /// }
 /// ```
-pub fn env_set(env : @core.Env, name : String, value : @core.Value) -> Unit raise @core.EvalError {
+pub fn env_set(
+  env : @core.Env,
+  name : String,
+  value : @core.Value,
+) -> Unit raise @core.EvalError {
   if env.is_empty() {
     raise @core.EvalError("unbound variable: \{name}")
   }

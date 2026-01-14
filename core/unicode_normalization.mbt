@@ -27,7 +27,7 @@ const HANGUL_S_COUNT : Int = HANGUL_L_COUNT * HANGUL_N_COUNT
 
 ///|
 fn data_chars(data : String) -> ReadOnlyArray[Char] {
-  let out = data.to_array().filter((ch) => ch != '\n' && ch != '\r')
+  let out = data.to_array().filter(ch => ch != '\n' && ch != '\r')
   ReadOnlyArray::from_array(out[:])
 }
 

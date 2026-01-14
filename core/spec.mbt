@@ -72,17 +72,19 @@
 /// Out of scope for now: full numeric tower.
 
 ///|
-pub(all) suberror ParseError String derive(Show, Eq)
+pub(all) suberror ParseError {
+  ParseError(String)
+} derive(Show, Eq)
 
 ///|
-pub(all) suberror EvalError String derive(Show, Eq)
+pub(all) suberror EvalError {
+  EvalError(String)
+} derive(Show, Eq)
 
 ///|
 /// Datum is the reader-level data representation used by quote.
 /// It is also used to store list/vector elements, so it includes runtime-only
 /// variants for records/conditions even though the reader never produces them.
-
-///|
 pub(all) enum Datum {
   Nil
   Bool(Bool)

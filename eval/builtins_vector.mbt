@@ -6,32 +6,37 @@ fn apply_vector_primitive(
 ) -> @core.Value? raise @core.EvalError {
   match prim {
     Vector => {
-      let items : Array[@core.Datum] =
-        args.map((arg) => value_to_datum_element(arg))
+      let items : Array[@core.Datum] = args.map(arg => value_to_datum_element(
+        arg,
+      ))
       Some(@core.Value::Datum(Vector(items)))
     }
     MakeVector =>
       match args {
         [len_value] =>
-          Some({
-            let len = value_as_nonnegative_int(len_value)
-            let fill = @core.Datum::Nil
-            let items : Array[@core.Datum] = []
-            for i in 0..<len {
-              items.push(fill)
-            }
-            @core.Value::Datum(Vector(items))
-          })
+          Some(
+            {
+              let len = value_as_nonnegative_int(len_value)
+              let fill = @core.Datum::Nil
+              let items : Array[@core.Datum] = []
+              for i in 0..<len {
+                items.push(fill)
+              }
+              @core.Value::Datum(Vector(items))
+            },
+          )
         [len_value, fill_value] =>
-          Some({
-            let len = value_as_nonnegative_int(len_value)
-            let fill = value_to_datum_element(fill_value)
-            let items : Array[@core.Datum] = []
-            for i in 0..<len {
-              items.push(fill)
-            }
-            @core.Value::Datum(Vector(items))
-          })
+          Some(
+            {
+              let len = value_as_nonnegative_int(len_value)
+              let fill = value_to_datum_element(fill_value)
+              let items : Array[@core.Datum] = []
+              for i in 0..<len {
+                items.push(fill)
+              }
+              @core.Value::Datum(Vector(items))
+            },
+          )
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 or 2 got \{args.length()}",
@@ -75,41 +80,47 @@ fn apply_vector_primitive(
     VectorFill =>
       match args {
         [vec_value, fill_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let fill = value_to_datum_element(fill_value)
-            let start = 0
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            for i in start..<end {
-              items[i] = fill
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let fill = value_to_datum_element(fill_value)
+              let start = 0
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              for i in start..<end {
+                items[i] = fill
+              }
+              @core.Value::Void
+            },
+          )
         [vec_value, fill_value, start_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let fill = value_to_datum_element(fill_value)
-            let start = value_as_int_index(start_value)
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            for i in start..<end {
-              items[i] = fill
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let fill = value_to_datum_element(fill_value)
+              let start = value_as_int_index(start_value)
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              for i in start..<end {
+                items[i] = fill
+              }
+              @core.Value::Void
+            },
+          )
         [vec_value, fill_value, start_value, end_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let fill = value_to_datum_element(fill_value)
-            let start = value_as_int_index(start_value)
-            let end = value_as_int_index(end_value)
-            check_slice_range(start, end, items.length())
-            for i in start..<end {
-              items[i] = fill
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let fill = value_to_datum_element(fill_value)
+              let start = value_as_int_index(start_value)
+              let end = value_as_int_index(end_value)
+              check_slice_range(start, end, items.length())
+              for i in start..<end {
+                items[i] = fill
+              }
+              @core.Value::Void
+            },
+          )
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 2 to 4 got \{args.length()}",
@@ -118,32 +129,38 @@ fn apply_vector_primitive(
     VectorCopy =>
       match args {
         [vec_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = 0
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            let slice = items.sub(start~, end~).to_array()
-            @core.Value::Datum(Vector(slice))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = 0
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              let slice = items.sub(start~, end~).to_array()
+              @core.Value::Datum(Vector(slice))
+            },
+          )
         [vec_value, start_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = value_as_int_index(start_value)
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            let slice = items.sub(start~, end~).to_array()
-            @core.Value::Datum(Vector(slice))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = value_as_int_index(start_value)
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              let slice = items.sub(start~, end~).to_array()
+              @core.Value::Datum(Vector(slice))
+            },
+          )
         [vec_value, start_value, end_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = value_as_int_index(start_value)
-            let end = value_as_int_index(end_value)
-            check_slice_range(start, end, items.length())
-            let slice = items.sub(start~, end~).to_array()
-            @core.Value::Datum(Vector(slice))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = value_as_int_index(start_value)
+              let end = value_as_int_index(end_value)
+              check_slice_range(start, end, items.length())
+              let slice = items.sub(start~, end~).to_array()
+              @core.Value::Datum(Vector(slice))
+            },
+          )
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
@@ -152,74 +169,80 @@ fn apply_vector_primitive(
     VectorCopyBang =>
       match args {
         [to_value, at_value, from_value] =>
-          Some({
-            let to_items = value_as_vector(to_value)
-            let at = value_as_int_index(at_value)
-            let from_items = value_as_vector(from_value)
-            let start = 0
-            let end = from_items.length()
-            let count = check_copy_range(
-              start,
-              end,
-              from_items.length(),
-              at,
-              to_items.length(),
-            )
-            let temp : Array[@core.Datum] = []
-            for i in 0..<count {
-              temp.push(from_items[start + i])
-            }
-            for j in 0..<count {
-              to_items[at + j] = temp[j]
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let to_items = value_as_vector(to_value)
+              let at = value_as_int_index(at_value)
+              let from_items = value_as_vector(from_value)
+              let start = 0
+              let end = from_items.length()
+              let count = check_copy_range(
+                start,
+                end,
+                from_items.length(),
+                at,
+                to_items.length(),
+              )
+              let temp : Array[@core.Datum] = []
+              for i in 0..<count {
+                temp.push(from_items[start + i])
+              }
+              for j in 0..<count {
+                to_items[at + j] = temp[j]
+              }
+              @core.Value::Void
+            },
+          )
         [to_value, at_value, from_value, start_value] =>
-          Some({
-            let to_items = value_as_vector(to_value)
-            let at = value_as_int_index(at_value)
-            let from_items = value_as_vector(from_value)
-            let start = value_as_int_index(start_value)
-            let end = from_items.length()
-            let count = check_copy_range(
-              start,
-              end,
-              from_items.length(),
-              at,
-              to_items.length(),
-            )
-            let temp : Array[@core.Datum] = []
-            for i in 0..<count {
-              temp.push(from_items[start + i])
-            }
-            for j in 0..<count {
-              to_items[at + j] = temp[j]
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let to_items = value_as_vector(to_value)
+              let at = value_as_int_index(at_value)
+              let from_items = value_as_vector(from_value)
+              let start = value_as_int_index(start_value)
+              let end = from_items.length()
+              let count = check_copy_range(
+                start,
+                end,
+                from_items.length(),
+                at,
+                to_items.length(),
+              )
+              let temp : Array[@core.Datum] = []
+              for i in 0..<count {
+                temp.push(from_items[start + i])
+              }
+              for j in 0..<count {
+                to_items[at + j] = temp[j]
+              }
+              @core.Value::Void
+            },
+          )
         [to_value, at_value, from_value, start_value, end_value] =>
-          Some({
-            let to_items = value_as_vector(to_value)
-            let at = value_as_int_index(at_value)
-            let from_items = value_as_vector(from_value)
-            let start = value_as_int_index(start_value)
-            let end = value_as_int_index(end_value)
-            let count = check_copy_range(
-              start,
-              end,
-              from_items.length(),
-              at,
-              to_items.length(),
-            )
-            let temp : Array[@core.Datum] = []
-            for i in 0..<count {
-              temp.push(from_items[start + i])
-            }
-            for j in 0..<count {
-              to_items[at + j] = temp[j]
-            }
-            @core.Value::Void
-          })
+          Some(
+            {
+              let to_items = value_as_vector(to_value)
+              let at = value_as_int_index(at_value)
+              let from_items = value_as_vector(from_value)
+              let start = value_as_int_index(start_value)
+              let end = value_as_int_index(end_value)
+              let count = check_copy_range(
+                start,
+                end,
+                from_items.length(),
+                at,
+                to_items.length(),
+              )
+              let temp : Array[@core.Datum] = []
+              for i in 0..<count {
+                temp.push(from_items[start + i])
+              }
+              for j in 0..<count {
+                to_items[at + j] = temp[j]
+              }
+              @core.Value::Void
+            },
+          )
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 3 to 5 got \{args.length()}",
@@ -236,29 +259,41 @@ fn apply_vector_primitive(
     VectorToList =>
       match args {
         [vec_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = 0
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            @core.Value::Datum(list_from_array(items.sub(start~, end~).to_array()))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = 0
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              @core.Value::Datum(
+                list_from_array(items.sub(start~, end~).to_array()),
+              )
+            },
+          )
         [vec_value, start_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = value_as_int_index(start_value)
-            let end = items.length()
-            check_slice_range(start, end, items.length())
-            @core.Value::Datum(list_from_array(items.sub(start~, end~).to_array()))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = value_as_int_index(start_value)
+              let end = items.length()
+              check_slice_range(start, end, items.length())
+              @core.Value::Datum(
+                list_from_array(items.sub(start~, end~).to_array()),
+              )
+            },
+          )
         [vec_value, start_value, end_value] =>
-          Some({
-            let items = value_as_vector(vec_value)
-            let start = value_as_int_index(start_value)
-            let end = value_as_int_index(end_value)
-            check_slice_range(start, end, items.length())
-            @core.Value::Datum(list_from_array(items.sub(start~, end~).to_array()))
-          })
+          Some(
+            {
+              let items = value_as_vector(vec_value)
+              let start = value_as_int_index(start_value)
+              let end = value_as_int_index(end_value)
+              check_slice_range(start, end, items.length())
+              @core.Value::Datum(
+                list_from_array(items.sub(start~, end~).to_array()),
+              )
+            },
+          )
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 to 3 got \{args.length()}",

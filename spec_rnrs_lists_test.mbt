@@ -54,8 +54,5 @@ test "rnrs lists: list copy and tail" {
     #|       (tail (list-tail lst 1))
     #|       (copy (list-copy lst)))
     #|  (list tail copy (length copy)))
-  inspect(
-    value_to_string(eval_program(program)),
-    content="((2 3) (1 2 3) 3)",
-  )
+  inspect(value_to_string(eval_program(program)), content="((2 3) (1 2 3) 3)")
 }

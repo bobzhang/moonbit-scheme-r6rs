@@ -161,7 +161,6 @@ test "r6rs libraries: version reference operators" {
     #|(import (ver-gt (> (1 0))))
     #|val
   inspect(value_to_string(eval_program(gt_prog)), content="20")
-
   let le_prog =
     #|(library (ver-le (1 0))
     #|  (export val)
@@ -174,7 +173,6 @@ test "r6rs libraries: version reference operators" {
     #|(import (ver-le (<= (1 0))))
     #|val
   inspect(value_to_string(eval_program(le_prog)), content="11")
-
   let not_prog =
     #|(library (ver-not (1 0))
     #|  (export val)
@@ -187,7 +185,6 @@ test "r6rs libraries: version reference operators" {
     #|(import (ver-not (not (1 0))))
     #|val
   inspect(value_to_string(eval_program(not_prog)), content="40")
-
   let lt_prog =
     #|(library (ver-lt (1 0))
     #|  (export val)
@@ -255,8 +252,9 @@ test "r6rs libraries: base excludes syntax-case" {
 test "r6rs libraries: import error cases" {
   let unknown_lib = try? eval_program("(import (no-such-lib))")
   inspect(unknown_lib is Err(_), content="true")
-  let unknown_only =
-    try? eval_program("(import (only (rnrs base) no-such-binding))")
+  let unknown_only = try? eval_program(
+    "(import (only (rnrs base) no-such-binding))",
+  )
   inspect(unknown_only is Err(_), content="true")
   let dup_rename = try? eval_program(
     (

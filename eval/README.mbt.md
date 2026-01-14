@@ -65,10 +65,9 @@ test "fixnum comparisons" {
 
 ///|
 test "fixnum comparison false cases" {
-  let value =
-    eval_program(
-      "(list (fx=? 1 2) (fx<? 1 3 2) (fx>? 3 1 2) (fx<=? 3 2 1) (fx>=? 1 2 3))",
-    )
+  let value = eval_program(
+    "(list (fx=? 1 2) (fx<? 1 3 2) (fx>? 3 1 2) (fx<=? 3 2 1) (fx>=? 1 2 3))",
+  )
   inspect(@runtime.value_to_string(value), content="(#f #f #f #f #f)")
 }
 
@@ -118,10 +117,9 @@ test "bytevector primitives" {
   inspect(@runtime.value_to_string(length), content="3")
   let ref_value = eval_program("(bytevector-u8-ref #vu8(10 20) 1)")
   inspect(@runtime.value_to_string(ref_value), content="20")
-  let set_value =
-    eval_program(
-      "(let ((bv (make-bytevector 3 7))) (bytevector-u8-set! bv 1 9) bv)",
-    )
+  let set_value = eval_program(
+    "(let ((bv (make-bytevector 3 7))) (bytevector-u8-set! bv 1 9) bv)",
+  )
   inspect(@runtime.value_to_string(set_value), content="#vu8(7 9 7)")
   let eq_false = eval_program("(bytevector=? #vu8(1 2) #vu8(1 2 3))")
   inspect(@runtime.value_to_string(eq_false), content="#f")
@@ -131,26 +129,25 @@ test "bytevector primitives" {
   inspect(@runtime.value_to_string(copy_all), content="#vu8(1 2 3)")
   let copy_start = eval_program("(bytevector-copy #vu8(1 2 3) 1)")
   inspect(@runtime.value_to_string(copy_start), content="#vu8(2 3)")
-  let copy_bang_full =
-    eval_program(
-      "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 0 src) dst)",
-    )
+  let copy_bang_full = eval_program(
+    "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 0 src) dst)",
+  )
   inspect(@runtime.value_to_string(copy_bang_full), content="#vu8(1 2 3 0)")
-  let copy_bang_start =
-    eval_program(
-      "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 0 src 1) dst)",
-    )
+  let copy_bang_start = eval_program(
+    "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 0 src 1) dst)",
+  )
   inspect(@runtime.value_to_string(copy_bang_start), content="#vu8(2 3 0 0)")
-  let copy_bang_slice =
-    eval_program(
-      "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 1 src 0 2) dst)",
-    )
+  let copy_bang_slice = eval_program(
+    "(let ((dst (make-bytevector 4 0)) (src #vu8(1 2 3))) (bytevector-copy! dst 1 src 0 2) dst)",
+  )
   inspect(@runtime.value_to_string(copy_bang_slice), content="#vu8(0 1 2 0)")
-  let fill =
-    eval_program("(let ((bv #vu8(1 2 3))) (bytevector-fill! bv 7 1 3) bv)")
+  let fill = eval_program(
+    "(let ((bv #vu8(1 2 3))) (bytevector-fill! bv 7 1 3) bv)",
+  )
   inspect(@runtime.value_to_string(fill), content="#vu8(1 7 7)")
-  let fill_start =
-    eval_program("(let ((bv #vu8(1 2 3))) (bytevector-fill! bv 9 1) bv)")
+  let fill_start = eval_program(
+    "(let ((bv #vu8(1 2 3))) (bytevector-fill! bv 9 1) bv)",
+  )
   inspect(@runtime.value_to_string(fill_start), content="#vu8(1 9 9)")
   let append = eval_program("(bytevector-append #vu8(1 2) #vu8(3 4))")
   inspect(@runtime.value_to_string(append), content="#vu8(1 2 3 4)")
@@ -218,31 +215,32 @@ test "bytevector arity errors" {
 
 ///|
 test "char and string primitives" {
-  let char_ci =
-    eval_program(
-      "(list (char-ci>? #\\b #\\A) (char-ci<=? #\\a #\\A) (char-ci>=? #\\A #\\b))",
-    )
+  let char_ci = eval_program(
+    "(list (char-ci>? #\\b #\\A) (char-ci<=? #\\a #\\A) (char-ci>=? #\\A #\\b))",
+  )
   inspect(@runtime.value_to_string(char_ci), content="(#t #t #f)")
-  let char_preds =
-    eval_program(
-      "(list (char? #\\a) (char? 1) (char-alphabetic? #\\a) (char-numeric? #\\9) (char-whitespace? #\\space) (char-upper-case? #\\A) (char-lower-case? #\\a))",
-    )
-  inspect(@runtime.value_to_string(char_preds), content="(#t #f #t #t #t #t #t)")
-  let char_cases =
-    eval_program(
-      "(list (char->integer (char-upcase #\\a)) (char->integer (char-downcase #\\A)) (char->integer (char-foldcase #\\A)) (char->integer (integer->char 66)))",
-    )
+  let char_preds = eval_program(
+    "(list (char? #\\a) (char? 1) (char-alphabetic? #\\a) (char-numeric? #\\9) (char-whitespace? #\\space) (char-upper-case? #\\A) (char-lower-case? #\\a))",
+  )
+  inspect(
+    @runtime.value_to_string(char_preds),
+    content="(#t #f #t #t #t #t #t)",
+  )
+  let char_cases = eval_program(
+    "(list (char->integer (char-upcase #\\a)) (char->integer (char-downcase #\\A)) (char->integer (char-foldcase #\\A)) (char->integer (integer->char 66)))",
+  )
   inspect(@runtime.value_to_string(char_cases), content="(65 97 97 66)")
-  let string_ci =
-    eval_program(
-      "(list (string-ci>? \"b\" \"A\") (string-ci<=? \"a\" \"A\") (string-ci>=? \"A\" \"b\"))",
-    )
+  let string_ci = eval_program(
+    "(list (string-ci>? \"b\" \"A\") (string-ci<=? \"a\" \"A\") (string-ci>=? \"A\" \"b\"))",
+  )
   inspect(@runtime.value_to_string(string_ci), content="(#t #t #f)")
-  let string_basic =
-    eval_program(
-      "(let ((s (string-copy \"hi\"))) (string-set! s 0 #\\H) (list (string? s) (string? 1) (string-length s) (string-append \"a\" \"b\") (char->integer (string-ref s 1)) s))",
-    )
-  inspect(@runtime.value_to_string(string_basic), content="(#t #f 2 \"ab\" 105 \"Hi\")")
+  let string_basic = eval_program(
+    "(let ((s (string-copy \"hi\"))) (string-set! s 0 #\\H) (list (string? s) (string? 1) (string-length s) (string-append \"a\" \"b\") (char->integer (string-ref s 1)) s))",
+  )
+  inspect(
+    @runtime.value_to_string(string_basic),
+    content="(#t #f 2 \"ab\" 105 \"Hi\")",
+  )
 }
 
 ///|
@@ -307,25 +305,21 @@ test "char and string arity errors" {
 
 ///|
 test "string copy and fill variants" {
-  let copy_full =
-    eval_program(
-      "(let ((to (string #\\a #\\b #\\c)) (from (string #\\x #\\y))) (string-copy! to 1 from) to)",
-    )
+  let copy_full = eval_program(
+    "(let ((to (string #\\a #\\b #\\c)) (from (string #\\x #\\y))) (string-copy! to 1 from) to)",
+  )
   inspect(@runtime.value_to_string(copy_full), content="\"axy\"")
-  let copy_start =
-    eval_program(
-      "(let ((to (string #\\a #\\b #\\c #\\d)) (from (string #\\w #\\x #\\y #\\z))) (string-copy! to 0 from 1) to)",
-    )
+  let copy_start = eval_program(
+    "(let ((to (string #\\a #\\b #\\c #\\d)) (from (string #\\w #\\x #\\y #\\z))) (string-copy! to 0 from 1) to)",
+  )
   inspect(@runtime.value_to_string(copy_start), content="\"xyzd\"")
-  let fill_all =
-    eval_program(
-      "(let ((s (string #\\a #\\b #\\c))) (string-fill! s #\\x) s)",
-    )
+  let fill_all = eval_program(
+    "(let ((s (string #\\a #\\b #\\c))) (string-fill! s #\\x) s)",
+  )
   inspect(@runtime.value_to_string(fill_all), content="\"xxx\"")
-  let fill_from =
-    eval_program(
-      "(let ((s (string #\\a #\\b #\\c #\\d))) (string-fill! s #\\x 2) s)",
-    )
+  let fill_from = eval_program(
+    "(let ((s (string #\\a #\\b #\\c #\\d))) (string-fill! s #\\x 2) s)",
+  )
   inspect(@runtime.value_to_string(fill_from), content="\"abxx\"")
 }
 
@@ -349,49 +343,41 @@ test "string surrogate boundary errors" {
   inspect(vec_err is Err(_), content="true")
   let vec_range_err = try? eval_program("(string->vector \"\\x1F600;\" 0 1)")
   inspect(vec_range_err is Err(_), content="true")
-  let copy_err =
-    try? eval_program(
-      "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1))",
-    )
+  let copy_err = try? eval_program(
+    "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1))",
+  )
   inspect(copy_err is Err(_), content="true")
-  let copy_range_err =
-    try? eval_program(
-      "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1 2))",
-    )
+  let copy_range_err = try? eval_program(
+    "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1 2))",
+  )
   inspect(copy_range_err is Err(_), content="true")
 }
 
 ///|
 test "string copy and list error branches" {
-  let copy3_err =
-    try? eval_program(
-      "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src))",
-    )
+  let copy3_err = try? eval_program(
+    "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src))",
+  )
   inspect(copy3_err is Err(_), content="true")
-  let copy3_to_err =
-    try? eval_program(
-      "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src))",
-    )
+  let copy3_to_err = try? eval_program(
+    "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src))",
+  )
   inspect(copy3_to_err is Err(_), content="true")
-  let copy4_err =
-    try? eval_program(
-      "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1))",
-    )
+  let copy4_err = try? eval_program(
+    "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1))",
+  )
   inspect(copy4_err is Err(_), content="true")
-  let copy4_to_err =
-    try? eval_program(
-      "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src 0))",
-    )
+  let copy4_to_err = try? eval_program(
+    "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src 0))",
+  )
   inspect(copy4_to_err is Err(_), content="true")
-  let copy5_err =
-    try? eval_program(
-      "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1 2))",
-    )
+  let copy5_err = try? eval_program(
+    "(let ((dst (string #\\a #\\b)) (src \"\\x1F600;\")) (string-copy! dst 0 src 1 2))",
+  )
   inspect(copy5_err is Err(_), content="true")
-  let copy5_to_err =
-    try? eval_program(
-      "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src 0 1))",
-    )
+  let copy5_to_err = try? eval_program(
+    "(let ((dst (string-copy \"\\x1F600;\")) (src \"ab\")) (string-copy! dst 0 src 0 1))",
+  )
   inspect(copy5_to_err is Err(_), content="true")
   let list_full_err = try? eval_program("(string->list \"\\x1F600;\")")
   inspect(list_full_err is Err(_), content="true")
@@ -411,16 +397,17 @@ test "string type errors" {
   inspect(length_non_datum is Err(_), content="true")
   let set_type = try? eval_program("(string-set! 1 0 #\\a)")
   inspect(set_type is Err(_), content="true")
-  let set_non_datum =
-    try? eval_program("(string-set! (lambda (x) x) 0 #\\a)")
+  let set_non_datum = try? eval_program("(string-set! (lambda (x) x) 0 #\\a)")
   inspect(set_non_datum is Err(_), content="true")
   let fill_type = try? eval_program("(string-fill! (string #\\a) 1)")
   inspect(fill_type is Err(_), content="true")
-  let fill_non_datum =
-    try? eval_program("(string-fill! (string #\\a) (lambda (x) x))")
+  let fill_non_datum = try? eval_program(
+    "(string-fill! (string #\\a) (lambda (x) x))",
+  )
   inspect(fill_non_datum is Err(_), content="true")
-  let fill_surrogate =
-    try? eval_program("(string-fill! (string #\\x1F600;) #\\a 0)")
+  let fill_surrogate = try? eval_program(
+    "(string-fill! (string #\\x1F600;) #\\a 0)",
+  )
   inspect(fill_surrogate is Err(_), content="true")
   let list_string_type = try? eval_program("(list->string (lambda (x) x))")
   inspect(list_string_type is Err(_), content="true")
@@ -428,8 +415,9 @@ test "string type errors" {
 
 ///|
 test "pair and list primitives" {
-  let pair =
-    eval_program("(let ((p (cons 1 2))) (set-car! p 3) (set-cdr! p 4) p)")
+  let pair = eval_program(
+    "(let ((p (cons 1 2))) (set-car! p 3) (set-cdr! p 4) p)",
+  )
   inspect(@runtime.value_to_string(pair), content="(3 . 4)")
   let car_value = eval_program("(car (cons 1 2))")
   inspect(@runtime.value_to_string(car_value), content="1")
@@ -522,28 +510,25 @@ test "vector primitives" {
   inspect(@runtime.value_to_string(vec_len), content="3")
   let vec_ref = eval_program("(vector-ref #(1 2 3) 1)")
   inspect(@runtime.value_to_string(vec_ref), content="2")
-  let vec_set =
-    eval_program("(let ((v (vector 1 2 3))) (vector-set! v 1 9) v)")
+  let vec_set = eval_program("(let ((v (vector 1 2 3))) (vector-set! v 1 9) v)")
   inspect(@runtime.value_to_string(vec_set), content="#(1 9 3)")
-  let vec_fill =
-    eval_program("(let ((v (vector 1 2 3))) (vector-fill! v 9 1) v)")
+  let vec_fill = eval_program(
+    "(let ((v (vector 1 2 3))) (vector-fill! v 9 1) v)",
+  )
   inspect(@runtime.value_to_string(vec_fill), content="#(1 9 9)")
   let vec_copy = eval_program("(vector-copy #(1 2 3) 1)")
   inspect(@runtime.value_to_string(vec_copy), content="#(2 3)")
-  let vec_copy_bang =
-    eval_program(
-      "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 0 src) dst)",
-    )
+  let vec_copy_bang = eval_program(
+    "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 0 src) dst)",
+  )
   inspect(@runtime.value_to_string(vec_copy_bang), content="#(1 2 3 0)")
-  let vec_copy_bang_start =
-    eval_program(
-      "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 0 src 1) dst)",
-    )
+  let vec_copy_bang_start = eval_program(
+    "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 0 src 1) dst)",
+  )
   inspect(@runtime.value_to_string(vec_copy_bang_start), content="#(2 3 0 0)")
-  let vec_copy_bang_slice =
-    eval_program(
-      "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 1 src 0 2) dst)",
-    )
+  let vec_copy_bang_slice = eval_program(
+    "(let ((dst (make-vector 4 0)) (src #(1 2 3))) (vector-copy! dst 1 src 0 2) dst)",
+  )
   inspect(@runtime.value_to_string(vec_copy_bang_slice), content="#(0 1 2 0)")
   let vec_append = eval_program("(vector-append #(1) #(2 3))")
   inspect(@runtime.value_to_string(vec_append), content="#(1 2 3)")
@@ -579,25 +564,22 @@ test "vector arity errors" {
 
 ///|
 test "symbol and predicate basics" {
-  let preds =
-    eval_program(
-      "(list (symbol? 'a) (symbol? 1) (identifier? #'a) (identifier? 1) (syntax? #'a) (syntax? 'a) (boolean? #t) (boolean? 1) (number? 1) (number? 'a) (integer? 1) (integer? 1.2) (exact-integer? 1) (exact-integer? 1.2) (rational? 1/2) (rational? 1+2i) (real? 1.0) (real? 1+2i) (complex? 1.0) (complex? 1+2i))",
-    )
+  let preds = eval_program(
+    "(list (symbol? 'a) (symbol? 1) (identifier? #'a) (identifier? 1) (syntax? #'a) (syntax? 'a) (boolean? #t) (boolean? 1) (number? 1) (number? 'a) (integer? 1) (integer? 1.2) (exact-integer? 1) (exact-integer? 1.2) (rational? 1/2) (rational? 1+2i) (real? 1.0) (real? 1+2i) (complex? 1.0) (complex? 1+2i))",
+  )
   inspect(
     @runtime.value_to_string(preds),
     content="(#t #f #t #f #t #f #t #f #t #f #t #f #t #f #t #f #t #f #t #t)",
   )
-  let non_datum =
-    eval_program(
-      "(let ((f (lambda (x) x))) (list (boolean? f) (number? f) (integer? f) (exact-integer? f) (rational? f) (real? f) (complex? f)))",
-    )
+  let non_datum = eval_program(
+    "(let ((f (lambda (x) x))) (list (boolean? f) (number? f) (integer? f) (exact-integer? f) (rational? f) (real? f) (complex? f)))",
+  )
   inspect(@runtime.value_to_string(non_datum), content="(#f #f #f #f #f #f #f)")
   let id_port = eval_program("(identifier? (current-output-port))")
   inspect(@runtime.value_to_string(id_port), content="#f")
-  let hashes =
-    eval_program(
-      "(list (integer? (string-hash \"a\")) (integer? (string-ci-hash \"A\")) (integer? (symbol-hash 'a)) (integer? (equal-hash '(1 2))))",
-    )
+  let hashes = eval_program(
+    "(list (integer? (string-hash \"a\")) (integer? (string-ci-hash \"A\")) (integer? (symbol-hash 'a)) (integer? (equal-hash '(1 2))))",
+  )
   inspect(@runtime.value_to_string(hashes), content="(#t #t #t #t)")
   let sym_text = eval_program("(symbol->string 'abc)")
   inspect(@runtime.value_to_string(sym_text), content="\"abc\"")
@@ -653,7 +635,9 @@ test "symbol and predicate arity errors" {
   inspect(syntax_to_datum_arity is Err(_), content="true")
   let syntax_to_datum_arity2 = try? eval_program("(syntax->datum #'x #'y)")
   inspect(syntax_to_datum_arity2 is Err(_), content="true")
-  let datum_to_syntax_err = try? eval_program("(datum->syntax #'x (lambda (x) x))")
+  let datum_to_syntax_err = try? eval_program(
+    "(datum->syntax #'x (lambda (x) x))",
+  )
   inspect(datum_to_syntax_err is Err(_), content="true")
   let datum_to_syntax_arity = try? eval_program("(datum->syntax #'x)")
   inspect(datum_to_syntax_arity is Err(_), content="true")
@@ -667,16 +651,21 @@ test "symbol and predicate arity errors" {
 test "identifier predicate type errors" {
   let bound_datum_err = try? eval_program("(bound-identifier=? 1 2)")
   inspect(bound_datum_err is Err(_), content="true")
-  let bound_syntax_err = try? eval_program("(bound-identifier=? (syntax 1) (syntax 2))")
+  let bound_syntax_err = try? eval_program(
+    "(bound-identifier=? (syntax 1) (syntax 2))",
+  )
   inspect(bound_syntax_err is Err(_), content="true")
-  let bound_port_err =
-    try? eval_program("(bound-identifier=? (current-output-port) #'a)")
+  let bound_port_err = try? eval_program(
+    "(bound-identifier=? (current-output-port) #'a)",
+  )
   inspect(bound_port_err is Err(_), content="true")
 }
 
 ///|
 test "numeric predicate edges" {
-  let exact_complex = eval_program("(exact? (make-rectangular 1 1000000000000))")
+  let exact_complex = eval_program(
+    "(exact? (make-rectangular 1 1000000000000))",
+  )
   inspect(@runtime.value_to_string(exact_complex), content="#t")
   let exact_complex_rat = eval_program("(exact? (make-rectangular 1 1/2))")
   inspect(@runtime.value_to_string(exact_complex_rat), content="#t")
@@ -720,18 +709,15 @@ test "numeric predicate edges" {
 
 ///|
 test "numeric comparison and division edges" {
-  let comparisons =
-    eval_program(
-      "(list (= 1+2i 1+2i) (< 12345678901234567890 12345678901234567891) (> 12345678901234567891 12345678901234567890) (integer? (make-rectangular 2 0)) (exact-integer? (make-rectangular 2 0)) (rational? (make-rectangular 1/2 0)))",
-    )
+  let comparisons = eval_program(
+    "(list (= 1+2i 1+2i) (< 12345678901234567890 12345678901234567891) (> 12345678901234567891 12345678901234567890) (integer? (make-rectangular 2 0)) (exact-integer? (make-rectangular 2 0)) (rational? (make-rectangular 1/2 0)))",
+  )
   inspect(@runtime.value_to_string(comparisons), content="(#t #t #t #t #t #t)")
-  let float_ops =
-    eval_program("(list (= (+ 1.0 2) 3.0) (= (* 1.0 2) 2.0))")
+  let float_ops = eval_program("(list (= (+ 1.0 2) 3.0) (= (* 1.0 2) 2.0))")
   inspect(@runtime.value_to_string(float_ops), content="(#t #t)")
-  let misc =
-    eval_program(
-      "(list (infinite? +nan.0) (flonum? (ceiling 2.0)) (number->string 0 10))",
-    )
+  let misc = eval_program(
+    "(list (infinite? +nan.0) (flonum? (ceiling 2.0)) (number->string 0 10))",
+  )
   inspect(@runtime.value_to_string(misc), content="(#f #t \"0\")")
   let polar_err = try? eval_program("(make-polar 1+2i 0)")
   inspect(polar_err is Err(_), content="true")
@@ -745,10 +731,9 @@ test "numeric comparison and division edges" {
 
 ///|
 test "numeric predicate extra cases" {
-  let value =
-    eval_program(
-      "(let ((c1 (string->number \"1+0i\")) (c2 (string->number \"2+0i\")) (cinex (string->number \"1+2.0i\"))) (list (exact? 'a) (exact? cinex) (odd? c1) (even? c2)))",
-    )
+  let value = eval_program(
+    "(let ((c1 (string->number \"1+0i\")) (c2 (string->number \"2+0i\")) (cinex (string->number \"1+2.0i\"))) (list (exact? 'a) (exact? cinex) (odd? c1) (even? c2)))",
+  )
   inspect(@runtime.value_to_string(value), content="(#f #f #t #t)")
   let odd_err = try? eval_program("(odd? 1.0)")
   inspect(odd_err is Err(_), content="true")
@@ -798,7 +783,9 @@ test "numeric predicate errors" {
   inspect(finite_complex_err is Err(_), content="true")
   let infinite_err = try? eval_program("(infinite?)")
   inspect(infinite_err is Err(_), content="true")
-  let infinite_complex_err = try? eval_program("(infinite? (make-rectangular 1 1))")
+  let infinite_complex_err = try? eval_program(
+    "(infinite? (make-rectangular 1 1))",
+  )
   inspect(infinite_complex_err is Err(_), content="true")
   let infinite_type_err = try? eval_program("(infinite? 'a)")
   inspect(infinite_type_err is Err(_), content="true")
@@ -814,8 +801,7 @@ test "numeric predicate errors" {
 
 ///|
 test "syntax-rules macro" {
-  let program =
-    "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
+  let program = "(begin (define-syntax add2 (syntax-rules () ((add2 x) (+ x 2)))) (add2 3))"
   let value = eval_program(program)
   inspect(@runtime.value_to_string(value), content="5")
 }
@@ -905,22 +891,25 @@ test "labelled expression evaluation" {
 
 ///|
 test "cond and case arrow" {
-  let cond_value =
-    eval_program("(cond ((+ 1 2) => (lambda (x) (+ x 1))) (else 0))")
+  let cond_value = eval_program(
+    "(cond ((+ 1 2) => (lambda (x) (+ x 1))) (else 0))",
+  )
   inspect(@runtime.value_to_string(cond_value), content="4")
-  let case_value =
-    eval_program(
-      "(case 2 ((1) => (lambda (x) (+ x 10))) ((2) => (lambda (x) (+ x 1))) (else 0))",
-    )
+  let case_value = eval_program(
+    "(case 2 ((1) => (lambda (x) (+ x 10))) ((2) => (lambda (x) (+ x 1))) (else 0))",
+  )
   inspect(@runtime.value_to_string(case_value), content="3")
 }
 
 ///|
 test "cond and case invalid arrow" {
-  let cond_err = try? eval_program("(cond ((+ 1 2) => (lambda (x) x) 4) (else 0))")
+  let cond_err = try? eval_program(
+    "(cond ((+ 1 2) => (lambda (x) x) 4) (else 0))",
+  )
   inspect(cond_err is Err(_), content="true")
-  let case_err =
-    try? eval_program("(case 2 ((2) => (lambda (x) x) 1) (else 0))")
+  let case_err = try? eval_program(
+    "(case 2 ((2) => (lambda (x) x) 1) (else 0))",
+  )
   inspect(case_err is Err(_), content="true")
 }
 
@@ -936,20 +925,21 @@ test "cond-expand error paths" {
 
 ///|
 test "cond-expand feature coverage" {
-  let and_case =
-    eval_program("(cond-expand ((and r6rs ieee-float) 1) (else 2))")
+  let and_case = eval_program(
+    "(cond-expand ((and r6rs ieee-float) 1) (else 2))",
+  )
   inspect(@runtime.value_to_string(and_case), content="1")
-  let or_case =
-    eval_program("(cond-expand ((or exact-closed r6rs) 3) (else 4))")
+  let or_case = eval_program(
+    "(cond-expand ((or exact-closed r6rs) 3) (else 4))",
+  )
   inspect(@runtime.value_to_string(or_case), content="3")
-  let not_case =
-    eval_program("(cond-expand ((not exact-closed) 5) (else 6))")
+  let not_case = eval_program("(cond-expand ((not exact-closed) 5) (else 6))")
   inspect(@runtime.value_to_string(not_case), content="5")
-  let lib_case =
-    eval_program("(cond-expand ((library (rnrs base)) 7) (else 8))")
+  let lib_case = eval_program(
+    "(cond-expand ((library (rnrs base)) 7) (else 8))",
+  )
   inspect(@runtime.value_to_string(lib_case), content="7")
-  let and_empty =
-    eval_program("(cond-expand ((and) 9) (else 0))")
+  let and_empty = eval_program("(cond-expand ((and) 9) (else 0))")
   inspect(@runtime.value_to_string(and_empty), content="9")
   let err_not = try? eval_program("(cond-expand ((not) 1) (else 2))")
   inspect(err_not is Err(_), content="true")
@@ -1011,19 +1001,17 @@ test "library version refs and export rename" {
 
 ///|
 test "guard invalid arrow" {
-  let guard_err =
-    try? eval_program(
-      "(guard (ex ((begin ex) => (lambda (v) v) 1) (else 'no)) (raise 'ok))",
-    )
+  let guard_err = try? eval_program(
+    "(guard (ex ((begin ex) => (lambda (v) v) 1) (else 'no)) (raise 'ok))",
+  )
   inspect(guard_err is Err(_), content="true")
 }
 
 ///|
 test "parameterize multi bindings" {
-  let value =
-    eval_program(
-      "(begin (define p1 (make-parameter 1 (lambda (x) (+ x 1)))) (define p2 (make-parameter 10)) (list (p1) (p2) (parameterize ((p1 4) (p2 20)) (list (p1) (p2))) (p1) (p2)))",
-    )
+  let value = eval_program(
+    "(begin (define p1 (make-parameter 1 (lambda (x) (+ x 1)))) (define p2 (make-parameter 10)) (list (p1) (p2) (parameterize ((p1 4) (p2 20)) (list (p1) (p2))) (p1) (p2)))",
+  )
   inspect(@runtime.value_to_string(value), content="(2 10 (5 20) 2 10)")
 }
 
@@ -1035,7 +1023,9 @@ test "parameterize non-parameter error" {
 
 ///|
 test "parameter arity error" {
-  let result = try? eval_program("(begin (define p (make-parameter 1)) (p 1 2))")
+  let result = try? eval_program(
+    "(begin (define p (make-parameter 1)) (p 1 2))",
+  )
   inspect(result is Err(_), content="true")
 }
 
@@ -1047,10 +1037,9 @@ test "eval environment error" {
 
 ///|
 test "record protocol returns non-procedure" {
-  let result =
-    try? eval_program(
-      "(begin (define-record-type foo (make-foo a) foo? (a foo-a) (protocol (lambda (p) 1))) (make-foo 1))",
-    )
+  let result = try? eval_program(
+    "(begin (define-record-type foo (make-foo a) foo? (a foo-a) (protocol (lambda (p) 1))) (make-foo 1))",
+  )
   inspect(result is Err(_), content="true")
 }
 
@@ -1100,24 +1089,21 @@ test "record descriptor mismatch errors" {
 
 ///|
 test "record datum conversion helpers" {
-  let record_err =
-    try? eval_program(
-      "(begin (define-record-type rec (make-rec x) rec? (x rec-x)) (define r (make-rec 1)) (list->string r))",
-    )
+  let record_err = try? eval_program(
+    "(begin (define-record-type rec (make-rec x) rec? (x rec-x)) (define r (make-rec 1)) (list->string r))",
+  )
   inspect(record_err is Err(_), content="true")
-  let record_keys =
-    eval_program(
-      "(begin (define-record-type rec (make-rec x) rec? (x rec-x)) (define r (make-rec 1)) (define ht (make-eq-hashtable)) (hashtable-set! ht r 1) (vector-length (hashtable-keys ht)))",
-    )
+  let record_keys = eval_program(
+    "(begin (define-record-type rec (make-rec x) rec? (x rec-x)) (define r (make-rec 1)) (define ht (make-eq-hashtable)) (hashtable-set! ht r 1) (vector-length (hashtable-keys ht)))",
+  )
   inspect(@runtime.value_to_string(record_keys), content="1")
 }
 
 ///|
 test "condition component type error" {
-  let record_err =
-    try? eval_program(
-      "(begin (define-record-type foo (make-foo a) foo? (a foo-a)) (simple-conditions (make-foo 1)))",
-    )
+  let record_err = try? eval_program(
+    "(begin (define-record-type foo (make-foo a) foo? (a foo-a)) (simple-conditions (make-foo 1)))",
+  )
   inspect(record_err is Err(_), content="true")
   let value_err = try? eval_program("(simple-conditions 1)")
   inspect(value_err is Err(_), content="true")
@@ -1125,10 +1111,9 @@ test "condition component type error" {
 
 ///|
 test "hashtable custom equivalence scanning" {
-  let value =
-    eval_program(
-      "(begin (define ht (make-hashtable (lambda (x) 0) (lambda (a b) (eq? a b)))) (hashtable-set! ht 'a 1) (hashtable-set! ht 'b 2) (hashtable-ref ht 'b 0))",
-    )
+  let value = eval_program(
+    "(begin (define ht (make-hashtable (lambda (x) 0) (lambda (a b) (eq? a b)))) (hashtable-set! ht 'a 1) (hashtable-set! ht 'b 2) (hashtable-ref ht 'b 0))",
+  )
   inspect(@runtime.value_to_string(value), content="2")
 }
 
@@ -1165,20 +1150,17 @@ test "hashtable primitives" {
 
 ///|
 test "hashtable error paths" {
-  let err_clear =
-    try? eval_program(
-      "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-clear! cp))",
-    )
+  let err_clear = try? eval_program(
+    "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-clear! cp))",
+  )
   inspect(err_clear is Err(_), content="true")
-  let err_clear_size =
-    try? eval_program(
-      "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-clear! cp 1))",
-    )
+  let err_clear_size = try? eval_program(
+    "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-clear! cp 1))",
+  )
   inspect(err_clear_size is Err(_), content="true")
-  let err_update =
-    try? eval_program(
-      "(begin (define ht (make-eq-hashtable)) (hashtable-update! ht 'a 1 0))",
-    )
+  let err_update = try? eval_program(
+    "(begin (define ht (make-eq-hashtable)) (hashtable-update! ht 'a 1 0))",
+  )
   inspect(err_update is Err(_), content="true")
 }
 
@@ -1372,24 +1354,24 @@ test "flonum primitives" {
     #|      (fl=? (fl* 2.0 3.0) 6.0)
     #|      (fl=? (fl- 5.0 2.0) 3.0)
     #|      (fl=? (fl/ 6.0 2.0) 3.0)
-      #|      (fl=? (flabs -3.0) 3.0)
-      #|      (fl=? (flfloor 2.9) 2.0)
-      #|      (fl=? (flceiling 2.1) 3.0)
-      #|      (fl=? (fltruncate -2.9) -2.0)
-      #|      (fl=? (flround 2.4) 2.0)
-      #|      (fl=? (flexp 0.0) 1.0)
-      #|      (fl=? (fllog 1.0) 0.0)
-      #|      (fl=? (flsin 0.0) 0.0)
-      #|      (fl=? (flcos 0.0) 1.0)
-      #|      (fl=? (fltan 0.0) 0.0)
-      #|      (fl=? (flasin 0.0) 0.0)
-      #|      (fl=? (flacos 1.0) 0.0)
-      #|      (fl=? (flatan 0.0) 0.0)
-      #|      (fl=? (flatan 0.0 1.0) 0.0)
-      #|      (fl=? num 5.0)
-      #|      (fl=? den 2.0)
-      #|      (fl=? (flsqrt 4.0) 2.0)
-      #|      (fl=? (flexpt 2.0 3.0) 8.0)
+    #|      (fl=? (flabs -3.0) 3.0)
+    #|      (fl=? (flfloor 2.9) 2.0)
+    #|      (fl=? (flceiling 2.1) 3.0)
+    #|      (fl=? (fltruncate -2.9) -2.0)
+    #|      (fl=? (flround 2.4) 2.0)
+    #|      (fl=? (flexp 0.0) 1.0)
+    #|      (fl=? (fllog 1.0) 0.0)
+    #|      (fl=? (flsin 0.0) 0.0)
+    #|      (fl=? (flcos 0.0) 1.0)
+    #|      (fl=? (fltan 0.0) 0.0)
+    #|      (fl=? (flasin 0.0) 0.0)
+    #|      (fl=? (flacos 1.0) 0.0)
+    #|      (fl=? (flatan 0.0) 0.0)
+    #|      (fl=? (flatan 0.0 1.0) 0.0)
+    #|      (fl=? num 5.0)
+    #|      (fl=? den 2.0)
+    #|      (fl=? (flsqrt 4.0) 2.0)
+    #|      (fl=? (flexpt 2.0 3.0) 8.0)
     #|      (fl=? from-fx 3.0)
     #|      (fl=? from-real 3.0)
     #|      divmod-ok
@@ -1562,8 +1544,9 @@ test "numeric edge cases" {
   inspect(err_magnitude is Err(_), content="true")
   let err_angle = try? eval_program("(angle)")
   inspect(err_angle is Err(_), content="true")
-  let err_num_str_complex =
-    try? eval_program("(number->string (make-rectangular 1 2) 16)")
+  let err_num_str_complex = try? eval_program(
+    "(number->string (make-rectangular 1 2) 16)",
+  )
   inspect(err_num_str_complex is Err(_), content="true")
   let err_inexact_type = try? eval_program("(inexact->exact 'a)")
   inspect(err_inexact_type is Err(_), content="true")
@@ -1575,20 +1558,21 @@ test "numeric edge cases" {
   inspect(@runtime.value_to_string(big_num), content="\"12345678901234567890\"")
   let exact_float = eval_program("(inexact? (exact->inexact 1.0))")
   inspect(@runtime.value_to_string(exact_float), content="#t")
-  let exact_complex =
-    eval_program("(complex? (exact->inexact (make-rectangular 1 2)))")
+  let exact_complex = eval_program(
+    "(complex? (exact->inexact (make-rectangular 1 2)))",
+  )
   inspect(@runtime.value_to_string(exact_complex), content="#t")
   let inexact_int = eval_program("(integer? (inexact->exact 1))")
   inspect(@runtime.value_to_string(inexact_int), content="#t")
-  let inexact_big =
-    eval_program("(integer? (inexact->exact 12345678901234567890))")
+  let inexact_big = eval_program(
+    "(integer? (inexact->exact 12345678901234567890))",
+  )
   inspect(@runtime.value_to_string(inexact_big), content="#t")
   let inexact_rat = eval_program("(rational? (inexact->exact 1/2))")
   inspect(@runtime.value_to_string(inexact_rat), content="#t")
-  let inexact_bigrat =
-    eval_program(
-      "(rational? (inexact->exact 12345678901234567890/12345678901234567891))",
-    )
+  let inexact_bigrat = eval_program(
+    "(rational? (inexact->exact 12345678901234567890/12345678901234567891))",
+  )
   inspect(@runtime.value_to_string(inexact_bigrat), content="#t")
 }
 
@@ -1638,7 +1622,10 @@ test "expt branch coverage extra" {
     #|        (fl=? (expt -1.0 odd-exp) -1.0)
     #|        (complex? (expt (make-rectangular 1 1) big-exp))))
   let value = eval_program(program)
-  inspect(@runtime.value_to_string(value), content="(#t #t #t #t #t #t #t #t #t)")
+  inspect(
+    @runtime.value_to_string(value),
+    content="(#t #t #t #t #t #t #t #t #t)",
+  )
 }
 
 ///|
@@ -1666,9 +1653,13 @@ test "syntax and quasiquote errors" {
   inspect(err_quasi is Err(_), content="true")
   let err_quasisyn = try? eval_program("(quasisyntax 1 2)")
   inspect(err_quasisyn is Err(_), content="true")
-  let err_unquote_splice = try? eval_program("(quasiquote (unquote-splicing 1))")
+  let err_unquote_splice = try? eval_program(
+    "(quasiquote (unquote-splicing 1))",
+  )
   inspect(err_unquote_splice is Err(_), content="true")
-  let err_unsyntax_splice = try? eval_program("(quasisyntax (unsyntax-splicing 1))")
+  let err_unsyntax_splice = try? eval_program(
+    "(quasisyntax (unsyntax-splicing 1))",
+  )
   inspect(err_unsyntax_splice is Err(_), content="true")
   let err_syntax_case = try? eval_program("(syntax-case 1 ())")
   inspect(err_syntax_case is Err(_), content="true")
@@ -1684,13 +1675,13 @@ test "quasiquote nesting" {
 
 ///|
 test "quasisyntax nesting and splicing" {
-  let nested =
-    eval_program("(syntax->datum (quasisyntax (quasisyntax #(1 2))))")
+  let nested = eval_program(
+    "(syntax->datum (quasisyntax (quasisyntax #(1 2))))",
+  )
   inspect(@runtime.value_to_string(nested), content="(quasisyntax #(1 2))")
-  let splice =
-    eval_program(
-      "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
-    )
+  let splice = eval_program(
+    "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
+  )
   inspect(@runtime.value_to_string(splice), content="(1 2 3)")
 }
 
@@ -1704,11 +1695,11 @@ test "lambda and case-lambda errors" {
   inspect(err_case_empty is Err(_), content="true")
   let err_case_clause = try? eval_program("(case-lambda (1))")
   inspect(err_case_clause is Err(_), content="true")
-  let err_case_arity =
-    try? eval_program("((case-lambda ((x) x) ((x y) y)) 1 2 3)")
+  let err_case_arity = try? eval_program(
+    "((case-lambda ((x) x) ((x y) y)) 1 2 3)",
+  )
   inspect(err_case_arity is Err(_), content="true")
-  let err_case_single =
-    try? eval_program("((case-lambda ((x y) x)) 1)")
+  let err_case_single = try? eval_program("((case-lambda ((x y) x)) 1)")
   inspect(err_case_single is Err(_), content="true")
   let err_lambda_rest = try? eval_program("((lambda (x . rest) x))")
   inspect(err_lambda_rest is Err(_), content="true")
@@ -1730,10 +1721,9 @@ test "binding and parameterize errors" {
   inspect(err_param_bind is Err(_), content="true")
   let err_let_syntax = try? eval_program("(let-syntax ((x 1)) x)")
   inspect(err_let_syntax is Err(_), content="true")
-  let err_bool =
-    try? eval_program(
-      "(define-record-type point (make-point x) point? (x point-x) (sealed 1))",
-    )
+  let err_bool = try? eval_program(
+    "(define-record-type point (make-point x) point? (x point-x) (sealed 1))",
+  )
   inspect(err_bool is Err(_), content="true")
 }
 
@@ -1751,19 +1741,17 @@ test "import set error cases" {
   inspect(err_for is Err(_), content="true")
   let err_meta = try? eval_program("(import (for (rnrs base) (meta -1)))")
   inspect(err_meta is Err(_), content="true")
-  let err_meta_shape =
-    try? eval_program("(import (for (rnrs base) (meta a)))")
+  let err_meta_shape = try? eval_program("(import (for (rnrs base) (meta a)))")
   inspect(err_meta_shape is Err(_), content="true")
   let err_meta_item = try? eval_program("(import (for (rnrs base) 1))")
   inspect(err_meta_item is Err(_), content="true")
-  let err_unknown =
-    try? eval_program("(import (rename (rnrs base) (nope nope2)))")
+  let err_unknown = try? eval_program(
+    "(import (rename (rnrs base) (nope nope2)))",
+  )
   inspect(err_unknown is Err(_), content="true")
-  let err_bad_rename =
-    try? eval_program("(import (rename (rnrs base) nope))")
+  let err_bad_rename = try? eval_program("(import (rename (rnrs base) nope))")
   inspect(err_bad_rename is Err(_), content="true")
-  let ok_meta =
-    eval_program("(begin (import (for (rnrs base) (meta 0))) #t)")
+  let ok_meta = eval_program("(begin (import (for (rnrs base) (meta 0))) #t)")
   inspect(@runtime.value_to_string(ok_meta), content="#t")
 }
 
@@ -1771,29 +1759,31 @@ test "import set error cases" {
 test "exception primitives" {
   let err_undefined = try? eval_program("(undefined-violation 'who \"msg\")")
   inspect(err_undefined is Err(_), content="true")
-  let err_syntax_violation =
-    try? eval_program("(syntax-violation 'who \"msg\" 'form)")
+  let err_syntax_violation = try? eval_program(
+    "(syntax-violation 'who \"msg\" 'form)",
+  )
   inspect(err_syntax_violation is Err(_), content="true")
-  let err_syntax_violation2 =
-    try? eval_program("(syntax-violation 'who \"msg\" 'form 'subform 1)")
+  let err_syntax_violation2 = try? eval_program(
+    "(syntax-violation 'who \"msg\" 'form 'subform 1)",
+  )
   inspect(err_syntax_violation2 is Err(_), content="true")
   let err_error = try? eval_program("(error 'who \"msg\" 'irritant)")
   inspect(err_error is Err(_), content="true")
-  let err_assertion =
-    try? eval_program("(assertion-violation 'who \"msg\" 'irritant)")
+  let err_assertion = try? eval_program(
+    "(assertion-violation 'who \"msg\" 'irritant)",
+  )
   inspect(err_assertion is Err(_), content="true")
-  let err_impl =
-    try? eval_program("(implementation-restriction-violation 'who \"msg\" 'irritant)")
+  let err_impl = try? eval_program(
+    "(implementation-restriction-violation 'who \"msg\" 'irritant)",
+  )
   inspect(err_impl is Err(_), content="true")
-  let err_raise =
-    try? eval_program(
-      "(with-exception-handler (lambda (c) 0) (lambda () (raise 'boom)))",
-    )
+  let err_raise = try? eval_program(
+    "(with-exception-handler (lambda (c) 0) (lambda () (raise 'boom)))",
+  )
   inspect(err_raise is Err(_), content="true")
-  let cont =
-    eval_program(
-      "(with-exception-handler (lambda (c) 5) (lambda () (raise-continuable 'boom)))",
-    )
+  let cont = eval_program(
+    "(with-exception-handler (lambda (c) 5) (lambda () (raise-continuable 'boom)))",
+  )
   inspect(@runtime.value_to_string(cont), content="5")
   let err_uncaught = try? eval_program("(raise 'boom)")
   inspect(err_uncaught is Err(_), content="true")
@@ -1805,8 +1795,9 @@ test "exception primitives" {
 
 ///|
 test "primitive arity mismatch extras" {
-  let err_call_with_values =
-    try? eval_program("(call-with-values (lambda () 1))")
+  let err_call_with_values = try? eval_program(
+    "(call-with-values (lambda () 1))",
+  )
   inspect(err_call_with_values is Err(_), content="true")
   let err_record_ctor = try? eval_program("(record-constructor)")
   inspect(err_record_ctor is Err(_), content="true")
@@ -1818,13 +1809,13 @@ test "primitive arity mismatch extras" {
   inspect(err_make_promise is Err(_), content="true")
   let err_force = try? eval_program("(force 1)")
   inspect(err_force is Err(_), content="true")
-  let err_with_handler =
-    try? eval_program("(with-exception-handler (lambda (e) e))")
+  let err_with_handler = try? eval_program(
+    "(with-exception-handler (lambda (e) e))",
+  )
   inspect(err_with_handler is Err(_), content="true")
-  let err_dynamic_wind =
-    try? eval_program(
-      "(dynamic-wind (lambda () 1) (lambda () 2))",
-    )
+  let err_dynamic_wind = try? eval_program(
+    "(dynamic-wind (lambda () 1) (lambda () 2))",
+  )
   inspect(err_dynamic_wind is Err(_), content="true")
   let err_eval = try? eval_program("(eval '1)")
   inspect(err_eval is Err(_), content="true")
@@ -1832,13 +1823,15 @@ test "primitive arity mismatch extras" {
   inspect(err_error is Err(_), content="true")
   let err_assert = try? eval_program("(assertion-violation 'who)")
   inspect(err_assert is Err(_), content="true")
-  let err_impl =
-    try? eval_program("(implementation-restriction-violation 'who)")
+  let err_impl = try? eval_program(
+    "(implementation-restriction-violation 'who)",
+  )
   inspect(err_impl is Err(_), content="true")
   let err_undef = try? eval_program("(undefined-violation 'who)")
   inspect(err_undef is Err(_), content="true")
-  let err_syntax_violation =
-    try? eval_program("(syntax-violation 'who \"msg\")")
+  let err_syntax_violation = try? eval_program(
+    "(syntax-violation 'who \"msg\")",
+  )
   inspect(err_syntax_violation is Err(_), content="true")
 }
 
@@ -1864,32 +1857,29 @@ test "map, apply, and length errors" {
   inspect(err_apply2 is Err(_), content="true")
   let err_proc = try? eval_program("((+ 1 2) 3)")
   inspect(err_proc is Err(_), content="true")
-  let err_vec_len =
-    try? eval_program(
-      "(vector-map (lambda (a b) a) #(1 2) #(3))",
-    )
+  let err_vec_len = try? eval_program(
+    "(vector-map (lambda (a b) a) #(1 2) #(3))",
+  )
   inspect(err_vec_len is Err(_), content="true")
-  let err_vec_for_len =
-    try? eval_program(
-      "(vector-for-each (lambda (a b) #t) #(1 2) #(3))",
-    )
+  let err_vec_for_len = try? eval_program(
+    "(vector-for-each (lambda (a b) #t) #(1 2) #(3))",
+  )
   inspect(err_vec_for_len is Err(_), content="true")
-  let err_str_len =
-    try? eval_program("(string-map (lambda (a b) a) \"ab\" \"c\")")
+  let err_str_len = try? eval_program(
+    "(string-map (lambda (a b) a) \"ab\" \"c\")",
+  )
   inspect(err_str_len is Err(_), content="true")
-  let err_str_for_len =
-    try? eval_program("(string-for-each (lambda (a b) #t) \"ab\" \"c\")")
+  let err_str_for_len = try? eval_program(
+    "(string-for-each (lambda (a b) #t) \"ab\" \"c\")",
+  )
   inspect(err_str_for_len is Err(_), content="true")
-  let str_map =
-    eval_program("(string-map (lambda (a b) a) \"ab\" \"cd\")")
+  let str_map = eval_program("(string-map (lambda (a b) a) \"ab\" \"cd\")")
   inspect(@runtime.value_to_string(str_map), content="\"ab\"")
-  let str_for =
-    eval_program("(string-for-each (lambda (a b) a) \"ab\" \"cd\")")
+  let str_for = eval_program("(string-for-each (lambda (a b) a) \"ab\" \"cd\")")
   inspect(@runtime.value_to_string(str_for), content="#<void>")
-  let sum =
-    eval_program(
-      "(begin (define xs '(1 2)) (define ys '(3 4)) (define acc 0) (for-each (lambda (a b) (set! acc (+ acc a b))) xs ys) acc)",
-    )
+  let sum = eval_program(
+    "(begin (define xs '(1 2)) (define ys '(3 4)) (define acc 0) (for-each (lambda (a b) (set! acc (+ acc a b))) xs ys) acc)",
+  )
   inspect(@runtime.value_to_string(sum), content="10")
 }
 
@@ -1905,15 +1895,11 @@ test "assoc error cases" {
 
 ///|
 test "parameters and continuations" {
-  let value =
-    eval_program(
-      "(begin (define p (make-parameter 1)) (p 3) (p))",
-    )
+  let value = eval_program("(begin (define p (make-parameter 1)) (p 3) (p))")
   inspect(@runtime.value_to_string(value), content="3")
-  let cont =
-    eval_program(
-      "(call-with-values (lambda () (call/cc (lambda (k) (k 1 2)))) list)",
-    )
+  let cont = eval_program(
+    "(call-with-values (lambda () (call/cc (lambda (k) (k 1 2)))) list)",
+  )
   inspect(@runtime.value_to_string(cont), content="(1 2)")
   let err_callcc = try? eval_program("(call/cc)")
   inspect(err_callcc is Err(_), content="true")
@@ -1921,19 +1907,17 @@ test "parameters and continuations" {
 
 ///|
 test "hashtable immutable update" {
-  let err_update =
-    try? eval_program(
-      "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-update! cp 'a (lambda (x) x) 0))",
-    )
+  let err_update = try? eval_program(
+    "(begin (define ht (make-eq-hashtable)) (define cp (hashtable-copy ht #f)) (hashtable-update! cp 'a (lambda (x) x) 0))",
+  )
   inspect(err_update is Err(_), content="true")
 }
 
 ///|
 test "syntax-case expression and values errors" {
-  let value =
-    eval_program(
-      "(begin (import (rnrs syntax-case)) (syntax-case 'x () ((x) 1) (_ 2)))",
-    )
+  let value = eval_program(
+    "(begin (import (rnrs syntax-case)) (syntax-case 'x () ((x) 1) (_ 2)))",
+  )
   inspect(@runtime.value_to_string(value), content="2")
   let err_multi = try? eval_program("(if (values #t #f) 1 2)")
   inspect(err_multi is Err(_), content="true")
@@ -1941,44 +1925,43 @@ test "syntax-case expression and values errors" {
 
 ///|
 test "parameterize multiple bindings" {
-  let value =
-    eval_program(
-      "(begin (define p1 (make-parameter 1)) (define p2 (make-parameter 2)) (parameterize ((p1 10) (p2 20)) (+ (p1) (p2))))",
-    )
+  let value = eval_program(
+    "(begin (define p1 (make-parameter 1)) (define p2 (make-parameter 2)) (parameterize ((p1 10) (p2 20)) (+ (p1) (p2))))",
+  )
   inspect(@runtime.value_to_string(value), content="30")
 }
 
 ///|
 test "nested unquote and unsyntax" {
-  let value =
-    eval_program(
-      "(quasiquote (quasiquote (unquote-splicing (list 1 2))))",
-    )
+  let value = eval_program(
+    "(quasiquote (quasiquote (unquote-splicing (list 1 2))))",
+  )
   inspect(
     @runtime.value_to_string(value),
     content="(quasiquote (unquote-splicing (list 1 2)))",
   )
-  let nested =
-    eval_program(
-      "(syntax->datum (quasisyntax (quasisyntax (unsyntax 1))))",
-    )
-  inspect(@runtime.value_to_string(nested), content="(quasisyntax (unsyntax 1))")
+  let nested = eval_program(
+    "(syntax->datum (quasisyntax (quasisyntax (unsyntax 1))))",
+  )
+  inspect(
+    @runtime.value_to_string(nested),
+    content="(quasisyntax (unsyntax 1))",
+  )
 }
 
 ///|
 test "numeric extra branches" {
-  let sqrt_big =
-    eval_program(
-      "(call-with-values (lambda () (exact-integer-sqrt 100000000000000000000)) list)",
-    )
+  let sqrt_big = eval_program(
+    "(call-with-values (lambda () (exact-integer-sqrt 100000000000000000000)) list)",
+  )
   inspect(@runtime.value_to_string(sqrt_big), content="(10000000000 0)")
-  let sqrt_big_rem =
-    eval_program(
-      "(call-with-values (lambda () (exact-integer-sqrt 100000000000000000001)) list)",
-    )
+  let sqrt_big_rem = eval_program(
+    "(call-with-values (lambda () (exact-integer-sqrt 100000000000000000001)) list)",
+  )
   inspect(@runtime.value_to_string(sqrt_big_rem), content="(10000000000 1)")
-  let err_sqrt_big =
-    try? eval_program("(exact-integer-sqrt -100000000000000000000)")
+  let err_sqrt_big = try? eval_program(
+    "(exact-integer-sqrt -100000000000000000000)",
+  )
   inspect(err_sqrt_big is Err(_), content="true")
   let err_sqrt_type = try? eval_program("(exact-integer-sqrt 1.0)")
   inspect(err_sqrt_type is Err(_), content="true")
@@ -2006,10 +1989,9 @@ test "numeric extra branches" {
   inspect(@runtime.value_to_string(abs_big), content="100000000000000000000")
   let abs_rat = eval_program("(abs -3/2)")
   inspect(@runtime.value_to_string(abs_rat), content="3/2")
-  let abs_bigrat =
-    eval_program(
-      "(abs -100000000000000000000/100000000000000000001)",
-    )
+  let abs_bigrat = eval_program(
+    "(abs -100000000000000000000/100000000000000000001)",
+  )
   inspect(
     @runtime.value_to_string(abs_bigrat),
     content="100000000000000000000/100000000000000000001",
@@ -2071,10 +2053,9 @@ test "numeric rounding exact branches" {
 
 ///|
 test "numeric rounding edge cases" {
-  let value =
-    eval_program(
-      "(list (floor 4/2) (floor -3/2) (ceiling 4/2) (ceiling -3/2) (round 4/2) (round 5/3) (round -5/3))",
-    )
+  let value = eval_program(
+    "(list (floor 4/2) (floor -3/2) (ceiling 4/2) (ceiling -3/2) (round 4/2) (round 5/3) (round -5/3))",
+  )
   inspect(@runtime.value_to_string(value), content="(2 -2 2 -1 2 2 -2)")
 }
 
@@ -2137,8 +2118,9 @@ test "index coercion and exact integer conversions" {
   inspect(@runtime.value_to_string(ok_vec), content="20")
   let ok_bit = eval_program("(bitwise-and 7 (make-rectangular 1 0))")
   inspect(@runtime.value_to_string(ok_bit), content="1")
-  let err_complex =
-    try? eval_program("(vector-ref #(1 2) (make-rectangular 1 2))")
+  let err_complex = try? eval_program(
+    "(vector-ref #(1 2) (make-rectangular 1 2))",
+  )
   inspect(err_complex is Err(_), content="true")
   let err_proc = try? eval_program("(vector-ref #(1) +)")
   inspect(err_proc is Err(_), content="true")
@@ -2319,33 +2301,29 @@ test "eqv? descriptors and ports" {
 
 ///|
 test "identifier scope mismatch" {
-  let value =
-    eval_program(
-      "(begin (define a (datum->syntax #f 'x)) (define b (syntax x)) (list (free-identifier=? a b) (bound-identifier=? a b)))",
-    )
+  let value = eval_program(
+    "(begin (define a (datum->syntax #f 'x)) (define b (syntax x)) (list (free-identifier=? a b) (bound-identifier=? a b)))",
+  )
   inspect(@runtime.value_to_string(value), content="(#f #f)")
 }
 
 ///|
 test "datum->syntax gensym stripping" {
-  let value =
-    eval_program(
-      "(begin (define s (datum->syntax (syntax foo__sg123__sg4) 'foo)) (symbol->string (syntax->datum s)))",
-    )
+  let value = eval_program(
+    "(begin (define s (datum->syntax (syntax foo__sg123__sg4) 'foo)) (symbol->string (syntax->datum s)))",
+  )
   inspect(@runtime.value_to_string(value), content="\"foo\"")
-  let plain =
-    eval_program(
-      "(begin (define s (datum->syntax (syntax foo) 'foo)) (symbol->string (syntax->datum s)))",
-    )
+  let plain = eval_program(
+    "(begin (define s (datum->syntax (syntax foo) 'foo)) (symbol->string (syntax->datum s)))",
+  )
   inspect(@runtime.value_to_string(plain), content="\"foo\"")
 }
 
 ///|
 test "datum->syntax gensym suffix handling" {
-  let value =
-    eval_program(
-      "(begin (define tmpl (syntax foo__sg1__sg2)) (define res1 (datum->syntax tmpl 'foo)) (define res2 (datum->syntax tmpl 'bar)) (define digits (datum->syntax #f (string->symbol \"12345\"))) (define res3 (datum->syntax digits 'foo)) (define res4 (datum->syntax (syntax __sg123) '__sg123)) (list (symbol->string (syntax->datum res1)) (symbol->string (syntax->datum res2)) (symbol->string (syntax->datum res3)) (symbol->string (syntax->datum res4))))",
-    )
+  let value = eval_program(
+    "(begin (define tmpl (syntax foo__sg1__sg2)) (define res1 (datum->syntax tmpl 'foo)) (define res2 (datum->syntax tmpl 'bar)) (define digits (datum->syntax #f (string->symbol \"12345\"))) (define res3 (datum->syntax digits 'foo)) (define res4 (datum->syntax (syntax __sg123) '__sg123)) (list (symbol->string (syntax->datum res1)) (symbol->string (syntax->datum res2)) (symbol->string (syntax->datum res3)) (symbol->string (syntax->datum res4))))",
+  )
   inspect(
     @runtime.value_to_string(value),
     content="(\"foo\" \"bar\" \"foo\" \"__sg123\")",
@@ -2395,25 +2373,21 @@ test "flonum edge cases" {
     @runtime.value_to_string(value),
     content="(#t #t #t #t #t #t #f #f #f #f #f #t #t)",
   )
-  let err_max =
-    try? eval_program(
-      "(begin (import (rnrs arithmetic flonums)) (flmax))",
-    )
+  let err_max = try? eval_program(
+    "(begin (import (rnrs arithmetic flonums)) (flmax))",
+  )
   inspect(err_max is Err(_), content="true")
-  let err_min =
-    try? eval_program(
-      "(begin (import (rnrs arithmetic flonums)) (flmin))",
-    )
+  let err_min = try? eval_program(
+    "(begin (import (rnrs arithmetic flonums)) (flmin))",
+  )
   inspect(err_min is Err(_), content="true")
-  let err_sub =
-    try? eval_program(
-      "(begin (import (rnrs arithmetic flonums)) (fl-))",
-    )
+  let err_sub = try? eval_program(
+    "(begin (import (rnrs arithmetic flonums)) (fl-))",
+  )
   inspect(err_sub is Err(_), content="true")
-  let err_div =
-    try? eval_program(
-      "(begin (import (rnrs arithmetic flonums)) (fl/))",
-    )
+  let err_div = try? eval_program(
+    "(begin (import (rnrs arithmetic flonums)) (fl/))",
+  )
   inspect(err_div is Err(_), content="true")
 }
 
@@ -2462,10 +2436,9 @@ test "hashtable sizing and arity" {
 
 ///|
 test "hashtable immutable mutation" {
-  let immut_err =
-    try? eval_program(
-      "(begin (define ht (hashtable-copy (make-eq-hashtable) #f)) (hashtable-set! ht 'a 1))",
-    )
+  let immut_err = try? eval_program(
+    "(begin (define ht (hashtable-copy (make-eq-hashtable) #f)) (hashtable-set! ht 'a 1))",
+  )
   inspect(immut_err is Err(_), content="true")
 }
 
@@ -2506,37 +2479,31 @@ test "record and condition error paths" {
   inspect(name_arity is Err(_), content="true")
   let field_arity = try? eval_program("(record-type-field-mutable?)")
   inspect(field_arity is Err(_), content="true")
-  let mut_err =
-    try? eval_program(
-      "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#((immutable x)))) (record-mutator rtd 0))",
-    )
+  let mut_err = try? eval_program(
+    "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#((immutable x)))) (record-mutator rtd 0))",
+  )
   inspect(mut_err is Err(_), content="true")
-  let uid_err =
-    try? eval_program(
-      "(make-record-type-descriptor 'pt #f 1 #f #f '#())",
-    )
+  let uid_err = try? eval_program(
+    "(make-record-type-descriptor 'pt #f 1 #f #f '#())",
+  )
   inspect(uid_err is Err(_), content="true")
-  let protocol_err =
-    try? eval_program(
-      "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#())) (make-record-constructor-descriptor rtd #f 1))",
-    )
+  let protocol_err = try? eval_program(
+    "(begin (define rtd (make-record-type-descriptor 'pt #f #f #f #f '#())) (make-record-constructor-descriptor rtd #f 1))",
+  )
   inspect(protocol_err is Err(_), content="true")
   let cond_err = try? eval_program("(condition)")
   inspect(cond_err is Err(_), content="true")
-  let acc_err =
-    try? eval_program(
-      "(begin (define-condition-type &c1 &condition make-c1 c1? (x c1-x)) (define-condition-type &c2 &condition make-c2 c2? (y c2-y)) (define acc (record-accessor (record-rtd (make-c2 1)) 0)) (condition-accessor (record-rtd (make-c1 1)) acc))",
-    )
+  let acc_err = try? eval_program(
+    "(begin (define-condition-type &c1 &condition make-c1 c1? (x c1-x)) (define-condition-type &c2 &condition make-c2 c2? (y c2-y)) (define acc (record-accessor (record-rtd (make-c2 1)) 0)) (condition-accessor (record-rtd (make-c1 1)) acc))",
+  )
   inspect(acc_err is Err(_), content="true")
-  let pred_err =
-    try? eval_program(
-      "(condition-predicate (make-record-type-descriptor 'pt #f #f #f #f '#((mutable x))))",
-    )
+  let pred_err = try? eval_program(
+    "(condition-predicate (make-record-type-descriptor 'pt #f #f #f #f '#((mutable x))))",
+  )
   inspect(pred_err is Err(_), content="true")
-  let acc_type_err =
-    try? eval_program(
-      "(begin (define-condition-type &c &condition make-c c? (x c-x)) (condition-accessor (record-rtd (make-c 1)) (lambda (x) x)))",
-    )
+  let acc_type_err = try? eval_program(
+    "(begin (define-condition-type &c &condition make-c c? (x c-x)) (condition-accessor (record-rtd (make-c 1)) (lambda (x) x)))",
+  )
   inspect(acc_type_err is Err(_), content="true")
 }
 
@@ -2572,14 +2539,18 @@ test "define-record-type option variants" {
 test "define-record-type error cases" {
   let expect_err = (expr : String) => {
     let err = try? eval_program(expr)
-    guard err is Err(_) else {
-      fail(expr)
-    }
+    guard err is Err(_) else { fail(expr) }
   }
   expect_err("(define-record-type r () r?)")
-  expect_err("(define-record-type r (make-r a) r? (parent p) (parent q) (a r-a))")
-  expect_err("(define-record-type r (make-r a) r? (protocol (lambda (p) p)) (protocol (lambda (p) p)) (a r-a))")
-  expect_err("(define-record-type r (make-r a) r? (nongenerative uid) (nongenerative uid) (a r-a))")
+  expect_err(
+    "(define-record-type r (make-r a) r? (parent p) (parent q) (a r-a))",
+  )
+  expect_err(
+    "(define-record-type r (make-r a) r? (protocol (lambda (p) p)) (protocol (lambda (p) p)) (a r-a))",
+  )
+  expect_err(
+    "(define-record-type r (make-r a) r? (nongenerative uid) (nongenerative uid) (a r-a))",
+  )
   expect_err("(define-record-type r (make-r a) r? (parent unknown) (a r-a))")
   expect_err("(define-record-type r (make-r a) r? (a))")
   expect_err("(define-record-type r (make-r a b) r? (a r-a))")
@@ -2611,9 +2582,7 @@ test "define-record-type error cases" {
 test "define-condition-type error cases" {
   let expect_err = (expr : String) => {
     let err = try? eval_program(expr)
-    guard err is Err(_) else {
-      fail(expr)
-    }
+    guard err is Err(_) else { fail(expr) }
   }
   expect_err("(define-condition-type)")
   expect_err("(define-condition-type &c &missing make-c c? (x c-x))")
@@ -2638,23 +2607,27 @@ test "define-condition-type error cases" {
 
 ///|
 test "macro invalid syntax" {
-  let ok_id =
-    eval_program("(begin (define-syntax const (identifier-syntax 42)) const)")
+  let ok_id = eval_program(
+    "(begin (define-syntax const (identifier-syntax 42)) const)",
+  )
   inspect(@runtime.value_to_string(ok_id), content="42")
   let err_rules = try? eval_program("(define-syntax bad (syntax-rules ()))")
   inspect(err_rules is Err(_), content="true")
-  let err_rules_clause =
-    try? eval_program("(define-syntax bad (syntax-rules () (x)))")
+  let err_rules_clause = try? eval_program(
+    "(define-syntax bad (syntax-rules () (x)))",
+  )
   inspect(err_rules_clause is Err(_), content="true")
-  let err_ident_empty = try? eval_program("(define-syntax bad (identifier-syntax))")
+  let err_ident_empty = try? eval_program(
+    "(define-syntax bad (identifier-syntax))",
+  )
   inspect(err_ident_empty is Err(_), content="true")
-  let err_ident_rule =
-    try? eval_program("(define-syntax bad (identifier-syntax (x) (y)))")
+  let err_ident_rule = try? eval_program(
+    "(define-syntax bad (identifier-syntax (x) (y)))",
+  )
   inspect(err_ident_rule is Err(_), content="true")
-  let err_case_clause =
-    try? eval_program(
-      "(define-syntax bad (lambda (stx) (syntax-case stx () ((_) 1 2 3))))",
-    )
+  let err_case_clause = try? eval_program(
+    "(define-syntax bad (lambda (stx) (syntax-case stx () ((_) 1 2 3))))",
+  )
   inspect(err_case_clause is Err(_), content="true")
 }
 
@@ -2705,10 +2678,9 @@ test "numeric helper error cases" {
 
 ///|
 test "numeric complex branches" {
-  let complex_flags =
-    eval_program(
-      "(list (complex? (sin (make-rectangular 1 1))) (complex? (cos (make-rectangular 1 1))) (complex? (tan (make-rectangular 1 1))) (complex? (exp (make-rectangular 1 1))) (complex? (log (make-rectangular 1 1))) (complex? (asin (make-rectangular 1 1))) (complex? (acos (make-rectangular 1 1))) (complex? (atan (make-rectangular 1 1))) (complex? (sqrt -1)))",
-    )
+  let complex_flags = eval_program(
+    "(list (complex? (sin (make-rectangular 1 1))) (complex? (cos (make-rectangular 1 1))) (complex? (tan (make-rectangular 1 1))) (complex? (exp (make-rectangular 1 1))) (complex? (log (make-rectangular 1 1))) (complex? (asin (make-rectangular 1 1))) (complex? (acos (make-rectangular 1 1))) (complex? (atan (make-rectangular 1 1))) (complex? (sqrt -1)))",
+  )
   inspect(
     @runtime.value_to_string(complex_flags),
     content="(#t #t #t #t #t #t #t #t #t)",
@@ -2857,9 +2829,7 @@ test "datum->syntax vector and complex" {
 test "macro invalid forms" {
   let expect_err = (expr : String) => {
     let err = try? eval_program(expr)
-    guard err is Err(_) else {
-      fail(expr)
-    }
+    guard err is Err(_) else { fail(expr) }
   }
   expect_err("(define-syntax bad ())")
   expect_err("(define-syntax bad (make-variable-transformer))")
@@ -2903,27 +2873,25 @@ test "procedure macro expansion" {
 
 ///|
 test "with-syntax invalid bindings" {
-  let err =
-    try? eval_program(
-      "(let-syntax ((m (syntax-rules () ((_ ) (with-syntax (x) #'x))))) (m))",
-    )
+  let err = try? eval_program(
+    "(let-syntax ((m (syntax-rules () ((_ ) (with-syntax (x) #'x))))) (m))",
+  )
   inspect(err is Err(_), content="true")
-  let err_match =
-    try? eval_program(
-      "(let-syntax ((m (syntax-rules () ((_ ) (with-syntax (((x y) '(1))) #'x))))) (m))",
-    )
+  let err_match = try? eval_program(
+    "(let-syntax ((m (syntax-rules () ((_ ) (with-syntax (((x y) '(1))) #'x))))) (m))",
+  )
   inspect(err_match is Err(_), content="true")
 }
 
 ///|
 test "quasisyntax splicing with syntax object" {
-  let value =
-    eval_program(
-      "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
-    )
+  let value = eval_program(
+    "(syntax->datum (quasisyntax ((unsyntax-splicing (syntax (1 2))) 3)))",
+  )
   inspect(@runtime.value_to_string(value), content="(1 2 3)")
-  let splice_err =
-    try? eval_program("(quasisyntax (unsyntax-splicing (syntax (1 2))))")
+  let splice_err = try? eval_program(
+    "(quasisyntax (unsyntax-splicing (syntax (1 2))))",
+  )
   inspect(splice_err is Err(_), content="true")
 }
 
@@ -2974,10 +2942,9 @@ test "macro ellipsis expansion" {
 
 ///|
 test "utf8 multibyte roundtrip" {
-  let roundtrip =
-    eval_program(
-      "(equal? (string->utf8 (utf8->string #vu8(65 194 162 226 130 172 240 144 141 136))) #vu8(65 194 162 226 130 172 240 144 141 136))",
-    )
+  let roundtrip = eval_program(
+    "(equal? (string->utf8 (utf8->string #vu8(65 194 162 226 130 172 240 144 141 136))) #vu8(65 194 162 226 130 172 240 144 141 136))",
+  )
   inspect(@runtime.value_to_string(roundtrip), content="#t")
 }
 
@@ -2985,20 +2952,19 @@ test "utf8 multibyte roundtrip" {
 test "bytevector int refs" {
   let uint_big = eval_program("(bytevector-uint-ref #vu8(1 2 3 4) 0 'big 2)")
   inspect(@runtime.value_to_string(uint_big), content="258")
-  let uint_little =
-    eval_program("(bytevector-uint-ref #vu8(1 2 3 4) 0 'little 2)")
+  let uint_little = eval_program(
+    "(bytevector-uint-ref #vu8(1 2 3 4) 0 'little 2)",
+  )
   inspect(@runtime.value_to_string(uint_little), content="513")
   let sint_neg = eval_program("(bytevector-sint-ref #vu8(255) 0 'big 1)")
   inspect(@runtime.value_to_string(sint_neg), content="-1")
-  let uint_set =
-    eval_program(
-      "(let ((bv (make-bytevector 4 0))) (bytevector-uint-set! bv 0 'big 2 258) bv)",
-    )
+  let uint_set = eval_program(
+    "(let ((bv (make-bytevector 4 0))) (bytevector-uint-set! bv 0 'big 2 258) bv)",
+  )
   inspect(@runtime.value_to_string(uint_set), content="#vu8(1 2 0 0)")
-  let sint_set =
-    eval_program(
-      "(let ((bv (make-bytevector 1 0))) (bytevector-sint-set! bv 0 'big 1 -1) bv)",
-    )
+  let sint_set = eval_program(
+    "(let ((bv (make-bytevector 1 0))) (bytevector-sint-set! bv 0 'big 1 -1) bv)",
+  )
   inspect(@runtime.value_to_string(sint_set), content="#vu8(255)")
 }
 
@@ -3008,8 +2974,7 @@ test "complex exactness predicates" {
   inspect(@runtime.value_to_string(exact_int), content="#t")
   let integer_val = eval_program("(integer? (make-rectangular 3 0))")
   inspect(@runtime.value_to_string(integer_val), content="#t")
-  let rational_val =
-    eval_program("(rational? (make-rectangular 3/2 0))")
+  let rational_val = eval_program("(rational? (make-rectangular 3/2 0))")
   inspect(@runtime.value_to_string(rational_val), content="#t")
 }
 
@@ -3063,11 +3028,13 @@ test "inexact/exact conversions" {
   inspect(@runtime.value_to_string(exact_half), content="1/2")
   let exact_err = try? eval_program("(inexact->exact +inf.0)")
   inspect(exact_err is Err(_), content="true")
-  let inexact_big =
-    eval_program("(flonum? (exact->inexact 9999999999999999999999))")
+  let inexact_big = eval_program(
+    "(flonum? (exact->inexact 9999999999999999999999))",
+  )
   inspect(@runtime.value_to_string(inexact_big), content="#t")
-  let inexact_bigrat =
-    eval_program("(flonum? (exact->inexact 9999999999999999999999/2))")
+  let inexact_bigrat = eval_program(
+    "(flonum? (exact->inexact 9999999999999999999999/2))",
+  )
   inspect(@runtime.value_to_string(inexact_bigrat), content="#t")
 }
 
@@ -3114,10 +3081,9 @@ test "integer division and gcd/lcm bigints" {
 
 ///|
 test "expt bigint paths" {
-  let values =
-    eval_program(
-      "(let ((big 9999999999999999999999)) (list (expt 2 (+ 2 (- big big))) (expt 2 (- (+ big (- big)) 1))))",
-    )
+  let values = eval_program(
+    "(let ((big 9999999999999999999999)) (list (expt 2 (+ 2 (- big big))) (expt 2 (- (+ big (- big)) 1))))",
+  )
   inspect(@runtime.value_to_string(values), content="(4 1/2)")
 }
 
@@ -3152,7 +3118,9 @@ test "magnitude big branches" {
 
 ///|
 test "number->string radix branches" {
-  let ok = eval_program("(list (number->string 1/2 10) (number->string 1.5 10))")
+  let ok = eval_program(
+    "(list (number->string 1/2 10) (number->string 1.5 10))",
+  )
   inspect(@runtime.value_to_string(ok), content="(\"1/2\" \"1.5\")")
   let err = try? eval_program("(number->string 1/2 16)")
   inspect(err is Err(_), content="true")
@@ -3175,8 +3143,9 @@ test "expt rational int exponent branches" {
     @runtime.value_to_string(value),
     content="(2/3 3/2 10000000000000000000001/3 3/10000000000000000000001)",
   )
-  let big_zero_err =
-    try? eval_program("(let ((big 10000000000000000000001)) (expt (- big big) -1))")
+  let big_zero_err = try? eval_program(
+    "(let ((big 10000000000000000000001)) (expt (- big big) -1))",
+  )
   inspect(big_zero_err is Err(_), content="true")
 }
 
@@ -3192,10 +3161,9 @@ test "expt bigint exponent branches" {
     #|        (flonum? (expt 1.0 exp-neg))))
   let value = eval_program(program)
   inspect(@runtime.value_to_string(value), content="(#t #t #t #t)")
-  let zero_err =
-    try? eval_program(
-      "(let ((big 10000000000000000000001)) (expt (- big big) (- (abs big))))",
-    )
+  let zero_err = try? eval_program(
+    "(let ((big 10000000000000000000001)) (expt (- big big) (- (abs big))))",
+  )
   inspect(zero_err is Err(_), content="true")
 }
 
@@ -3213,10 +3181,9 @@ test "fixnum empty and copy bit branches" {
 
 ///|
 test "bitwise copy bit branches" {
-  let value =
-    eval_program(
-      "(list (bitwise-copy-bit 10 1 0) (bitwise-copy-bit 10 1 1))",
-    )
+  let value = eval_program(
+    "(list (bitwise-copy-bit 10 1 0) (bitwise-copy-bit 10 1 1))",
+  )
   inspect(@runtime.value_to_string(value), content="(8 10)")
   let err = try? eval_program("(bitwise-copy-bit 10 1 2)")
   inspect(err is Err(_), content="true")
@@ -3277,12 +3244,24 @@ test "numeric arity mismatch coverage" {
   expect_err("(begin (import (rnrs arithmetic fixnums)) (fxbit-set?))")
   expect_err("(begin (import (rnrs arithmetic fixnums)) (fxcopy-bit 1 2))")
   expect_err("(begin (import (rnrs arithmetic fixnums)) (fxbit-field 1 2))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxcopy-bit-field 1 2 3))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxrotate-bit-field 1 2 3))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxreverse-bit-field 1 2))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift 1))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift-left 1))")
-  expect_err("(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift-right 1))")
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxcopy-bit-field 1 2 3))",
+  )
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxrotate-bit-field 1 2 3))",
+  )
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxreverse-bit-field 1 2))",
+  )
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift 1))",
+  )
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift-left 1))",
+  )
+  expect_err(
+    "(begin (import (rnrs arithmetic fixnums)) (fxarithmetic-shift-right 1))",
+  )
   expect_err("(begin (import (rnrs arithmetic flonums)) (flonum? 1.0 2.0))")
   expect_err("(begin (import (rnrs arithmetic flonums)) (real->flonum))")
   expect_err("(begin (import (rnrs arithmetic flonums)) (fixnum->flonum))")
@@ -3331,10 +3310,9 @@ test "flmax and flmin nan branches" {
 
 ///|
 test "flonum non-finite rounding" {
-  let values =
-    eval_program(
-      "(list (flonum? (lambda (x) x)) (flfloor +inf.0) (flceiling +inf.0) (fltruncate +inf.0) (flround +inf.0))",
-    )
+  let values = eval_program(
+    "(list (flonum? (lambda (x) x)) (flfloor +inf.0) (flceiling +inf.0) (fltruncate +inf.0) (flround +inf.0))",
+  )
   inspect(
     @runtime.value_to_string(values),
     content="(#f Infinity Infinity Infinity Infinity)",
@@ -3345,7 +3323,9 @@ test "flonum non-finite rounding" {
 test "bytevector utf8 and endian errors" {
   let native = eval_program("(native-endianness)")
   inspect(@runtime.value_to_string(native), content="little")
-  let endian_err = try? eval_program("(bytevector-uint-ref #vu8(1 2) 0 'bogus 1)")
+  let endian_err = try? eval_program(
+    "(bytevector-uint-ref #vu8(1 2) 0 'bogus 1)",
+  )
   inspect(endian_err is Err(_), content="true")
   let size_err = try? eval_program("(bytevector-uint-ref #vu8(1 2) 0 'big 0)")
   inspect(size_err is Err(_), content="true")
@@ -3403,9 +3383,13 @@ test "complex literal index coercion" {
   inspect(@runtime.value_to_string(ok_vec), content="20")
   let ok_bit = eval_program("(bitwise-and 7 1+0i)")
   inspect(@runtime.value_to_string(ok_bit), content="1")
-  let err_big = try? eval_program("(vector-ref #(1 2) 10000000000000000000001+0i)")
+  let err_big = try? eval_program(
+    "(vector-ref #(1 2) 10000000000000000000001+0i)",
+  )
   inspect(err_big is Err(_), content="true")
-  let err_big_int = try? eval_program("(vector-ref #(1 2) 10000000000000000000001)")
+  let err_big_int = try? eval_program(
+    "(vector-ref #(1 2) 10000000000000000000001)",
+  )
   inspect(err_big_int is Err(_), content="true")
 }
 

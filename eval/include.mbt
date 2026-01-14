@@ -38,7 +38,7 @@ fn include_parse_file(
   fold_case : Bool,
 ) -> Array[@core.Datum] raise @core.EvalError {
   let content = include_read_text(path)
-  @parser.parse_program(content, fold_case=fold_case) catch {
+  @parser.parse_program(content, fold_case~) catch {
     _ => raise @core.EvalError("include: parse error: \{path}")
   }
 }

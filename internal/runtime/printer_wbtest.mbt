@@ -5,12 +5,13 @@ test "printer internals" {
     BigInt(_) => ()
     _ => fail("expected bigint")
   }
-  match datum_abs(
-    @core.Datum::BigRat(
-      @bigint.BigInt::from_int(1),
-      @bigint.BigInt::from_int(2),
-    ),
-  ) {
+  match
+    datum_abs(
+      @core.Datum::BigRat(
+        @bigint.BigInt::from_int(1),
+        @bigint.BigInt::from_int(2),
+      ),
+    ) {
     BigRat(_, _) => ()
     _ => fail("expected bigrat")
   }

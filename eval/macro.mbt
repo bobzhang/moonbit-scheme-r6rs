@@ -64,18 +64,15 @@ fn is_core_identifier(name : String) -> Bool {
 }
 
 ///|
-fn parse_syntax_rules(expr : @core.Datum, env : @core.Env) -> @core.SyntaxRules raise @core.EvalError {
+fn parse_syntax_rules(
+  expr : @core.Datum,
+  env : @core.Env,
+) -> @core.SyntaxRules raise @core.EvalError {
   let (ellipsis, literals_expr, rule_exprs) = match datum_list_to_array(expr) {
-    [Symbol("syntax-rules"), Symbol(name), literals_expr, ..rule_exprs] => (
-      name,
-      literals_expr,
-      rule_exprs,
-    )
-    [Symbol("syntax-rules"), literals_expr, ..rule_exprs] => (
-      "...",
-      literals_expr,
-      rule_exprs,
-    )
+    [Symbol("syntax-rules"), Symbol(name), literals_expr, .. rule_exprs] =>
+      (name, literals_expr, rule_exprs)
+    [Symbol("syntax-rules"), literals_expr, .. rule_exprs] =>
+      ("...", literals_expr, rule_exprs)
     _ => raise @core.EvalError("invalid syntax-rules")
   }
   if rule_exprs.is_empty() {
@@ -88,11 +85,7 @@ fn parse_syntax_rules(expr : @core.Datum, env : @core.Env) -> @core.SyntaxRules 
     match datum_list_to_array(rule_expr) {
       [pattern, template] => {
         validate_pattern(
-          pattern,
-          literals,
-          ellipsis,
-          ellipsis_active,
-          "invalid syntax-rules",
+          pattern, literals, ellipsis, ellipsis_active, "invalid syntax-rules",
         )
         rules.push(@core.SyntaxRule::new(pattern, template, None))
       }
@@ -114,7 +107,7 @@ fn parse_identifier_syntax(
   match datum_list_to_array(expr) {
     [Symbol("identifier-syntax"), rule_expr] =>
       rules.push(@core.SyntaxRule::new(Symbol(name), rule_expr, None))
-    [Symbol("identifier-syntax"), ..rule_exprs] => {
+    [Symbol("identifier-syntax"), .. rule_exprs] => {
       if rule_exprs.is_empty() {
         raise @core.EvalError("invalid identifier-syntax")
       }
@@ -137,11 +130,10 @@ fn parse_identifier_syntax(
   for rule in rules {
     collect_template_symbols(rule.template, literal_set)
   }
-  let literals : Array[String] =
-    literal_set
-      .keys()
-      .filter((key) => !pattern_vars.contains(key))
-      .to_array()
+  let literals : Array[String] = literal_set
+    .keys()
+    .filter(key => !pattern_vars.contains(key))
+    .to_array()
   @core.SyntaxRules::new(literals, rules, "...", @core.SyntaxRules, env)
 }
 
@@ -161,21 +153,13 @@ fn parse_syntax_case_rules(
     match datum_list_to_array(clauses[i]) {
       [pattern, template] => {
         validate_pattern(
-          pattern,
-          literals,
-          "...",
-          ellipsis_active,
-          "invalid syntax-case",
+          pattern, literals, "...", ellipsis_active, "invalid syntax-case",
         )
         rules.push(@core.SyntaxRule::new(pattern, template, None))
       }
       [pattern, fender, template] => {
         validate_pattern(
-          pattern,
-          literals,
-          "...",
-          ellipsis_active,
-          "invalid syntax-case",
+          pattern, literals, "...", ellipsis_active, "invalid syntax-case",
         )
         rules.push(@core.SyntaxRule::new(pattern, template, Some(fender)))
       }
@@ -198,11 +182,12 @@ fn parse_syntax_case_transformer(
       match datum_list_to_array(params_expr) {
         [param_expr] => {
           let _ = parse_symbol_name(param_expr)
+
         }
         _ => raise @core.EvalError("invalid syntax-case")
       }
       match datum_list_to_array(body_expr) {
-        [Symbol("syntax-case"), _, literals_expr, ..clauses] => {
+        [Symbol("syntax-case"), _, literals_expr, .. clauses] => {
           if clauses.is_empty() {
             raise @core.EvalError("invalid syntax-case")
           }
@@ -222,7 +207,7 @@ fn is_syntax_case_transformer_expr(expr : @core.Datum) -> Bool {
       match datum_list_to_array_opt(params_expr) {
         Some([_]) =>
           match datum_list_to_array_opt(body_expr) {
-            Some([Symbol("syntax-case"), _, _, _, .._]) => true
+            Some([Symbol("syntax-case"), _, _, _, ..]) => true
             _ => false
           }
         _ => false
@@ -232,7 +217,10 @@ fn is_syntax_case_transformer_expr(expr : @core.Datum) -> Bool {
 }
 
 ///|
-fn eval_transformer_expr(expr : @core.Datum, env : @core.Env) -> @core.Value raise @core.EvalError {
+fn eval_transformer_expr(
+  expr : @core.Datum,
+  env : @core.Env,
+) -> @core.Value raise @core.EvalError {
   let eval_env = @runtime.env_clone(env)
   eval_expr_transformer(expr, eval_env)
 }
@@ -245,13 +233,12 @@ fn parse_transformer(
 ) -> @core.MacroTransformer raise @core.EvalError {
   match datum_list_to_array(expr) {
     [] => raise @core.EvalError("invalid syntax transformer")
-    [Symbol("syntax-rules"), ..] =>
-      Rules(parse_syntax_rules(expr, env))
+    [Symbol("syntax-rules"), ..] => Rules(parse_syntax_rules(expr, env))
     [Symbol("identifier-syntax"), ..] =>
       Rules(parse_identifier_syntax(expr, name, env))
     [Symbol("make-variable-transformer"), transformer_expr] =>
       parse_transformer(transformer_expr, name, env)
-    [Symbol("make-variable-transformer"), .._] =>
+    [Symbol("make-variable-transformer"), ..] =>
       raise @core.EvalError("invalid syntax transformer")
     [Symbol("lambda"), ..] if is_syntax_case_transformer_expr(expr) =>
       Rules(parse_syntax_case_transformer(expr, env))
@@ -266,7 +253,9 @@ fn parse_transformer(
 }
 
 ///|
-fn parse_literal_list(expr : @core.Datum) -> Array[String] raise @core.EvalError {
+fn parse_literal_list(
+  expr : @core.Datum,
+) -> Array[String] raise @core.EvalError {
   let items = datum_list_to_array(expr)
   let literals : Array[String] = []
   for item in items {
@@ -424,7 +413,7 @@ fn binding_clone(value : BindingVal) -> BindingVal {
   match value {
     Leaf(datum) => Leaf(datum)
     Seq(values) => {
-      let cloned : Array[BindingVal] = values.map((item) => binding_clone(item))
+      let cloned : Array[BindingVal] = values.map(item => binding_clone(item))
       Seq(cloned)
     }
   }
@@ -471,12 +460,7 @@ fn binding_select(
   depth : Int,
 ) -> @core.Datum? {
   match value {
-    Leaf(datum) =>
-      if depth < indices.length() {
-        None
-      } else {
-        Some(datum)
-      }
+    Leaf(datum) => if depth < indices.length() { None } else { Some(datum) }
     Seq(values) =>
       if depth >= indices.length() || values.is_empty() {
         None
@@ -547,8 +531,7 @@ fn binding_to_datum(value : BindingVal) -> @core.Datum {
   match value {
     Leaf(datum) => datum
     Seq(values) => {
-      let items : Array[@core.Datum] =
-        values.map((item) => binding_to_datum(item))
+      let items : Array[@core.Datum] = values.map(item => binding_to_datum(item))
       list_from_array(items)
     }
   }
@@ -561,9 +544,13 @@ fn fender_allows(
   env : @core.Env,
 ) -> Bool raise @core.EvalError {
   let fenv = @runtime.env_extend(env)
-  bindings.iter2().each((name, value) =>
-    @runtime.env_define(fenv, name, value_from_datum(binding_to_datum(value)))
-  )
+  bindings
+  .iter2()
+  .each((name, value) => @runtime.env_define(
+    fenv,
+    name,
+    value_from_datum(binding_to_datum(value)),
+  ))
   let result = eval_expr(expr, fenv)
   !is_false(result)
 }
@@ -574,14 +561,20 @@ fn template_env_with_bindings(
   bindings : Map[String, BindingVal],
 ) -> @core.Env {
   let fenv = @runtime.env_extend(env)
-  bindings.iter2().each((name, value) =>
-    @runtime.env_define(fenv, name, value_from_datum(binding_to_datum(value)))
-  )
+  bindings
+  .iter2()
+  .each((name, value) => @runtime.env_define(
+    fenv,
+    name,
+    value_from_datum(binding_to_datum(value)),
+  ))
   fenv
 }
 
 ///|
-fn value_to_syntax_datum(value : @core.Value) -> @core.Datum raise @core.EvalError {
+fn value_to_syntax_datum(
+  value : @core.Value,
+) -> @core.Datum raise @core.EvalError {
   match value {
     SyntaxObject(_) | Record(_) => value_to_datum_element(value)
     Datum(d) => d
@@ -592,10 +585,11 @@ fn value_to_syntax_datum(value : @core.Value) -> @core.Datum raise @core.EvalErr
 ///|
 priv struct MacroExpansion {
   datum : @core.Datum
-  captures : Map[String,@core.Value]
+  captures : Map[String, @core.Value]
 }
 
 ///|
+
 ///|
 fn scopes_equal_macro(left : Array[Int], right : Array[Int]) -> Bool {
   if left.length() != right.length() {
@@ -615,7 +609,7 @@ fn rename_proc_symbol(
   name : String,
   def_env : @core.Env,
   renames : Map[String, String],
-  captures : Map[String,@core.Value],
+  captures : Map[String, @core.Value],
 ) -> @core.Datum {
   match renames.get(name) {
     Some(rename) => Symbol(rename)
@@ -638,7 +632,7 @@ fn rename_proc_datum(
   def_env : @core.Env,
   call_ctx : Int,
   renames : Map[String, String],
-  captures : Map[String,@core.Value],
+  captures : Map[String, @core.Value],
 ) -> @core.Datum {
   match datum {
     Symbol(name) => rename_proc_symbol(name, def_env, renames, captures)
@@ -649,9 +643,9 @@ fn rename_proc_datum(
       )
     Vector(items) =>
       Vector(
-        items.map((item) =>
-          rename_proc_datum(item, def_env, call_ctx, renames, captures)
-        ),
+        items.map(item => rename_proc_datum(
+          item, def_env, call_ctx, renames, captures,
+        )),
       )
     Label(tag, value) =>
       Label(
@@ -697,7 +691,7 @@ fn rename_proc_expansion(
   call_ctx : Int,
 ) -> MacroExpansion {
   let renames : Map[String, String] = {}
-  let captures : Map[String,@core.Value] = {}
+  let captures : Map[String, @core.Value] = {}
   let renamed = rename_proc_datum(datum, def_env, call_ctx, renames, captures)
   MacroExpansion::{ datum: renamed, captures }
 }
@@ -709,7 +703,7 @@ fn expand_macro_rules(
   env : @core.Env,
 ) -> MacroExpansion raise @core.EvalError {
   let call_scope = match rules.kind {
-   @core.SyntaxRules => Some(@runtime.next_syntax_context())
+    @core.SyntaxRules => Some(@runtime.next_syntax_context())
     SyntaxCase => None
   }
   let ellipsis_active = !is_literal(rules.literals, rules.ellipsis)
@@ -737,7 +731,7 @@ fn expand_macro_rules(
             Some(fender) => {
               let fender_env = match rules.kind {
                 SyntaxCase => rules.def_env
-               @core.SyntaxRules => env
+                @core.SyntaxRules => env
               }
               if !fender_allows(fender, bindings, fender_env) {
                 continue i + 1
@@ -754,7 +748,7 @@ fn expand_macro_rules(
             env,
           )
           let expanded = match rules.kind {
-           @core.SyntaxRules =>
+            @core.SyntaxRules =>
               expand_template(
                 rule.template,
                 bindings,
@@ -810,10 +804,7 @@ fn expand_macro_proc(
         @core.SyntaxObject::new(marked_call, [call_ctx], None),
       )
   }
-  let call_expr = list_from_array([
-    Symbol(temp_name),
-    Value(stx),
-  ])
+  let call_expr = list_from_array([Symbol(temp_name), Value(stx)])
   let value = eval_expr_transformer(call_expr, fenv)
   let datum = value_to_syntax_datum(value)
   rename_proc_expansion(datum, def_env, call_ctx)
@@ -827,8 +818,7 @@ fn expand_macro(
 ) -> MacroExpansion raise @core.EvalError {
   match transformer {
     Rules(rules) => expand_macro_rules(rules, call, env)
-    Procedure(proc, def_env) =>
-      expand_macro_proc(proc, def_env, call, env)
+    Procedure(proc, def_env) => expand_macro_proc(proc, def_env, call, env)
   }
 }
 
@@ -844,7 +834,11 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
 }
 
 ///|
-fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) -> @core.Datum {
+fn syntax_add_scope_with_env(
+  datum : @core.Datum,
+  scope : Int,
+  env : @core.Env,
+) -> @core.Datum {
   match datum {
     Symbol(name) =>
       Value(
@@ -882,9 +876,7 @@ fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) 
         syntax_add_scope_with_env(b.val, scope, env),
       )
     Vector(items) =>
-      Vector(
-        items.map((item) => syntax_add_scope_with_env(item, scope, env)),
-      )
+      Vector(items.map(item => syntax_add_scope_with_env(item, scope, env)))
     Complex(real, imag) =>
       Complex(
         Ref::new(syntax_add_scope_with_env(real.val, scope, env)),
@@ -895,7 +887,11 @@ fn syntax_add_scope_with_env(datum : @core.Datum, scope : Int, env : @core.Env) 
 }
 
 ///|
-fn wrap_pattern_datum(value : @core.Datum, scope : Int?, env : @core.Env) -> @core.Datum {
+fn wrap_pattern_datum(
+  value : @core.Datum,
+  scope : Int?,
+  env : @core.Env,
+) -> @core.Datum {
   match scope {
     Some(call_scope) => {
       let marked = syntax_add_scope_with_env(value, call_scope, env)
@@ -943,8 +939,7 @@ fn rewrite_template_expr(
         Some(items) => {
           if !items.is_empty() {
             let head = items[0]
-            let is_template_form =
-              datum_is_symbol(head, "syntax") ||
+            let is_template_form = datum_is_symbol(head, "syntax") ||
               datum_is_symbol(head, "quasisyntax") ||
               datum_is_symbol(head, "with-syntax")
             if is_template_form {
@@ -1005,11 +1000,9 @@ fn rewrite_template_expr(
       }
     Vector(items) =>
       Vector(
-        items.map((item) =>
-          rewrite_template_expr(
-            item, bindings, renames, ellipsis, ellipsis_active, error_message, env,
-          )
-        ),
+        items.map(item => rewrite_template_expr(
+          item, bindings, renames, ellipsis, ellipsis_active, error_message, env,
+        )),
       )
     _ => expr
   }
@@ -1148,7 +1141,7 @@ fn collect_repeat_bindings(
   if count == 0 {
     let names : Map[String, Bool] = {}
     collect_pattern_vars(repeat_pat, literals, ellipsis, names)
-    names.keys().each((name) => result[name] = Seq([]))
+    names.keys().each(name => result[name] = Seq([]))
     return Some(result)
   }
   let repeated : Map[String, Array[BindingVal]] = {}
@@ -1169,16 +1162,16 @@ fn collect_repeat_bindings(
       ) {
       return None
     }
-    iter_bindings.iter2().each((name, value) =>
-      match repeated.get(name) {
-        Some(values) => values.push(value)
-        None => {
-          let values : Array[BindingVal] = []
-          values.push(value)
-          repeated[name] = values
-        }
+    iter_bindings
+    .iter2()
+    .each((name, value) => match repeated.get(name) {
+      Some(values) => values.push(value)
+      None => {
+        let values : Array[BindingVal] = []
+        values.push(value)
+        repeated[name] = values
       }
-    )
+    })
     continue i + 1
   }
   repeated.iter2().each((name, values) => result[name] = Seq(values))
@@ -1352,7 +1345,11 @@ fn datum_list_to_array_opt(list : @core.Datum) -> Array[@core.Datum]? {
   } else {
     false
   }
-  if ok { Some(items) } else { None }
+  if ok {
+    Some(items)
+  } else {
+    None
+  }
 }
 
 ///|
@@ -1415,7 +1412,10 @@ fn literal_matches(
 }
 
 ///|
-fn array_datum_equal(left : Array[@core.Datum], right : Array[@core.Datum]) -> Bool {
+fn array_datum_equal(
+  left : Array[@core.Datum],
+  right : Array[@core.Datum],
+) -> Bool {
   if left.length() != right.length() {
     false
   } else {
@@ -1530,9 +1530,9 @@ fn build_rename_map(
   ellipsis : String,
   def_env : @core.Env,
   env : @core.Env,
-) -> (Map[String, String], Map[String,@core.Value]) {
+) -> (Map[String, String], Map[String, @core.Value]) {
   let renames : Map[String, String] = {}
-  let captures : Map[String,@core.Value] = {}
+  let captures : Map[String, @core.Value] = {}
   collect_renames(
     template, bindings, literals, ellipsis, def_env, env, renames, captures,
   )
@@ -1548,7 +1548,7 @@ fn collect_renames(
   def_env : @core.Env,
   env : @core.Env,
   renames : Map[String, String],
-  captures : Map[String,@core.Value],
+  captures : Map[String, @core.Value],
 ) -> Unit {
   match template {
     Symbol(name) =>
@@ -1654,7 +1654,7 @@ fn expand_with_syntax(
 ) -> @core.Datum raise @core.EvalError {
   let (binding_expr, body_exprs) = match items {
     [_, binding_expr, body_expr] => (binding_expr, [body_expr])
-    [_, binding_expr, body_expr, ..rest] => {
+    [_, binding_expr, body_expr, .. rest] => {
       let bodies : Array[@core.Datum] = [body_expr]
       for expr in rest {
         bodies.push(expr)
@@ -1693,30 +1693,16 @@ fn expand_with_syntax(
   match body_exprs {
     [body_expr] =>
       expand_template_indexed(
-        body_expr,
-        expanded,
-        renames,
-        ellipsis,
-        ellipsis_active,
-        error_message,
-        indices,
-        env,
-        template_forms,
+        body_expr, expanded, renames, ellipsis, ellipsis_active, error_message, indices,
+        env, template_forms,
       )
     _ => {
       let forms : Array[@core.Datum] = [Symbol("begin")]
       for expr in body_exprs {
         forms.push(
           expand_template_indexed(
-            expr,
-            expanded,
-            renames,
-            ellipsis,
-            ellipsis_active,
-            error_message,
-            indices,
-            env,
-            template_forms,
+            expr, expanded, renames, ellipsis, ellipsis_active, error_message, indices,
+            env, template_forms,
           ),
         )
       }
@@ -1726,7 +1712,10 @@ fn expand_with_syntax(
 }
 
 ///|
-fn rename_datum(datum : @core.Datum, renames : Map[String, String]) -> @core.Datum {
+fn rename_datum(
+  datum : @core.Datum,
+  renames : Map[String, String],
+) -> @core.Datum {
   match datum {
     Symbol(name) =>
       match renames.get(name) {
@@ -1735,10 +1724,8 @@ fn rename_datum(datum : @core.Datum, renames : Map[String, String]) -> @core.Dat
       }
     Pair(a, b) =>
       pair_new(rename_datum(a.val, renames), rename_datum(b.val, renames))
-    Vector(items) =>
-      Vector(items.map((item) => rename_datum(item, renames)))
-    Label(tag, value) =>
-      Label(tag, Ref::new(rename_datum(value.val, renames)))
+    Vector(items) => Vector(items.map(item => rename_datum(item, renames)))
+    Label(tag, value) => Label(tag, Ref::new(rename_datum(value.val, renames)))
     _ => datum
   }
 }
@@ -1789,27 +1776,14 @@ fn expand_template_indexed(
             match items {
               [head, expr] if datum_is_symbol(head, "syntax") =>
                 expand_template_indexed(
-                  expr,
-                  bindings,
-                  renames,
-                  ellipsis,
-                  ellipsis_active,
-                  error_message,
-                  indices,
-                  env,
-                  template_forms,
+                  expr, bindings, renames, ellipsis, ellipsis_active, error_message,
+                  indices, env, template_forms,
                 )
               [head, expr] if datum_is_symbol(head, "quasisyntax") => {
                 let fenv = template_env_with_bindings(env, bindings)
                 let expanded_template = expand_template_quasisyntax(
-                  expr,
-                  bindings,
-                  renames,
-                  ellipsis,
-                  ellipsis_active,
-                  error_message,
-                  indices,
-                  env,
+                  expr, bindings, renames, ellipsis, ellipsis_active, error_message,
+                  indices, env,
                 )
                 let expanded = quasisyntax_expand(expanded_template, fenv, 1)
                 rename_datum(expanded, renames)
@@ -1896,7 +1870,8 @@ fn expand_template_quasisyntax(
           } else {
             match items {
               [head, _] if datum_is_symbol(head, "unsyntax") => template
-              [head, _] if datum_is_symbol(head, "unsyntax-splicing") => template
+              [head, _] if datum_is_symbol(head, "unsyntax-splicing") =>
+                template
               _ =>
                 expand_template_list_quasisyntax(
                   items, bindings, renames, ellipsis, ellipsis_active, error_message,
@@ -2319,7 +2294,12 @@ fn template_has_repeat_binding(
               // invariant : i >= 0 && i <= items.length()
               // decreases : items.length() - i
               // assert : i <= items.length()
-              if template_has_repeat_binding(items[i], bindings, ellipsis, indices) {
+              if template_has_repeat_binding(
+                  items[i],
+                  bindings,
+                  ellipsis,
+                  indices,
+                ) {
                 break true
               }
               continue i + 1

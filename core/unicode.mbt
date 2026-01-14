@@ -155,6 +155,7 @@ pub fn UnicodeChar::general_category(self : UnicodeChar) -> String {
 }
 
 ///|
+
 ///|
 fn unicode_case_equivalents(ch : Char) -> Array[Char] {
   let out : Array[Char] = [ch]

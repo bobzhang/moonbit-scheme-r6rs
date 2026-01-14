@@ -1,5 +1,5 @@
 ///|
-let primitive_bindings : Array[(String,@core.Primitive)] = [
+let primitive_bindings : Array[(String, @core.Primitive)] = [
   ("+", @core.Primitive::Add),
   ("-", @core.Primitive::Sub),
   ("*", @core.Primitive::Mul),
@@ -54,7 +54,10 @@ let primitive_bindings : Array[(String,@core.Primitive)] = [
   ("record?", @core.Primitive::RecordP),
   ("record-rtd", @core.Primitive::RecordRtd),
   ("record-type-descriptor?", @core.Primitive::RecordTypeDescriptorP),
-  ("record-constructor-descriptor?", @core.Primitive::RecordConstructorDescriptorP),
+  (
+    "record-constructor-descriptor?",
+    @core.Primitive::RecordConstructorDescriptorP,
+  ),
   ("record-type-name", @core.Primitive::RecordTypeName),
   ("record-type-parent", @core.Primitive::RecordTypeParent),
   ("record-type-uid", @core.Primitive::RecordTypeUid),
@@ -63,13 +66,19 @@ let primitive_bindings : Array[(String,@core.Primitive)] = [
   ("record-type-opaque?", @core.Primitive::RecordTypeOpaqueP),
   ("record-type-field-names", @core.Primitive::RecordTypeFieldNames),
   ("record-type-field-mutable?", @core.Primitive::RecordTypeFieldMutableP),
-  ("record-constructor-descriptor", @core.Primitive::RecordConstructorDescriptor),
+  (
+    "record-constructor-descriptor",
+    @core.Primitive::RecordConstructorDescriptor,
+  ),
   ("record-constructor", @core.Primitive::RecordConstructor),
   ("record-predicate", @core.Primitive::RecordPredicate),
   ("record-accessor", @core.Primitive::RecordAccessor),
   ("record-mutator", @core.Primitive::RecordMutator),
   ("make-record-type-descriptor", @core.Primitive::MakeRecordTypeDescriptor),
-  ("make-record-constructor-descriptor", @core.Primitive::MakeRecordConstructorDescriptor),
+  (
+    "make-record-constructor-descriptor",
+    @core.Primitive::MakeRecordConstructorDescriptor,
+  ),
   ("condition", @core.Primitive::Condition),
   ("condition?", @core.Primitive::ConditionP),
   ("simple-conditions", @core.Primitive::SimpleConditions),
@@ -89,7 +98,10 @@ let primitive_bindings : Array[(String,@core.Primitive)] = [
   ("hashtable-clear!", @core.Primitive::HashtableClear),
   ("hashtable-keys", @core.Primitive::HashtableKeys),
   ("hashtable-entries", @core.Primitive::HashtableEntries),
-  ("hashtable-equivalence-function", @core.Primitive::HashtableEquivalenceFunction),
+  (
+    "hashtable-equivalence-function",
+    @core.Primitive::HashtableEquivalenceFunction,
+  ),
   ("hashtable-hash-function", @core.Primitive::HashtableHashFunction),
   ("hashtable-mutable?", @core.Primitive::HashtableMutableP),
   ("make-enumeration", @core.Primitive::MakeEnumeration),
@@ -374,7 +386,10 @@ let primitive_bindings : Array[(String,@core.Primitive)] = [
   ("raise-continuable", @core.Primitive::RaiseContinuable),
   ("error", @core.Primitive::Error),
   ("assertion-violation", @core.Primitive::AssertionViolation),
-  ("implementation-restriction-violation", @core.Primitive::ImplementationRestrictionViolation),
+  (
+    "implementation-restriction-violation",
+    @core.Primitive::ImplementationRestrictionViolation,
+  ),
   ("undefined-violation", @core.Primitive::UndefinedViolation),
   ("syntax-violation", @core.Primitive::SyntaxViolation),
   ("call/cc", @core.Primitive::CallCC),
@@ -391,7 +406,10 @@ let cxr_chains : Array[String] = [
 ]
 
 ///|
-fn define_primitives(env : @core.Env, defs : Array[(String,@core.Primitive)]) -> Unit {
+fn define_primitives(
+  env : @core.Env,
+  defs : Array[(String, @core.Primitive)],
+) -> Unit {
   for i = 0; i < defs.length(); {
     // invariant : i >= 0 && i <= defs.length()
     // decreases : defs.length() - i
@@ -407,14 +425,19 @@ fn define_primitives(env : @core.Env, defs : Array[(String,@core.Primitive)]) ->
 ///|
 fn define_cxr_primitives(env : @core.Env) -> Unit {
   for chain in cxr_chains {
-    @runtime.env_define(env, "c\{chain}r", @core.Value::Primitive(@core.Primitive::Cxr(chain)))
+    @runtime.env_define(
+      env,
+      "c\{chain}r",
+      @core.Value::Primitive(@core.Primitive::Cxr(chain)),
+    )
   }
 }
 
 ///|
 fn init_env() -> @core.Env {
   let env = @runtime.env_new()
-  let condition_rtd = match @runtime.lookup_record_type_descriptor("&condition") {
+  let condition_rtd = match
+    @runtime.lookup_record_type_descriptor("&condition") {
     Some(desc) => desc
     None => {
       let condition_type = @runtime.make_record_type(
@@ -437,15 +460,19 @@ fn init_env() -> @core.Env {
       condition_rtd
     }
   }
-  @runtime.env_define(env, "&condition", @core.Value::RecordTypeDescriptor(condition_rtd))
+  @runtime.env_define(
+    env,
+    "&condition",
+    @core.Value::RecordTypeDescriptor(condition_rtd),
+  )
   define_primitives(env, primitive_bindings)
   define_cxr_primitives(env)
   env
 }
 
 ///|
-fn env_export_map(env : @core.Env) -> Map[String,@core.Binding] {
-  let exports : Map[String,@core.Binding] = {}
+fn env_export_map(env : @core.Env) -> Map[String, @core.Binding] {
+  let exports : Map[String, @core.Binding] = {}
   for frame in env {
     frame.iter2().each((key, binding) => exports[key] = binding)
   }

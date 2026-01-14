@@ -2009,7 +2009,10 @@ test "r6rs numeric: trig and gcd/lcm edges" {
     #|      (denominator 3)
     #|      (gcd 100000000000000000000 10)
     #|      (lcm 100000000000000000000 6))
-  inspect(value_to_string(eval_program(big_program)), content="(3 1 10 300000000000000000000)")
+  inspect(
+    value_to_string(eval_program(big_program)),
+    content="(3 1 10 300000000000000000000)",
+  )
   let big_div = try? eval_program("(quotient 12345678901234567890 0)")
   inspect(big_div is Err(_), content="true")
   let big_rem = try? eval_program("(remainder 12345678901234567890 0)")

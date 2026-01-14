@@ -88,7 +88,11 @@ pub fn Reader::label_get(self : Reader, label : Int) -> Ref[@core.Datum]? {
 ///   guard r.label_get(2) is None else { fail("expected missing label") }
 /// }
 /// ```
-pub fn Reader::label_set(self : Reader, label : Int, cell : Ref[@core.Datum]) -> Unit {
+pub fn Reader::label_set(
+  self : Reader,
+  label : Int,
+  cell : Ref[@core.Datum],
+) -> Unit {
   self.labels[label] = cell
 }
 
@@ -140,7 +144,9 @@ fn is_delim(ch : Char) -> Bool {
 ///   guard r.peek() is Some('f') else { fail("expected f") }
 /// }
 /// ```
-pub fn Reader::skip_ws_and_comments(self : Reader) -> Unit raise @core.ParseError {
+pub fn Reader::skip_ws_and_comments(
+  self : Reader,
+) -> Unit raise @core.ParseError {
   for cur = self.peek(); true; {
     // invariant : self.pos >= 0 && self.pos <= self.chars.length()
     // decreases : self.chars.length() - self.pos
@@ -229,11 +235,7 @@ fn Reader::skip_block_comment(self : Reader) -> Unit raise @core.ParseError {
 /// }
 /// ```
 pub fn Reader::is_ellipsis_start(self : Reader) -> Bool {
-  match (
-    self.peek(),
-    self.peek_offset(1),
-    self.peek_offset(2),
-  ) {
+  match (self.peek(), self.peek_offset(1), self.peek_offset(2)) {
     (Some('.'), Some('.'), Some('.')) =>
       match self.peek_offset(3) {
         None => true
@@ -255,61 +257,68 @@ pub fn Reader::is_ellipsis_start(self : Reader) -> Bool {
 /// ```
 pub fn Reader::read_token(self : Reader) -> String raise @core.ParseError {
   let chars : Array[Char] = []
-  let (in_bar, started) =
-    for in_bar = false, started = false, fold_case = self.fold_case; true; {
-      // invariant : self.pos >= 0 && self.pos <= self.chars.length()
-      // decreases : self.chars.length() - self.pos
-      // assert : !in_bar || started
-      match self.peek() {
-        Some(ch) => {
-          if !in_bar && is_delim(ch) {
-            break (in_bar, started)
-          }
-          let started = true
-          ignore(self.next())
-          let fold_case = if !in_bar && chars.is_empty() && ch == '#' {
-            if self.peek() == Some('\\') { false } else { fold_case }
+  let (in_bar, started) = for in_bar = false, started = false, fold_case = self.fold_case; true; {
+    // invariant : self.pos >= 0 && self.pos <= self.chars.length()
+    // decreases : self.chars.length() - self.pos
+    // assert : !in_bar || started
+    match self.peek() {
+      Some(ch) => {
+        if !in_bar && is_delim(ch) {
+          break (in_bar, started)
+        }
+        let started = true
+        ignore(self.next())
+        let fold_case = if !in_bar && chars.is_empty() && ch == '#' {
+          if self.peek() == Some('\\') {
+            false
           } else {
             fold_case
           }
-          if in_bar {
-            if ch == '|' {
-              continue false, started, fold_case
-            } else if ch == '\\' {
-              chars.push(self.read_identifier_escape())
-              continue in_bar, started, fold_case
-            } else {
-              chars.push(ch)
-              continue in_bar, started, fold_case
-            }
-          } else if ch == '|' {
-            continue true, started, fold_case
+        } else {
+          fold_case
+        }
+        if in_bar {
+          if ch == '|' {
+            continue false, started, fold_case
           } else if ch == '\\' {
-            match chars {
-              ['#'] => chars.push(ch)
-              _ => {
-                let escaped = self.read_identifier_escape()
-                chars.push(
-                  if fold_case {
-                    @core.UnicodeChar::new(escaped).foldcase()
-                  } else {
-                    escaped
-                  },
-                )
-              }
-            }
+            chars.push(self.read_identifier_escape())
             continue in_bar, started, fold_case
           } else {
-            let next_char = if fold_case { @core.UnicodeChar::new(ch).foldcase() } else { ch }
-            chars.push(next_char)
+            chars.push(ch)
             continue in_bar, started, fold_case
           }
+        } else if ch == '|' {
+          continue true, started, fold_case
+        } else if ch == '\\' {
+          match chars {
+            ['#'] => chars.push(ch)
+            _ => {
+              let escaped = self.read_identifier_escape()
+              chars.push(
+                if fold_case {
+                  @core.UnicodeChar::new(escaped).foldcase()
+                } else {
+                  escaped
+                },
+              )
+            }
+          }
+          continue in_bar, started, fold_case
+        } else {
+          let next_char = if fold_case {
+            @core.UnicodeChar::new(ch).foldcase()
+          } else {
+            ch
+          }
+          chars.push(next_char)
+          continue in_bar, started, fold_case
         }
-        _ => break (in_bar, started)
       }
-    } else {
-      (false, false)
+      _ => break (in_bar, started)
     }
+  } else {
+    (false, false)
+  }
   if in_bar {
     raise @core.ParseError("unterminated identifier")
   }

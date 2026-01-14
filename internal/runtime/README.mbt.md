@@ -66,7 +66,7 @@ test "gensym unique suffix" {
   let a = gensym("x")
   let b = gensym("x")
   inspect(a != b, content="true")
-  guard a is [.."x__gs", .._rest] else { fail("expected gensym prefix") }
+  guard a is [.. "x__gs", .. _rest] else { fail("expected gensym prefix") }
 }
 
 ///|
@@ -177,14 +177,14 @@ test "printer datum rendering" {
     (@core.Datum::Char('\n'), "#\\newline"),
     (@core.Datum::Char('\t'), "#\\tab"),
     (@core.Datum::Char('a'), "#\\a"),
-    (
-      @core.Datum::String(Ref::new("a\n\t\r\"\\b")),
-      "\"a\\n\\t\\r\\\"\\\\b\"",
-    ),
+    (@core.Datum::String(Ref::new("a\n\t\r\"\\b")), "\"a\\n\\t\\r\\\"\\\\b\""),
     (@core.Datum::Symbol("foo"), "foo"),
     (proper_list, "(1 2)"),
     (dotted_list, "(1 . 2)"),
-    (@core.Datum::Vector([@core.Datum::Int(1), @core.Datum::Bool(true)]), "#(1 #t)"),
+    (
+      @core.Datum::Vector([@core.Datum::Int(1), @core.Datum::Bool(true)]),
+      "#(1 #t)",
+    ),
     (@core.Datum::ByteVector([1, 2]), "#vu8(1 2)"),
     (@core.Datum::Record(record), "#<record>"),
     (@core.Datum::Condition(condition), "#<condition>"),
@@ -202,14 +202,28 @@ test "value to string variants" {
   let env = env_new()
   let record_type = @core.RecordType::new(1, "r", None, false, false, None, [])
   let record = @core.Record::new(1, record_type, [])
-  let ctor_desc_for_type = @core.RecordConstructorDescriptor::new(1, record_type, None, None)
-  let ctor_desc = @core.RecordConstructorDescriptor::new(2, record_type, None, None)
-  let record_type_desc =
-    @core.RecordTypeDescriptor::new(1, record_type, ctor_desc_for_type)
+  let ctor_desc_for_type = @core.RecordConstructorDescriptor::new(
+    1,
+    record_type,
+    None,
+    None,
+  )
+  let ctor_desc = @core.RecordConstructorDescriptor::new(
+    2,
+    record_type,
+    None,
+    None,
+  )
+  let record_type_desc = @core.RecordTypeDescriptor::new(
+    1, record_type, ctor_desc_for_type,
+  )
   let enum_set = @core.EnumSet::new(1, ["a"], [true])
   let table = @core.Hashtable::new(1, true, @core.HashtableEquiv::Eq, None, [])
   let port = new_output_string_port()
-  let promise = @core.Promise::new(1, @core.PromiseState::Value(@core.Value::Void))
+  let promise = @core.Promise::new(
+    1,
+    @core.PromiseState::Value(@core.Value::Void),
+  )
   let eval_env = @core.EvalEnv::new(1, env)
   let syntax_obj = @core.SyntaxObject::new(@core.Datum::Symbol("x"), [], None)
   let values : Array[(@core.Value, String)] = [
@@ -221,8 +235,14 @@ test "value to string variants" {
     (@core.Value::Record(record), "#<record>"),
     (@core.Value::Hashtable(table), "#<hashtable>"),
     (@core.Value::EnumSet(enum_set), "#<enum-set>"),
-    (@core.Value::RecordTypeDescriptor(record_type_desc), "#<record-type-descriptor>"),
-    (@core.Value::RecordConstructorDescriptor(ctor_desc), "#<record-constructor-descriptor>"),
+    (
+      @core.Value::RecordTypeDescriptor(record_type_desc),
+      "#<record-type-descriptor>",
+    ),
+    (
+      @core.Value::RecordConstructorDescriptor(ctor_desc),
+      "#<record-constructor-descriptor>",
+    ),
     (@core.Value::SyntaxObject(syntax_obj), "#<syntax>"),
     (@core.Value::SyntaxKeyword("syntax"), "#<syntax-keyword>"),
   ]
@@ -320,9 +340,7 @@ test "syntax helpers extra" {
     Ref::new(@core.Datum::Nil),
   )
   let wrapped_pair = @core.Datum::Value(
-    @core.Value::SyntaxObject(
-      @core.SyntaxObject::new(pair, [3], None),
-    ),
+    @core.Value::SyntaxObject(@core.SyntaxObject::new(pair, [3], None)),
   )
   match syntax_add_scope(wrapped_pair, 4) {
     Value(SyntaxObject(obj)) =>
@@ -344,8 +362,21 @@ test "syntax helpers extra" {
 ///|
 test "record type alias without uid" {
   reset_record_type_registry()
-  let record_type = @core.RecordType::new(50, "doc/alias", None, false, false, None, [])
-  let ctor_desc = @core.RecordConstructorDescriptor::new(50, record_type, None, None)
+  let record_type = @core.RecordType::new(
+    50,
+    "doc/alias",
+    None,
+    false,
+    false,
+    None,
+    [],
+  )
+  let ctor_desc = @core.RecordConstructorDescriptor::new(
+    50,
+    record_type,
+    None,
+    None,
+  )
   let desc = @core.RecordTypeDescriptor::new(50, record_type, ctor_desc)
   register_record_type_alias("doc/alias", desc)
   match lookup_record_type_descriptor("doc/alias") {

@@ -140,10 +140,7 @@ test "datum constructors" {
     Int(42) => ()
     _ => fail("expected int datum")
   }
-  let pair = Datum::Pair(
-    Ref::new(Datum::Symbol("a")),
-    Ref::new(Datum::Nil),
-  )
+  let pair = Datum::Pair(Ref::new(Datum::Symbol("a")), Ref::new(Datum::Nil))
   match pair {
     Pair(car, cdr) =>
       match (car.val, cdr.val) {

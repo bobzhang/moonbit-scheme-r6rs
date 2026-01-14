@@ -28,8 +28,8 @@ fn apply_record_condition_primitive(
     | ConditionP
     | SimpleConditions
     | ConditionPredicate
-    | ConditionAccessor
-    => Some(apply_record_condition_primitive_core(prim, args))
+    | ConditionAccessor =>
+      Some(apply_record_condition_primitive_core(prim, args))
     _ => None
   }
 }
@@ -53,7 +53,10 @@ fn apply_record_condition_primitive_core(
           if record.record_type.is_opaque {
             raise @core.EvalError("record type is opaque")
           } else {
-            match @runtime.lookup_record_type_descriptor_by_id(record.record_type.id) {
+            match
+              @runtime.lookup_record_type_descriptor_by_id(
+                record.record_type.id,
+              ) {
               Some(desc) => @core.Value::RecordTypeDescriptor(desc)
               None => raise @core.EvalError("invalid record type descriptor")
             }
@@ -88,7 +91,8 @@ fn apply_record_condition_primitive_core(
           match desc.record_type.parent {
             Some(parent) =>
               match @runtime.lookup_record_type_descriptor(parent.name) {
-                Some(parent_desc) => @core.Value::RecordTypeDescriptor(parent_desc)
+                Some(parent_desc) =>
+                  @core.Value::RecordTypeDescriptor(parent_desc)
                 None => @core.Value::Datum(Bool(false))
               }
             None => @core.Value::Datum(Bool(false))
@@ -204,7 +208,14 @@ fn apply_record_condition_primitive_core(
       }
     MakeRecordTypeDescriptor =>
       match args {
-        [name_value, parent_value, uid_value, sealed_value, opaque_value, fields_value] => {
+        [
+          name_value,
+          parent_value,
+          uid_value,
+          sealed_value,
+          opaque_value,
+          fields_value,
+        ] => {
           let name = value_as_symbol(name_value)
           let parent_desc = match parent_value {
             Datum(Bool(false)) => None
@@ -269,7 +280,9 @@ fn apply_record_condition_primitive_core(
                     name, parent_type, is_sealed, effective_opaque, uid, fields,
                   )
                   let ctor_desc = default_constructor_descriptor(record_type)
-                  let rtd = @runtime.make_record_type_descriptor(record_type, ctor_desc)
+                  let rtd = @runtime.make_record_type_descriptor(
+                    record_type, ctor_desc,
+                  )
                   let _ = @runtime.register_record_type(name, rtd)
                   @core.Value::RecordTypeDescriptor(rtd)
                 }
@@ -279,7 +292,9 @@ fn apply_record_condition_primitive_core(
                 name, parent_type, is_sealed, effective_opaque, uid, fields,
               )
               let ctor_desc = default_constructor_descriptor(record_type)
-              let rtd = @runtime.make_record_type_descriptor(record_type, ctor_desc)
+              let rtd = @runtime.make_record_type_descriptor(
+                record_type, ctor_desc,
+              )
               let _ = @runtime.register_record_type(name, rtd)
               @core.Value::RecordTypeDescriptor(rtd)
             }
@@ -345,7 +360,7 @@ fn apply_record_condition_primitive_core(
         }
         _ => raise arity_mismatch(3, args.length())
       }
-    Condition => {
+    Condition =>
       match args {
         [] => raise arity_mismatch(1, 0)
         _ => {
@@ -362,7 +377,6 @@ fn apply_record_condition_primitive_core(
           }
         }
       }
-    }
     ConditionP =>
       match args {
         [condition_value] => {
@@ -377,8 +391,9 @@ fn apply_record_condition_primitive_core(
         [condition_value] => {
           let base = condition_base_type()
           let components = condition_components(condition_value, base)
-          let items : Array[@core.Datum] =
-            components.map((record) => Record(record))
+          let items : Array[@core.Datum] = components.map(record => Record(
+            record,
+          ))
           @core.Value::Datum(list_from_array(items))
         }
         _ => raise arity_mismatch(1, args.length())
@@ -402,14 +417,14 @@ fn apply_record_condition_primitive_core(
             raise @core.EvalError("type error: record accessor expected")
           }
           @core.Value::ConditionProc(
-            @runtime.make_condition_proc(
-              Accessor(desc.record_type, idx),
-            ),
+            @runtime.make_condition_proc(Accessor(desc.record_type, idx)),
           )
         }
         _ => raise arity_mismatch(2, args.length())
       }
     _ =>
-      raise @core.EvalError("internal error: apply_record_condition_primitive dispatch")
+      raise @core.EvalError(
+        "internal error: apply_record_condition_primitive dispatch",
+      )
   }
 }

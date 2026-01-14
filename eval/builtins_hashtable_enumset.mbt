@@ -35,8 +35,7 @@ fn apply_hashtable_enumset_primitive(
     | EnumSetDifference
     | EnumSetComplement
     | EnumSetProjection
-    | EnumSetToList
-    => Some(apply_hashtable_enumset_primitive_core(prim, args))
+    | EnumSetToList => Some(apply_hashtable_enumset_primitive_core(prim, args))
     _ => None
   }
 }
@@ -45,9 +44,7 @@ fn apply_hashtable_enumset_primitive(
 fn clone_hashtable_entries(
   entries : Array[@core.HashtableEntry],
 ) -> Array[@core.HashtableEntry] {
-  entries.map((entry) =>
-    @core.HashtableEntry::new(entry.key, entry.value.val)
-  )
+  entries.map(entry => @core.HashtableEntry::new(entry.key, entry.value.val))
 }
 
 ///|
@@ -59,11 +56,8 @@ fn hashtable_clone(table : @core.Hashtable, mutable : Bool) -> @core.Value {
 }
 
 ///|
-fn enum_set_members_fill(
-  universe : Array[String],
-  value : Bool,
-) -> Array[Bool] {
-  universe.map((_name) => value)
+fn enum_set_members_fill(universe : Array[String], value : Bool) -> Array[Bool] {
+  universe.map(_name => value)
 }
 
 ///|
@@ -85,9 +79,10 @@ fn apply_hashtable_enumset_primitive_core(
   match prim {
     MakeEqHashtable =>
       match args {
-        [] => @core.Value::Hashtable(
-          @runtime.make_hashtable(@core.HashtableEquiv::Eq, None, true),
-        )
+        [] =>
+          @core.Value::Hashtable(
+            @runtime.make_hashtable(@core.HashtableEquiv::Eq, None, true),
+          )
         [size_value] => {
           validate_hashtable_size_arg(size_value)
           @core.Value::Hashtable(
@@ -98,9 +93,10 @@ fn apply_hashtable_enumset_primitive_core(
       }
     MakeEqvHashtable =>
       match args {
-        [] => @core.Value::Hashtable(
-          @runtime.make_hashtable(@core.HashtableEquiv::Eqv, None, true),
-        )
+        [] =>
+          @core.Value::Hashtable(
+            @runtime.make_hashtable(@core.HashtableEquiv::Eqv, None, true),
+          )
         [size_value] => {
           validate_hashtable_size_arg(size_value)
           @core.Value::Hashtable(
@@ -116,7 +112,9 @@ fn apply_hashtable_enumset_primitive_core(
             raise @core.EvalError("type error: procedure expected")
           }
           let equiv = hashtable_equiv_from_value(equiv_value)
-          @core.Value::Hashtable(@runtime.make_hashtable(equiv, Some(hash_value), true))
+          @core.Value::Hashtable(
+            @runtime.make_hashtable(equiv, Some(hash_value), true),
+          )
         }
         [hash_value, equiv_value, size_value] => {
           if !@runtime.is_procedure_value(hash_value) {
@@ -124,7 +122,9 @@ fn apply_hashtable_enumset_primitive_core(
           }
           let equiv = hashtable_equiv_from_value(equiv_value)
           validate_hashtable_size_arg(size_value)
-          @core.Value::Hashtable(@runtime.make_hashtable(equiv, Some(hash_value), true))
+          @core.Value::Hashtable(
+            @runtime.make_hashtable(equiv, Some(hash_value), true),
+          )
         }
         _ => raise arity_mismatch(2, args.length())
       }
@@ -200,10 +200,9 @@ fn apply_hashtable_enumset_primitive_core(
       match args {
         [table_value] => {
           let table = value_as_hashtable(table_value)
-          let items : Array[@core.Datum] =
-            table.entries.val.map((entry) =>
-              value_to_datum_element(entry.key)
-            )
+          let items : Array[@core.Datum] = table.entries.val.map(entry => value_to_datum_element(
+            entry.key,
+          ))
           @core.Value::Datum(Vector(items))
         }
         _ => raise arity_mismatch(1, args.length())
@@ -212,14 +211,12 @@ fn apply_hashtable_enumset_primitive_core(
       match args {
         [table_value] => {
           let table = value_as_hashtable(table_value)
-          let key_items : Array[@core.Datum] =
-            table.entries.val.map((entry) =>
-              value_to_datum_element(entry.key)
-            )
-          let value_items : Array[@core.Datum] =
-            table.entries.val.map((entry) =>
-              value_to_datum_element(entry.value.val)
-            )
+          let key_items : Array[@core.Datum] = table.entries.val.map(entry => value_to_datum_element(
+            entry.key,
+          ))
+          let value_items : Array[@core.Datum] = table.entries.val.map(entry => value_to_datum_element(
+            entry.value.val,
+          ))
           @core.Value::Values([
             @core.Value::Datum(Vector(key_items)),
             @core.Value::Datum(Vector(value_items)),
@@ -431,6 +428,8 @@ fn apply_hashtable_enumset_primitive_core(
         _ => raise arity_mismatch(1, args.length())
       }
     _ =>
-      raise @core.EvalError("internal error: apply_hashtable_enumset_primitive dispatch")
+      raise @core.EvalError(
+        "internal error: apply_hashtable_enumset_primitive dispatch",
+      )
   }
 }

@@ -16,7 +16,9 @@ fn pair_new(car : @core.Datum, cdr : @core.Datum) -> @core.Datum {
 
 ///|
 /// Convert a proper list datum into an array.
-fn datum_list_to_array(list : @core.Datum) -> Array[@core.Datum] raise @core.EvalError {
+fn datum_list_to_array(
+  list : @core.Datum,
+) -> Array[@core.Datum] raise @core.EvalError {
   let items : Array[@core.Datum] = []
   for cur = list; true; {
     // invariant : items.length() >= 0

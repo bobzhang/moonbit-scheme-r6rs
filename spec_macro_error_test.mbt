@@ -2,16 +2,15 @@
 test "r6rs macro: non-procedure transformer" {
   let bad = try? eval_program("(define-syntax bad (+ 1 2))")
   match bad {
-    Err(err) => inspect(err, content="EvalError(\"type error: procedure expected\")")
+    Err(err) =>
+      inspect(err, content="EvalError(\"type error: procedure expected\")")
     _ => fail("expected transformer type error")
   }
 }
 
 ///|
 test "r6rs macro: invalid identifier-syntax rule" {
-  let bad = try? eval_program(
-    "(define-syntax bad (identifier-syntax (x) (y)))",
-  )
+  let bad = try? eval_program("(define-syntax bad (identifier-syntax (x) (y)))")
   match bad {
     Err(err) => inspect(err, content="EvalError(\"invalid identifier-syntax\")")
     _ => fail("expected identifier-syntax error")
@@ -47,7 +46,8 @@ test "r6rs macro: with-syntax requires datum" {
     #|  (bad))
   let bad = try? eval_program(program)
   match bad {
-    Err(err) => inspect(err, content="EvalError(\"type error: datum expected\")")
+    Err(err) =>
+      inspect(err, content="EvalError(\"type error: datum expected\")")
     _ => fail("expected datum error")
   }
 }
@@ -63,7 +63,8 @@ test "r6rs macro: invalid syntax-case clause" {
     #|  (bad 1))
   let bad = try? eval_program(program)
   match bad {
-    Err(err) => inspect(err, content="EvalError(\"invalid syntax-case clause\")")
+    Err(err) =>
+      inspect(err, content="EvalError(\"invalid syntax-case clause\")")
     _ => fail("expected syntax-case clause error")
   }
 }

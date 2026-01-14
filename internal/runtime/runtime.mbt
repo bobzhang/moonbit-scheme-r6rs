@@ -1,3 +1,4 @@
+///|
 priv struct Counter {
   cell : Ref[Int]
 }
@@ -60,14 +61,16 @@ let enum_set_proc_counter : Counter = Counter::new()
 let library_registry : Ref[Map[String, Map[String, @core.Binding]]] = Ref::new({})
 
 ///|
-let record_type_registry : Ref[Map[String, @core.RecordTypeDescriptor]] = Ref::new({})
+let record_type_registry : Ref[Map[String, @core.RecordTypeDescriptor]] = Ref::new({},
+)
 
 ///|
 let record_type_uid_registry : Ref[Map[String, @core.RecordTypeDescriptor]] = Ref::new({},
 )
 
 ///|
-let record_type_id_registry : Ref[Map[Int, @core.RecordTypeDescriptor]] = Ref::new({})
+let record_type_id_registry : Ref[Map[Int, @core.RecordTypeDescriptor]] = Ref::new({},
+)
 
 ///|
 /// Generate a fresh symbol name with a gensym suffix.
@@ -78,7 +81,7 @@ let record_type_id_registry : Ref[Map[Int, @core.RecordTypeDescriptor]] = Ref::n
 ///   let a = gensym("x")
 ///   let b = gensym("x")
 ///   inspect(a != b, content="true")
-///   guard a is [.."x__gs", .._rest] else { fail("expected gensym prefix") }
+///   guard a is [.. "x__gs", .. _rest] else { fail("expected gensym prefix") }
 /// }
 /// ```
 pub fn gensym(base : String) -> String {
@@ -183,7 +186,9 @@ pub fn make_record_proc(kind : @core.RecordProcKind) -> @core.RecordProc {
 
 ///|
 /// Allocate a condition procedure wrapper.
-pub fn make_condition_proc(kind : @core.ConditionProcKind) -> @core.ConditionProc {
+pub fn make_condition_proc(
+  kind : @core.ConditionProcKind,
+) -> @core.ConditionProc {
   @core.ConditionProc::new(next_condition_proc_id(), kind)
 }
 
@@ -263,7 +268,7 @@ fn enum_set_members_all_false(universe : Array[String]) -> Array[Bool] {
 
 ///|
 fn enum_set_members_fill(universe : Array[String], value : Bool) -> Array[Bool] {
-  universe.map((_name) => value)
+  universe.map(_name => value)
 }
 
 ///|
@@ -370,7 +375,9 @@ pub fn register_record_type_alias(
 
 ///|
 /// Look up a record type descriptor by name.
-pub fn lookup_record_type_descriptor(name : String) -> @core.RecordTypeDescriptor? {
+pub fn lookup_record_type_descriptor(
+  name : String,
+) -> @core.RecordTypeDescriptor? {
   record_type_registry.val.get(name)
 }
 
@@ -384,7 +391,9 @@ pub fn lookup_record_type_descriptor_by_uid(
 
 ///|
 /// Look up a record type descriptor by internal id.
-pub fn lookup_record_type_descriptor_by_id(id : Int) -> @core.RecordTypeDescriptor? {
+pub fn lookup_record_type_descriptor_by_id(
+  id : Int,
+) -> @core.RecordTypeDescriptor? {
   record_type_id_registry.val.get(id)
 }
 
@@ -416,7 +425,10 @@ pub fn is_procedure_value(value : @core.Value) -> Bool {
 ///   inspect(record_type_is_a(base, child), content="false")
 /// }
 /// ```
-pub fn record_type_is_a(actual : @core.RecordType, target : @core.RecordType) -> Bool {
+pub fn record_type_is_a(
+  actual : @core.RecordType,
+  target : @core.RecordType,
+) -> Bool {
   if actual.id == target.id {
     true
   } else {
@@ -429,7 +441,10 @@ pub fn record_type_is_a(actual : @core.RecordType, target : @core.RecordType) ->
 
 ///|
 /// Register a library export table.
-pub fn register_library(name : String, exports : Map[String, @core.Binding]) -> Unit {
+pub fn register_library(
+  name : String,
+  exports : Map[String, @core.Binding],
+) -> Unit {
   library_registry.val[name] = exports
 }
 
@@ -562,6 +577,7 @@ pub fn symbol_name(expr : @core.Datum) -> String? {
 }
 
 ///|
+
 ///|
 fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
   if scopes.contains(scope) {
@@ -578,10 +594,8 @@ fn scopes_with_added(scopes : Array[Int], scope : Int) -> Array[Int] {
 pub fn strip_syntax_datum(datum : @core.Datum) -> @core.Datum {
   match datum {
     Value(SyntaxObject(obj)) => strip_syntax_datum(obj.datum)
-    Pair(a, b) =>
-      pair_new(strip_syntax_datum(a.val), strip_syntax_datum(b.val))
-    Vector(items) =>
-      Vector(items.map((item) => strip_syntax_datum(item)))
+    Pair(a, b) => pair_new(strip_syntax_datum(a.val), strip_syntax_datum(b.val))
+    Vector(items) => Vector(items.map(item => strip_syntax_datum(item)))
     Complex(real, imag) =>
       Complex(
         Ref::new(strip_syntax_datum(real.val)),
@@ -606,8 +620,7 @@ fn syntax_wrap_datum(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
         syntax_wrap_datum(a.val, scopes),
         syntax_wrap_datum(b.val, scopes),
       )
-    Vector(items) =>
-      Vector(items.map((item) => syntax_wrap_datum(item, scopes)))
+    Vector(items) => Vector(items.map(item => syntax_wrap_datum(item, scopes)))
     Complex(real, imag) =>
       Complex(
         Ref::new(syntax_wrap_datum(real.val, scopes)),
@@ -620,7 +633,10 @@ fn syntax_wrap_datum(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
 
 ///|
 /// Wrap a datum in syntax objects unless already wrapped.
-pub fn syntax_wrap_root(datum : @core.Datum, scopes : Array[Int]) -> @core.Datum {
+pub fn syntax_wrap_root(
+  datum : @core.Datum,
+  scopes : Array[Int],
+) -> @core.Datum {
   match datum {
     Symbol(_) => datum
     Value(SyntaxObject(_)) => datum
@@ -652,8 +668,7 @@ pub fn syntax_add_scope(datum : @core.Datum, scope : Int) -> @core.Datum {
     }
     Pair(a, b) =>
       pair_new(syntax_add_scope(a.val, scope), syntax_add_scope(b.val, scope))
-    Vector(items) =>
-      Vector(items.map((item) => syntax_add_scope(item, scope)))
+    Vector(items) => Vector(items.map(item => syntax_add_scope(item, scope)))
     Complex(real, imag) =>
       Complex(
         Ref::new(syntax_add_scope(real.val, scope)),

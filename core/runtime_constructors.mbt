@@ -38,7 +38,7 @@ pub fn Record::new(
   record_type : RecordType,
   values : Array[Value],
 ) -> Record {
-  let fields = values.map((value) => Ref::new(value))
+  let fields = values.map(value => Ref::new(value))
   { id, record_type, fields }
 }
 

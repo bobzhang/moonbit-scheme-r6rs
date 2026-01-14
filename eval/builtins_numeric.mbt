@@ -153,8 +153,7 @@ fn apply_numeric_primitive(
     | FlAcos
     | FlAtan
     | FlSqrt
-    | FlExpt
-    => Some(apply_numeric_primitive_core(prim, args))
+    | FlExpt => Some(apply_numeric_primitive_core(prim, args))
     _ => None
   }
 }
@@ -184,16 +183,16 @@ fn apply_numeric_primitive_core(
           let number = value_as_number(value)
           @core.Value::Datum(num_sub(@core.Datum::Int(0), number))
         }
-        [first, ..rest] => {
-          let result = for i = 0, result = value_as_number(first);
-            i < rest.length(); {
-              // invariant : i >= 0 && i <= rest.length()
-              // decreases : rest.length() - i
-              // assert : i <= rest.length()
-              continue i + 1, num_sub(result, value_as_number(rest[i]))
-            } else {
-              result
-            }
+        [first, .. rest] => {
+          let result = for i = 0, result = value_as_number(first); i <
+                          rest.length(); {
+            // invariant : i >= 0 && i <= rest.length()
+            // decreases : rest.length() - i
+            // assert : i <= rest.length()
+            continue i + 1, num_sub(result, value_as_number(rest[i]))
+          } else {
+            result
+          }
           @core.Value::Datum(result)
         }
       }
@@ -215,23 +214,23 @@ fn apply_numeric_primitive_core(
           let number = value_as_number(value)
           @core.Value::Datum(num_div(@core.Datum::Int(1), number))
         }
-        [first, ..rest] => {
-          let result = for i = 0, result = value_as_number(first);
-            i < rest.length(); {
-              // invariant : i >= 0 && i <= rest.length()
-              // decreases : rest.length() - i
-              // assert : i <= rest.length()
-              continue i + 1, num_div(result, value_as_number(rest[i]))
-            } else {
-              result
-            }
+        [first, .. rest] => {
+          let result = for i = 0, result = value_as_number(first); i <
+                          rest.length(); {
+            // invariant : i >= 0 && i <= rest.length()
+            // decreases : rest.length() - i
+            // assert : i <= rest.length()
+            continue i + 1, num_div(result, value_as_number(rest[i]))
+          } else {
+            result
+          }
           @core.Value::Datum(result)
         }
       }
     NumEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let first = value_as_number(first)
           let ok = for i = 0; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -250,7 +249,7 @@ fn apply_numeric_primitive_core(
     Less =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_number(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -270,7 +269,7 @@ fn apply_numeric_primitive_core(
     Greater =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_number(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -290,7 +289,7 @@ fn apply_numeric_primitive_core(
     LessEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_number(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -310,7 +309,7 @@ fn apply_numeric_primitive_core(
     GreaterEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_number(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -345,8 +344,7 @@ fn apply_numeric_primitive_core(
       }
     InexactToExact =>
       match args {
-        [Datum(Float(f))] =>
-          @core.Value::Datum(float_to_exact_datum(f))
+        [Datum(Float(f))] => @core.Value::Datum(float_to_exact_datum(f))
         [Datum(Complex(real, imag))] => {
           let real_exact = inexact_component_to_exact(real.val)
           let imag_exact = inexact_component_to_exact(imag.val)
@@ -355,8 +353,7 @@ fn apply_numeric_primitive_core(
         [Datum(Int(n))] => @core.Value::Datum(@core.Datum::Int(n))
         [Datum(BigInt(n))] => @core.Value::Datum(@core.Datum::BigInt(n))
         [Datum(Rat(n, d))] => @core.Value::Datum(@core.Datum::Rat(n, d))
-        [Datum(BigRat(n, d))] =>
-          @core.Value::Datum(@core.Datum::BigRat(n, d))
+        [Datum(BigRat(n, d))] => @core.Value::Datum(@core.Datum::BigRat(n, d))
         [_] => raise @core.EvalError("type error: number expected")
         _ => raise arity_mismatch(1, args.length())
       }
@@ -404,10 +401,8 @@ fn apply_numeric_primitive_core(
             raise @core.EvalError("type error: nonnegative real expected")
           }
           match x {
-            Int(_)
-            | BigInt(_)
-            | Rat(_, _)
-            | BigRat(_, _) => @core.Value::Datum(x)
+            Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) =>
+              @core.Value::Datum(x)
             Float(f) => {
               let (n, d) = rationalize_float(f, tol)
               @core.Value::Datum(normalize_rat_or_error(n, d))
@@ -434,10 +429,7 @@ fn apply_numeric_primitive_core(
               let text = bigint_to_string_radix(n, radix)
               @core.Value::Datum(@core.Datum::String(Ref::new(text)))
             }
-            Rat(_, _)
-            | BigRat(_, _)
-            | Float(_)
-            | Complex(_, _) => {
+            Rat(_, _) | BigRat(_, _) | Float(_) | Complex(_, _) => {
               if radix != 10 {
                 raise @core.EvalError("type error: exact integer expected")
               }
@@ -462,10 +454,7 @@ fn apply_numeric_primitive_core(
               let text = bigint_to_string_radix(n, radix)
               @core.Value::Datum(@core.Datum::String(Ref::new(text)))
             }
-            Rat(_, _)
-            | BigRat(_, _)
-            | Float(_)
-            | Complex(_, _) => {
+            Rat(_, _) | BigRat(_, _) | Float(_) | Complex(_, _) => {
               if radix != 10 {
                 raise @core.EvalError("type error: exact integer expected")
               }
@@ -500,7 +489,7 @@ fn apply_numeric_primitive_core(
           if radix < 2 || radix > 36 {
             raise @core.EvalError("radix out of range")
           }
-          let parsed = @parser.parse_number_token(s, radix=radix)
+          let parsed = @parser.parse_number_token(s, radix~)
           match parsed {
             Some(num) => @core.Value::Datum(num)
             None => @core.Value::Datum(@core.Datum::Bool(false))
@@ -524,7 +513,9 @@ fn apply_numeric_primitive_core(
       match args {
         [r_value, theta_value] => {
           let r = number_to_float(datum_to_real(value_as_number(r_value)))
-          let theta = number_to_float(datum_to_real(value_as_number(theta_value)))
+          let theta = number_to_float(
+            datum_to_real(value_as_number(theta_value)),
+          )
           let real = @core.Datum::Float(r * @math.cosf(theta))
           let imag = @core.Datum::Float(r * @math.sinf(theta))
           @core.Value::Datum(make_complex(real, imag))
@@ -546,10 +537,8 @@ fn apply_numeric_primitive_core(
           match value_as_number(num_value) {
             Complex(_, imag) => @core.Value::Datum(imag.val)
             Float(_) => @core.Value::Datum(@core.Datum::Float(0.0))
-            Int(_)
-            | BigInt(_)
-            | Rat(_, _)
-            | BigRat(_, _) => @core.Value::Datum(@core.Datum::Int(0))
+            Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) =>
+              @core.Value::Datum(@core.Datum::Int(0))
             _ => raise @core.EvalError("type error: number expected")
           }
         _ => raise arity_mismatch(1, args.length())
@@ -587,7 +576,9 @@ fn apply_numeric_primitive_core(
             Complex(real, imag) => {
               let real_f = number_to_float(real.val)
               let imag_f = number_to_float(imag.val)
-              @core.Value::Datum(@core.Datum::Float(@math.atan2f(imag_f, real_f)))
+              @core.Value::Datum(
+                @core.Datum::Float(@math.atan2f(imag_f, real_f)),
+              )
             }
             datum => {
               let real_f = number_to_float(datum)
@@ -667,7 +658,9 @@ fn apply_numeric_primitive_core(
               match base {
                 Int(base_int) =>
                   if exp_int >= 0 {
-                    @core.Value::Datum(@core.Datum::Int(pow_int(base_int, exp_int)))
+                    @core.Value::Datum(
+                      @core.Datum::Int(pow_int(base_int, exp_int)),
+                    )
                   } else {
                     @core.Value::Datum(
                       normalize_rat_or_error(1, pow_int(base_int, -exp_int)),
@@ -779,14 +772,18 @@ fn apply_numeric_primitive_core(
                   } else if exp_sign > 0 {
                     let num_pow = pow_bigint_bigint(num, abs_exp)
                     let den_pow = pow_bigint_bigint(den, abs_exp)
-                    @core.Value::Datum(normalize_big_rat_or_error(num_pow, den_pow))
+                    @core.Value::Datum(
+                      normalize_big_rat_or_error(num_pow, den_pow),
+                    )
                   } else {
                     if bigint_is_zero(num) {
                       raise @core.EvalError("division by zero")
                     }
                     let num_pow = pow_bigint_bigint(num, abs_exp)
                     let den_pow = pow_bigint_bigint(den, abs_exp)
-                    @core.Value::Datum(normalize_big_rat_or_error(den_pow, num_pow))
+                    @core.Value::Datum(
+                      normalize_big_rat_or_error(den_pow, num_pow),
+                    )
                   }
                 }
                 BigRat(n, d) =>
@@ -795,20 +792,28 @@ fn apply_numeric_primitive_core(
                   } else if exp_sign > 0 {
                     let num_pow = pow_bigint_bigint(n, abs_exp)
                     let den_pow = pow_bigint_bigint(d, abs_exp)
-                    @core.Value::Datum(normalize_big_rat_or_error(num_pow, den_pow))
+                    @core.Value::Datum(
+                      normalize_big_rat_or_error(num_pow, den_pow),
+                    )
                   } else {
                     if bigint_is_zero(n) {
                       raise @core.EvalError("division by zero")
                     }
                     let num_pow = pow_bigint_bigint(n, abs_exp)
                     let den_pow = pow_bigint_bigint(d, abs_exp)
-                    @core.Value::Datum(normalize_big_rat_or_error(den_pow, num_pow))
+                    @core.Value::Datum(
+                      normalize_big_rat_or_error(den_pow, num_pow),
+                    )
                   }
                 Float(f) => {
                   let exp_f = bigint_to_float(abs_exp)
                   let abs_base = if f < 0.0 { -f } else { f }
                   let pow = @math.powf(abs_base, exp_f)
-                  let pow = if exp_sign < 0 { Float::from_int(1) / pow } else { pow }
+                  let pow = if exp_sign < 0 {
+                    Float::from_int(1) / pow
+                  } else {
+                    pow
+                  }
                   let pow = if f < 0.0 && exp_is_odd { -pow } else { pow }
                   @core.Value::Datum(@core.Datum::Float(pow))
                 }
@@ -842,7 +847,9 @@ fn apply_numeric_primitive_core(
                     }
                     None =>
                       if base_f >= 0.0 {
-                        @core.Value::Datum(@core.Datum::Float(@math.powf(base_f, exp_f)))
+                        @core.Value::Datum(
+                          @core.Datum::Float(@math.powf(base_f, exp_f)),
+                        )
                       } else {
                         let (rr, ri) = complex_expt_f(base_f, 0.0, exp_f, 0.0)
                         @core.Value::Datum(complex_from_float(rr, ri))
@@ -861,7 +868,9 @@ fn apply_numeric_primitive_core(
                 _ => {
                   let base_f = number_to_float(base)
                   if base_f >= 0.0 {
-                    @core.Value::Datum(@core.Datum::Float(@math.powf(base_f, exp_f)))
+                    @core.Value::Datum(
+                      @core.Datum::Float(@math.powf(base_f, exp_f)),
+                    )
                   } else {
                     let (rr, ri) = complex_expt_f(base_f, 0.0, exp_f, 0.0)
                     @core.Value::Datum(complex_from_float(rr, ri))
@@ -1115,37 +1124,38 @@ fn apply_numeric_primitive_core(
           }
         }
         _ => raise arity_mismatch(2, args.length())
-    }
+      }
     Gcd => {
-      let (use_big, acc_int, acc_big) =
-        for i = 0,
-          use_big = false,
-          acc_int = 0,
-          acc_big = bigint_from_int(0);
-          i < args.length(); {
-          // invariant : i >= 0 && i <= args.length()
-          // decreases : args.length() - i
-          // assert : use_big || acc_big == bigint_from_int(0)
-          let value = value_as_exact_integer(args[i])
-          match value {
-            Int(n) =>
-              if use_big {
-                let next_acc_big = bigint_gcd(acc_big, bigint_from_int(n))
-                continue i + 1, true, acc_int, next_acc_big
-              } else {
-                let next_acc_int = gcd(acc_int, n)
-                continue i + 1, false, next_acc_int, acc_big
-              }
-            BigInt(n) => {
-              let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
-              let next_acc_big = bigint_gcd(base_big, n)
+      let (use_big, acc_int, acc_big) = for i = 0, use_big = false, acc_int = 0, acc_big = bigint_from_int(
+                                                0,
+                                              ); i < args.length(); {
+        // invariant : i >= 0 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : use_big || acc_big == bigint_from_int(0)
+        let value = value_as_exact_integer(args[i])
+        match value {
+          Int(n) =>
+            if use_big {
+              let next_acc_big = bigint_gcd(acc_big, bigint_from_int(n))
               continue i + 1, true, acc_int, next_acc_big
+            } else {
+              let next_acc_int = gcd(acc_int, n)
+              continue i + 1, false, next_acc_int, acc_big
             }
-            _ => raise @core.EvalError("type error: integer expected")
+          BigInt(n) => {
+            let base_big = if use_big {
+              acc_big
+            } else {
+              bigint_from_int(acc_int)
+            }
+            let next_acc_big = bigint_gcd(base_big, n)
+            continue i + 1, true, acc_int, next_acc_big
           }
-        } else {
-          (use_big, acc_int, acc_big)
+          _ => raise @core.EvalError("type error: integer expected")
         }
+      } else {
+        (use_big, acc_int, acc_big)
+      }
       if use_big {
         @core.Value::Datum(
           match bigint_to_int_option(acc_big) {
@@ -1158,51 +1168,50 @@ fn apply_numeric_primitive_core(
       }
     }
     Lcm => {
-      let (use_big, acc_int, acc_big) =
-        for i = 0,
-          use_big = false,
-          acc_int = 1,
-          acc_big = bigint_from_int(1);
-          i < args.length(); {
-          // invariant : i >= 0 && i <= args.length()
-          // decreases : args.length() - i
-          // assert : use_big || acc_big == bigint_from_int(1)
-          let value = value_as_exact_integer(args[i])
-          match value {
-            Int(n) =>
-              if use_big {
-                let n_big = bigint_from_int(n)
-                let next_acc_big =
-                  if acc_big.is_zero() || n_big.is_zero() {
-                    bigint_from_int(0)
-                  } else {
-                    let g = bigint_gcd(acc_big, n_big)
-                    bigint_abs(acc_big / g * n_big)
-                  }
-                continue i + 1, true, acc_int, next_acc_big
-              } else if acc_int == 0 || n == 0 {
-                continue i + 1, false, 0, acc_big
+      let (use_big, acc_int, acc_big) = for i = 0, use_big = false, acc_int = 1, acc_big = bigint_from_int(
+                                                1,
+                                              ); i < args.length(); {
+        // invariant : i >= 0 && i <= args.length()
+        // decreases : args.length() - i
+        // assert : use_big || acc_big == bigint_from_int(1)
+        let value = value_as_exact_integer(args[i])
+        match value {
+          Int(n) =>
+            if use_big {
+              let n_big = bigint_from_int(n)
+              let next_acc_big = if acc_big.is_zero() || n_big.is_zero() {
+                bigint_from_int(0)
               } else {
-                let g = gcd(acc_int, n)
-                let next_acc_int = int_abs(acc_int / g * n)
-                continue i + 1, false, next_acc_int, acc_big
+                let g = bigint_gcd(acc_big, n_big)
+                bigint_abs(acc_big / g * n_big)
               }
-            BigInt(n) => {
-              let base_big = if use_big { acc_big } else { bigint_from_int(acc_int) }
-              let next_acc_big =
-                if base_big.is_zero() || n.is_zero() {
-                  bigint_from_int(0)
-                } else {
-                  let g = bigint_gcd(base_big, n)
-                  bigint_abs(base_big / g * n)
-                }
               continue i + 1, true, acc_int, next_acc_big
+            } else if acc_int == 0 || n == 0 {
+              continue i + 1, false, 0, acc_big
+            } else {
+              let g = gcd(acc_int, n)
+              let next_acc_int = int_abs(acc_int / g * n)
+              continue i + 1, false, next_acc_int, acc_big
             }
-            _ => raise @core.EvalError("type error: integer expected")
+          BigInt(n) => {
+            let base_big = if use_big {
+              acc_big
+            } else {
+              bigint_from_int(acc_int)
+            }
+            let next_acc_big = if base_big.is_zero() || n.is_zero() {
+              bigint_from_int(0)
+            } else {
+              let g = bigint_gcd(base_big, n)
+              bigint_abs(base_big / g * n)
+            }
+            continue i + 1, true, acc_int, next_acc_big
           }
-        } else {
-          (use_big, acc_int, acc_big)
+          _ => raise @core.EvalError("type error: integer expected")
         }
+      } else {
+        (use_big, acc_int, acc_big)
+      }
       if use_big {
         @core.Value::Datum(
           match bigint_to_int_option(acc_big) {
@@ -1214,24 +1223,24 @@ fn apply_numeric_primitive_core(
         @core.Value::Datum(@core.Datum::Int(acc_int))
       }
     }
-    Max => {
+    Max =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let best = value_as_number(first)
           let has_inexact = best is Float(_)
-          let (best, has_inexact) =
-            for i = 0, best = best, has_inexact = has_inexact; i < rest.length(); {
-              // invariant : i >= 0 && i <= rest.length()
-              // decreases : rest.length() - i
-              // assert : i <= rest.length()
-              let cur = value_as_number(rest[i])
-              let next_best = if num_less(best, cur) { cur } else { best }
-              let next_has_inexact = has_inexact || cur is Float(_)
-              continue i + 1, next_best, next_has_inexact
-            } else {
-              (best, has_inexact)
-            }
+          let (best, has_inexact) = for i = 0, best = best, has_inexact = has_inexact; i <
+                                       rest.length(); {
+            // invariant : i >= 0 && i <= rest.length()
+            // decreases : rest.length() - i
+            // assert : i <= rest.length()
+            let cur = value_as_number(rest[i])
+            let next_best = if num_less(best, cur) { cur } else { best }
+            let next_has_inexact = has_inexact || cur is Float(_)
+            continue i + 1, next_best, next_has_inexact
+          } else {
+            (best, has_inexact)
+          }
           if has_inexact {
             @core.Value::Datum(@core.Datum::Float(number_to_float(best)))
           } else {
@@ -1239,25 +1248,24 @@ fn apply_numeric_primitive_core(
           }
         }
       }
-    }
-    Min => {
+    Min =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let best = value_as_number(first)
           let has_inexact = best is Float(_)
-          let (best, has_inexact) =
-            for i = 0, best = best, has_inexact = has_inexact; i < rest.length(); {
-              // invariant : i >= 0 && i <= rest.length()
-              // decreases : rest.length() - i
-              // assert : i <= rest.length()
-              let cur = value_as_number(rest[i])
-              let next_best = if num_greater(best, cur) { cur } else { best }
-              let next_has_inexact = has_inexact || cur is Float(_)
-              continue i + 1, next_best, next_has_inexact
-            } else {
-              (best, has_inexact)
-            }
+          let (best, has_inexact) = for i = 0, best = best, has_inexact = has_inexact; i <
+                                       rest.length(); {
+            // invariant : i >= 0 && i <= rest.length()
+            // decreases : rest.length() - i
+            // assert : i <= rest.length()
+            let cur = value_as_number(rest[i])
+            let next_best = if num_greater(best, cur) { cur } else { best }
+            let next_has_inexact = has_inexact || cur is Float(_)
+            continue i + 1, next_best, next_has_inexact
+          } else {
+            (best, has_inexact)
+          }
           if has_inexact {
             @core.Value::Datum(@core.Datum::Float(number_to_float(best)))
           } else {
@@ -1265,7 +1273,6 @@ fn apply_numeric_primitive_core(
           }
         }
       }
-    }
     Floor =>
       match args {
         [num_value] => {
@@ -1353,7 +1360,7 @@ fn apply_numeric_primitive_core(
     BitwiseAnd =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(-1))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_exact_integer(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1370,7 +1377,7 @@ fn apply_numeric_primitive_core(
     BitwiseIor =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(0))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_exact_integer(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1387,7 +1394,7 @@ fn apply_numeric_primitive_core(
     BitwiseXor =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(0))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_exact_integer(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1523,7 +1530,9 @@ fn apply_numeric_primitive_core(
           let start = value_as_nonnegative_int(start_value)
           let end = value_as_nonnegative_int(end_value)
           let from = value_as_exact_integer(from_value)
-          @core.Value::Datum(datum_bitwise_copy_bit_field(value, start, end, from))
+          @core.Value::Datum(
+            datum_bitwise_copy_bit_field(value, start, end, from),
+          )
         }
         _ => raise arity_mismatch(4, args.length())
       }
@@ -1534,7 +1543,9 @@ fn apply_numeric_primitive_core(
           let start = value_as_nonnegative_int(start_value)
           let end = value_as_nonnegative_int(end_value)
           let count = value_as_int_index(count_value)
-          @core.Value::Datum(datum_bitwise_rotate_bit_field(value, start, end, count))
+          @core.Value::Datum(
+            datum_bitwise_rotate_bit_field(value, start, end, count),
+          )
         }
         _ => raise arity_mismatch(4, args.length())
       }
@@ -1577,7 +1588,7 @@ fn apply_numeric_primitive_core(
     FxEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let first = value_as_fixnum_int(first)
           let ok = for i = 0; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1596,7 +1607,7 @@ fn apply_numeric_primitive_core(
     FxLess =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_fixnum_int(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1616,7 +1627,7 @@ fn apply_numeric_primitive_core(
     FxGreater =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_fixnum_int(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1636,7 +1647,7 @@ fn apply_numeric_primitive_core(
     FxLessEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_fixnum_int(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1656,7 +1667,7 @@ fn apply_numeric_primitive_core(
     FxGreaterEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_fixnum_int(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1698,10 +1709,10 @@ fn apply_numeric_primitive_core(
         [value] => bool_value(value_as_fixnum_int(value) % 2 == 0)
         _ => raise arity_mismatch(1, args.length())
       }
-    FxMin => {
+    FxMin =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let current = value_as_fixnum_int(first)
           let current = for i = 0, current = current; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1716,11 +1727,10 @@ fn apply_numeric_primitive_core(
           @core.Value::Datum(@core.Datum::Int(current))
         }
       }
-    }
-    FxMax => {
+    FxMax =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let current = value_as_fixnum_int(first)
           let current = for i = 0, current = current; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1735,7 +1745,6 @@ fn apply_numeric_primitive_core(
           @core.Value::Datum(@core.Datum::Int(current))
         }
       }
-    }
     FxAdd => {
       let acc = for i = 0, acc = bigint_from_int(0); i < args.length(); {
         // invariant : i >= 0 && i <= args.length()
@@ -1755,16 +1764,16 @@ fn apply_numeric_primitive_core(
           let result = value_as_fixnum_bigint(value)
           @core.Value::Datum(fixnum_from_bigint(-result))
         }
-        [first, ..rest] => {
-          let result = for i = 0, result = value_as_fixnum_bigint(first);
-            i < rest.length(); {
-              // invariant : i >= 0 && i <= rest.length()
-              // decreases : rest.length() - i
-              // assert : i <= rest.length()
-              continue i + 1, result - value_as_fixnum_bigint(rest[i])
-            } else {
-              result
-            }
+        [first, .. rest] => {
+          let result = for i = 0, result = value_as_fixnum_bigint(first); i <
+                          rest.length(); {
+            // invariant : i >= 0 && i <= rest.length()
+            // decreases : rest.length() - i
+            // assert : i <= rest.length()
+            continue i + 1, result - value_as_fixnum_bigint(rest[i])
+          } else {
+            result
+          }
           @core.Value::Datum(fixnum_from_bigint(result))
         }
       }
@@ -1919,7 +1928,7 @@ fn apply_numeric_primitive_core(
     FxAnd =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(-1))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_fixnum_datum(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1936,7 +1945,7 @@ fn apply_numeric_primitive_core(
     FxIor =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(0))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_fixnum_datum(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1953,7 +1962,7 @@ fn apply_numeric_primitive_core(
     FxXor =>
       match args {
         [] => @core.Value::Datum(@core.Datum::Int(0))
-        [first, ..rest] => {
+        [first, .. rest] => {
           let acc = value_as_fixnum_datum(first)
           let acc = for i = 0, acc = acc; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -1980,9 +1989,7 @@ fn apply_numeric_primitive_core(
             BitAnd,
           )
           @core.Value::Datum(
-            fixnum_from_datum(
-              datum_bitwise_binop(masked_yes, masked_no, BitOr),
-            ),
+            fixnum_from_datum(datum_bitwise_binop(masked_yes, masked_no, BitOr)),
           )
         }
         _ => raise arity_mismatch(3, args.length())
@@ -2113,7 +2120,9 @@ fn apply_numeric_primitive_core(
         [value, shift_value] => {
           let value = value_as_fixnum_datum(value)
           let shift = value_as_fixnum_int(shift_value)
-          @core.Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, shift)))
+          @core.Value::Datum(
+            fixnum_from_datum(datum_arithmetic_shift(value, shift)),
+          )
         }
         _ => raise arity_mismatch(2, args.length())
       }
@@ -2122,7 +2131,9 @@ fn apply_numeric_primitive_core(
         [value, shift_value] => {
           let value = value_as_fixnum_datum(value)
           let shift = value_as_nonnegative_fixnum_int(shift_value)
-          @core.Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, shift)))
+          @core.Value::Datum(
+            fixnum_from_datum(datum_arithmetic_shift(value, shift)),
+          )
         }
         _ => raise arity_mismatch(2, args.length())
       }
@@ -2131,7 +2142,9 @@ fn apply_numeric_primitive_core(
         [value, shift_value] => {
           let value = value_as_fixnum_datum(value)
           let shift = value_as_nonnegative_fixnum_int(shift_value)
-          @core.Value::Datum(fixnum_from_datum(datum_arithmetic_shift(value, -shift)))
+          @core.Value::Datum(
+            fixnum_from_datum(datum_arithmetic_shift(value, -shift)),
+          )
         }
         _ => raise arity_mismatch(2, args.length())
       }
@@ -2164,7 +2177,7 @@ fn apply_numeric_primitive_core(
     FlEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let first = value_as_flonum(first)
           let ok = for i = 0; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2183,7 +2196,7 @@ fn apply_numeric_primitive_core(
     FlLess =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_flonum(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2203,7 +2216,7 @@ fn apply_numeric_primitive_core(
     FlGreater =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_flonum(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2223,7 +2236,7 @@ fn apply_numeric_primitive_core(
     FlLessEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_flonum(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2243,7 +2256,7 @@ fn apply_numeric_primitive_core(
     FlGreaterEq =>
       match args {
         [] | [_] => bool_value(true)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let prev = value_as_flonum(first)
           let ok = for i = 0, prev = prev; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2309,10 +2322,10 @@ fn apply_numeric_primitive_core(
         [value] => bool_value(float_is_nan(value_as_flonum(value)))
         _ => raise arity_mismatch(1, args.length())
       }
-    FlMax => {
+    FlMax =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let current = value_as_flonum(first)
           if float_is_nan(current) {
             return @core.Value::Datum(@core.Datum::Float(current))
@@ -2333,11 +2346,10 @@ fn apply_numeric_primitive_core(
           @core.Value::Datum(@core.Datum::Float(current))
         }
       }
-    }
-    FlMin => {
+    FlMin =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [first, ..rest] => {
+        [first, .. rest] => {
           let current = value_as_flonum(first)
           if float_is_nan(current) {
             return @core.Value::Datum(@core.Datum::Float(current))
@@ -2358,7 +2370,6 @@ fn apply_numeric_primitive_core(
           @core.Value::Datum(@core.Datum::Float(current))
         }
       }
-    }
     FlAdd => {
       let acc = for i = 0, acc = Float::from_int(0); i < args.length(); {
         // invariant : i >= 0 && i <= args.length()
@@ -2384,8 +2395,9 @@ fn apply_numeric_primitive_core(
     FlSub =>
       match args {
         [] => raise arity_mismatch(1, 0)
-        [value] => @core.Value::Datum(@core.Datum::Float(-value_as_flonum(value)))
-        [first, ..rest] => {
+        [value] =>
+          @core.Value::Datum(@core.Datum::Float(-value_as_flonum(value)))
+        [first, .. rest] => {
           let result = value_as_flonum(first)
           let result = for i = 0, result = result; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2405,7 +2417,7 @@ fn apply_numeric_primitive_core(
           let denom = value_as_flonum(value)
           @core.Value::Datum(@core.Datum::Float(Float::from_int(1) / denom))
         }
-        [first, ..rest] => {
+        [first, .. rest] => {
           let result = value_as_flonum(first)
           let result = for i = 0, result = result; i < rest.length(); {
             // invariant : i >= 0 && i <= rest.length()
@@ -2422,7 +2434,9 @@ fn apply_numeric_primitive_core(
       match args {
         [value] => {
           let num = value_as_flonum(value)
-          @core.Value::Datum(@core.Datum::Float(if num < 0.0 { -num } else { num }))
+          @core.Value::Datum(
+            @core.Datum::Float(if num < 0.0 { -num } else { num }),
+          )
         }
         _ => raise arity_mismatch(1, args.length())
       }
@@ -2515,7 +2529,9 @@ fn apply_numeric_primitive_core(
           if !float_is_finite(num) {
             @core.Value::Datum(@core.Datum::Float(num))
           } else {
-            @core.Value::Datum(@core.Datum::Float(Float::from_int(float_floor_int(num))))
+            @core.Value::Datum(
+              @core.Datum::Float(Float::from_int(float_floor_int(num))),
+            )
           }
         }
         _ => raise arity_mismatch(1, args.length())
@@ -2541,7 +2557,9 @@ fn apply_numeric_primitive_core(
           if !float_is_finite(num) {
             @core.Value::Datum(@core.Datum::Float(num))
           } else {
-            @core.Value::Datum(@core.Datum::Float(Float::from_int(num.to_int())))
+            @core.Value::Datum(
+              @core.Datum::Float(Float::from_int(num.to_int())),
+            )
           }
         }
         _ => raise arity_mismatch(1, args.length())
@@ -2553,7 +2571,9 @@ fn apply_numeric_primitive_core(
           if !float_is_finite(num) {
             @core.Value::Datum(@core.Datum::Float(num))
           } else {
-            @core.Value::Datum(@core.Datum::Float(Float::from_int(float_round_int(num))))
+            @core.Value::Datum(
+              @core.Datum::Float(Float::from_int(float_round_int(num))),
+            )
           }
         }
         _ => raise arity_mismatch(1, args.length())
@@ -2561,49 +2581,65 @@ fn apply_numeric_primitive_core(
     FlExp =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.expf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.expf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlLog =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.lnf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.lnf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlSin =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.sinf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.sinf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlCos =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.cosf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.cosf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlTan =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.tanf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.tanf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlAsin =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.asinf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.asinf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlAcos =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.acosf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.acosf(value_as_flonum(value))),
+          )
         _ => raise arity_mismatch(1, args.length())
       }
     FlAtan =>
       match args {
         [value] =>
-          @core.Value::Datum(@core.Datum::Float(@math.atanf(value_as_flonum(value))))
+          @core.Value::Datum(
+            @core.Datum::Float(@math.atanf(value_as_flonum(value))),
+          )
         [y_value, x_value] => {
           let y = value_as_flonum(y_value)
           let x = value_as_flonum(x_value)
@@ -2628,7 +2664,6 @@ fn apply_numeric_primitive_core(
         }
         _ => raise arity_mismatch(2, args.length())
       }
-    _ =>
-      raise @core.EvalError("internal error: numeric primitive dispatch")
+    _ => raise @core.EvalError("internal error: numeric primitive dispatch")
   }
 }

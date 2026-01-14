@@ -68,8 +68,7 @@ test "parse basics" {
     _ => fail("expected string")
   }
   match parse_program("#vu8(1 2)") {
-    [ByteVector(items), ..] =>
-      inspect(items.length(), content="2")
+    [ByteVector(items), ..] => inspect(items.length(), content="2")
     _ => fail("expected bytevector")
   }
   match parse_program("#(1 2)") {
@@ -378,7 +377,10 @@ test "parse number edge cases" {
     Some(Float(_)) => ()
     _ => fail("expected inexact big rat")
   }
-  match parse_number_token("1000000000000000000000000000000/1000000000000000000000000000000") {
+  match
+    parse_number_token(
+      "1000000000000000000000000000000/1000000000000000000000000000000",
+    ) {
     Some(Int(1)) => ()
     _ => fail("expected 1")
   }

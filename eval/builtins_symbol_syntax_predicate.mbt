@@ -40,8 +40,8 @@ fn apply_symbol_syntax_predicate_primitive(
     | FiniteP
     | InfiniteP
     | NanP
-    | ProcedureP
-    => Some(apply_symbol_syntax_predicate_primitive_core(prim, args))
+    | ProcedureP =>
+      Some(apply_symbol_syntax_predicate_primitive_core(prim, args))
     _ => None
   }
 }
@@ -118,15 +118,13 @@ fn apply_symbol_syntax_predicate_primitive_core(
       }
     SymbolToString =>
       match args {
-        [Datum(Symbol(name))] =>
-          @core.Value::Datum(String(Ref::new(name)))
+        [Datum(Symbol(name))] => @core.Value::Datum(String(Ref::new(name)))
         [_] => raise @core.EvalError("type error: symbol expected")
         _ => raise arity_mismatch(1, args.length())
       }
     StringToSymbol =>
       match args {
-        [Datum(String(name))] =>
-          @core.Value::Datum(Symbol(name.val))
+        [Datum(String(name))] => @core.Value::Datum(Symbol(name.val))
         [_] => raise @core.EvalError("type error: string expected")
         _ => raise arity_mismatch(1, args.length())
       }
@@ -270,8 +268,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
         | [Datum(Rat(_, _))]
         | [Datum(BigRat(_, _))]
         | [Datum(Float(_))] => bool_value(true)
-        [Datum(Complex(_, imag))] =>
-          bool_value(datum_is_zero(imag.val))
+        [Datum(Complex(_, imag))] => bool_value(datum_is_zero(imag.val))
         [_] => bool_value(false)
         _ => raise arity_mismatch(1, args.length())
       }
@@ -390,8 +387,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
           }
           match value {
             Int(n) => bool_value(n % 2 != 0)
-            BigInt(n) =>
-              bool_value(!bigint_is_zero(n % bigint_from_int(2)))
+            BigInt(n) => bool_value(!bigint_is_zero(n % bigint_from_int(2)))
             _ => raise @core.EvalError("type error: exact integer expected")
           }
         }
@@ -418,8 +414,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
           }
           match value {
             Int(n) => bool_value(n % 2 == 0)
-            BigInt(n) =>
-              bool_value(bigint_is_zero(n % bigint_from_int(2)))
+            BigInt(n) => bool_value(bigint_is_zero(n % bigint_from_int(2)))
             _ => raise @core.EvalError("type error: exact integer expected")
           }
         }
@@ -436,10 +431,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
           if datum_is_zero(imag.val) {
             match real.val {
               Float(f) => bool_value(float_is_finite(f))
-              Int(_)
-              | BigInt(_)
-              | Rat(_, _)
-              | BigRat(_, _) => bool_value(true)
+              Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) => bool_value(true)
               _ => raise @core.EvalError("type error: number expected")
             }
           } else {
@@ -459,10 +451,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
           if datum_is_zero(imag.val) {
             match real.val {
               Float(f) => bool_value(float_is_infinite(f))
-              Int(_)
-              | BigInt(_)
-              | Rat(_, _)
-              | BigRat(_, _) => bool_value(false)
+              Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) => bool_value(false)
               _ => raise @core.EvalError("type error: number expected")
             }
           } else {
@@ -482,10 +471,7 @@ fn apply_symbol_syntax_predicate_primitive_core(
           if datum_is_zero(imag.val) {
             match real.val {
               Float(f) => bool_value(float_is_nan(f))
-              Int(_)
-              | BigInt(_)
-              | Rat(_, _)
-              | BigRat(_, _) => bool_value(false)
+              Int(_) | BigInt(_) | Rat(_, _) | BigRat(_, _) => bool_value(false)
               _ => raise @core.EvalError("type error: number expected")
             }
           } else {
@@ -509,6 +495,8 @@ fn apply_symbol_syntax_predicate_primitive_core(
         _ => raise arity_mismatch(1, args.length())
       }
     _ =>
-      raise @core.EvalError("internal error: apply_symbol_syntax_predicate_primitive dispatch")
+      raise @core.EvalError(
+        "internal error: apply_symbol_syntax_predicate_primitive dispatch",
+      )
   }
 }
