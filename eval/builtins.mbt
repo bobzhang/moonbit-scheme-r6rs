@@ -4,38 +4,31 @@ fn apply_primitive(
   prim : @core.Primitive,
   args : Array[@core.Value],
 ) -> @core.Value raise @core.EvalError {
-  match apply_numeric_primitive(prim, args) {
-    Some(value) => value
-    None =>
-      match apply_symbol_syntax_predicate_primitive(prim, args) {
-        Some(value) => value
-        None =>
-          match apply_record_condition_primitive(prim, args) {
-            Some(value) => value
-            None =>
-              match apply_hashtable_enumset_primitive(prim, args) {
-                Some(value) => value
-                None =>
-                  if is_pair_list_primitive(prim) {
-                    apply_pair_list_primitive(prim, args)
-                  } else {
-                    match apply_char_string_primitive(prim, args) {
-                      Some(value) => value
-                      None =>
-                        match apply_vector_primitive(prim, args) {
-                          Some(value) => value
-                          None =>
-                            match apply_bytevector_primitive(prim, args) {
-                              Some(value) => value
-                              None => apply_primitive_core(prim, args)
-                            }
-                        }
-                    }
-                  }
-              }
-          }
-      }
+  if apply_numeric_primitive(prim, args) is Some(value) {
+    return value
   }
+  if apply_symbol_syntax_predicate_primitive(prim, args) is Some(value) {
+    return value
+  }
+  if apply_record_condition_primitive(prim, args) is Some(value) {
+    return value
+  }
+  if apply_hashtable_enumset_primitive(prim, args) is Some(value) {
+    return value
+  }
+  if is_pair_list_primitive(prim) {
+    return apply_pair_list_primitive(prim, args)
+  }
+  if apply_char_string_primitive(prim, args) is Some(value) {
+    return value
+  }
+  if apply_vector_primitive(prim, args) is Some(value) {
+    return value
+  }
+  if apply_bytevector_primitive(prim, args) is Some(value) {
+    return value
+  }
+  apply_primitive_core(prim, args)
 }
 
 ///|

@@ -37,19 +37,23 @@ fn parse_int_token(tok : String) -> Int? {
 }
 
 ///|
+/// Create an imaginary unit (1 or -1) based on exactness.
+fn make_imag_unit(sign : Int, exactness : Char?) -> @core.Datum {
+  match exactness {
+    Some('i') | Some('I') => @core.Datum::Float(Float::from_int(sign))
+    _ => @core.Datum::Int(sign)
+  }
+}
+
+///|
 
 ///|
 fn parse_label_token(tok : String) -> (Bool, Int)? {
   let view = tok[:]
   match view {
-    ['#', .., last] =>
+    ['#', ..digits, last] =>
       match last {
-        '=' | '#' => {
-          let digits = try view[1:view.length() - 1] catch {
-            _ => return None
-          } noraise {
-            view => view
-          }
+        '=' | '#' => {          
           parse_decimal_digits(digits).map(acc => (last == '=', acc))
         }
         _ => None
@@ -69,7 +73,7 @@ fn int_abs(value : Int) -> Int {
 
 ///|
 fn gcd(a : Int, b : Int) -> Int {
-  for x = int_abs(a), y = int_abs(b); y != 0; {
+  for x = Int::abs(a), y = Int::abs(b); y != 0; {
     // invariant : x >= 0 && y >= 0
     // decreases : y
     // assert : y >= 0
@@ -827,27 +831,10 @@ fn parse_complex_token(
     return None
   }
   match core_chars {
-    [] => {
-      let imag = match exactness {
-        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
-        _ => @core.Datum::Int(1)
-      }
-      return Some(make_complex_datum(@core.Datum::Int(0), imag))
-    }
-    ['+'] => {
-      let imag = match exactness {
-        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
-        _ => @core.Datum::Int(1)
-      }
-      return Some(make_complex_datum(@core.Datum::Int(0), imag))
-    }
-    ['-'] => {
-      let imag = match exactness {
-        Some('i') | Some('I') => @core.Datum::Float(Float::from_int(-1))
-        _ => @core.Datum::Int(-1)
-      }
-      return Some(make_complex_datum(@core.Datum::Int(0), imag))
-    }
+    [] | ['+'] =>
+      return Some(make_complex_datum(@core.Datum::Int(0), make_imag_unit(1, exactness)))
+    ['-'] =>
+      return Some(make_complex_datum(@core.Datum::Int(0), make_imag_unit(-1, exactness)))
     _ => ()
   }
   match find_complex_split(core_chars, radix) {
@@ -869,16 +856,8 @@ fn parse_complex_token(
         None => return None
       }
       let imag = match imag_view {
-        ['+'] =>
-          match exactness {
-            Some('i') | Some('I') => @core.Datum::Float(Float::from_int(1))
-            _ => @core.Datum::Int(1)
-          }
-        ['-'] =>
-          match exactness {
-            Some('i') | Some('I') => @core.Datum::Float(Float::from_int(-1))
-            _ => @core.Datum::Int(-1)
-          }
+        ['+'] => make_imag_unit(1, exactness)
+        ['-'] => make_imag_unit(-1, exactness)
         _ => {
           let imag_str = imag_view.to_string()
           match

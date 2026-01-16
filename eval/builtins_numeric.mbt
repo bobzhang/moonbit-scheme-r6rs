@@ -246,86 +246,10 @@ fn apply_numeric_primitive_core(
           bool_value(ok)
         }
       }
-    Less =>
-      match args {
-        [] | [_] => bool_value(true)
-        [first, .. rest] => {
-          let prev = value_as_number(first)
-          let ok = for i = 0, prev = prev; i < rest.length(); {
-            // invariant : i >= 0 && i <= rest.length()
-            // decreases : rest.length() - i
-            // assert : i <= rest.length()
-            let cur = value_as_number(rest[i])
-            if !num_less(prev, cur) {
-              break false
-            }
-            continue i + 1, cur
-          } else {
-            true
-          }
-          bool_value(ok)
-        }
-      }
-    Greater =>
-      match args {
-        [] | [_] => bool_value(true)
-        [first, .. rest] => {
-          let prev = value_as_number(first)
-          let ok = for i = 0, prev = prev; i < rest.length(); {
-            // invariant : i >= 0 && i <= rest.length()
-            // decreases : rest.length() - i
-            // assert : i <= rest.length()
-            let cur = value_as_number(rest[i])
-            if !num_greater(prev, cur) {
-              break false
-            }
-            continue i + 1, cur
-          } else {
-            true
-          }
-          bool_value(ok)
-        }
-      }
-    LessEq =>
-      match args {
-        [] | [_] => bool_value(true)
-        [first, .. rest] => {
-          let prev = value_as_number(first)
-          let ok = for i = 0, prev = prev; i < rest.length(); {
-            // invariant : i >= 0 && i <= rest.length()
-            // decreases : rest.length() - i
-            // assert : i <= rest.length()
-            let cur = value_as_number(rest[i])
-            if !num_less_eq(prev, cur) {
-              break false
-            }
-            continue i + 1, cur
-          } else {
-            true
-          }
-          bool_value(ok)
-        }
-      }
-    GreaterEq =>
-      match args {
-        [] | [_] => bool_value(true)
-        [first, .. rest] => {
-          let prev = value_as_number(first)
-          let ok = for i = 0, prev = prev; i < rest.length(); {
-            // invariant : i >= 0 && i <= rest.length()
-            // decreases : rest.length() - i
-            // assert : i <= rest.length()
-            let cur = value_as_number(rest[i])
-            if !num_greater_eq(prev, cur) {
-              break false
-            }
-            continue i + 1, cur
-          } else {
-            true
-          }
-          bool_value(ok)
-        }
-      }
+    Less => compare_chain(args, num_less)
+    Greater => compare_chain(args, num_greater)
+    LessEq => compare_chain(args, num_less_eq)
+    GreaterEq => compare_chain(args, num_greater_eq)
     ExactToInexact =>
       match args {
         [Datum(Float(f))] => @core.Value::Datum(@core.Datum::Float(f))
@@ -2665,5 +2589,29 @@ fn apply_numeric_primitive_core(
         _ => raise arity_mismatch(2, args.length())
       }
     _ => raise @core.EvalError("internal error: numeric primitive dispatch")
+  }
+}
+
+///|
+/// Helper for chained numeric comparisons (e.g., < <= > >=).
+fn compare_chain(
+  args : Array[@core.Value],
+  cmp : (@core.Datum, @core.Datum) -> Bool raise @core.EvalError,
+) -> @core.Value raise @core.EvalError {
+  match args {
+    [] | [_] => bool_value(true)
+    [first, .. rest] => {
+      let prev = value_as_number(first)
+      let ok = for i = 0, prev = prev; i < rest.length(); {
+        let cur = value_as_number(rest[i])
+        if !cmp(prev, cur) {
+          break false
+        }
+        continue i + 1, cur
+      } else {
+        true
+      }
+      bool_value(ok)
+    }
   }
 }
