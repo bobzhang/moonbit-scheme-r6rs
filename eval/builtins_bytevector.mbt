@@ -110,39 +110,14 @@ fn apply_bytevector_primitive(
       }
     ByteVectorCopy =>
       match args {
-        [vec_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = 0
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(ByteVector(slice))
-            },
-          )
-        [vec_value, start_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(ByteVector(slice))
-            },
-          )
-        [vec_value, start_value, end_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = value_as_int_index(end_value)
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(ByteVector(slice))
-            },
-          )
+        [vec_value, .. rest] => {
+          let items = value_as_bytevector(vec_value)
+          let start = if rest.length() >= 1 { value_as_int_index(rest[0]) } else { 0 }
+          let end = if rest.length() >= 2 { value_as_int_index(rest[1]) } else { items.length() }
+          check_slice_range(start, end, items.length())
+          let slice = items.sub(start~, end~).to_array()
+          Some(@core.Value::Datum(ByteVector(slice)))
+        }
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 to 3 got \{args.length()}",
@@ -240,48 +215,17 @@ fn apply_bytevector_primitive(
     }
     ByteVectorFill =>
       match args {
-        [vec_value, fill_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let fill = value_as_byte(fill_value)
-              let start = 0
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
-        [vec_value, fill_value, start_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let fill = value_as_byte(fill_value)
-              let start = value_as_int_index(start_value)
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
-        [vec_value, fill_value, start_value, end_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let fill = value_as_byte(fill_value)
-              let start = value_as_int_index(start_value)
-              let end = value_as_int_index(end_value)
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
+        [vec_value, fill_value, .. rest] => {
+          let items = value_as_bytevector(vec_value)
+          let fill = value_as_byte(fill_value)
+          let start = if rest.length() >= 1 { value_as_int_index(rest[0]) } else { 0 }
+          let end = if rest.length() >= 2 { value_as_int_index(rest[1]) } else { items.length() }
+          check_slice_range(start, end, items.length())
+          for i in start..<end {
+            items[i] = fill
+          }
+          Some(@core.Value::Void)
+        }
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 2 to 4 got \{args.length()}",
@@ -289,48 +233,17 @@ fn apply_bytevector_primitive(
       }
     ByteVectorToU8List =>
       match args {
-        [vec_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = 0
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let datums : Array[@core.Datum] = []
-              for i in start..<end {
-                datums.push(Int(items[i]))
-              }
-              @core.Value::Datum(list_from_array(datums))
-            },
-          )
-        [vec_value, start_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let datums : Array[@core.Datum] = []
-              for i in start..<end {
-                datums.push(Int(items[i]))
-              }
-              @core.Value::Datum(list_from_array(datums))
-            },
-          )
-        [vec_value, start_value, end_value] =>
-          Some(
-            {
-              let items = value_as_bytevector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = value_as_int_index(end_value)
-              check_slice_range(start, end, items.length())
-              let datums : Array[@core.Datum] = []
-              for i in start..<end {
-                datums.push(Int(items[i]))
-              }
-              @core.Value::Datum(list_from_array(datums))
-            },
-          )
+        [vec_value, .. rest] => {
+          let items = value_as_bytevector(vec_value)
+          let start = if rest.length() >= 1 { value_as_int_index(rest[0]) } else { 0 }
+          let end = if rest.length() >= 2 { value_as_int_index(rest[1]) } else { items.length() }
+          check_slice_range(start, end, items.length())
+          let datums : Array[@core.Datum] = []
+          for i in start..<end {
+            datums.push(Int(items[i]))
+          }
+          Some(@core.Value::Datum(list_from_array(datums)))
+        }
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 to 3 got \{args.length()}",

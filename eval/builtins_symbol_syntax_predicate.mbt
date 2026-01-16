@@ -86,34 +86,9 @@ fn apply_symbol_syntax_predicate_primitive_core(
         [_] => bool_value(false)
         _ => raise arity_mismatch(1, args.length())
       }
-    FreeIdentifierEq =>
+    FreeIdentifierEq | BoundIdentifierEq =>
       match args {
-        [left, right] => {
-          let (a, a_scopes, a_binding) = identifier_info(left)
-          let (b, b_scopes, b_binding) = identifier_info(right)
-          if a != b {
-            bool_value(false)
-          } else if a_binding is Some(_) && b_binding is Some(_) {
-            bool_value(a_binding == b_binding)
-          } else {
-            bool_value(scopes_equal(a_scopes, b_scopes))
-          }
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    BoundIdentifierEq =>
-      match args {
-        [left, right] => {
-          let (a, a_scopes, a_binding) = identifier_info(left)
-          let (b, b_scopes, b_binding) = identifier_info(right)
-          if a != b {
-            bool_value(false)
-          } else if a_binding is Some(_) && b_binding is Some(_) {
-            bool_value(a_binding == b_binding)
-          } else {
-            bool_value(scopes_equal(a_scopes, b_scopes))
-          }
-        }
+        [left, right] => compare_identifiers(left, right)
         _ => raise arity_mismatch(2, args.length())
       }
     SymbolToString =>
@@ -498,5 +473,22 @@ fn apply_symbol_syntax_predicate_primitive_core(
       raise @core.EvalError(
         "internal error: apply_symbol_syntax_predicate_primitive dispatch",
       )
+  }
+}
+
+///|
+/// Compare two identifiers for equality (used by both free-identifier=? and bound-identifier=?).
+fn compare_identifiers(
+  left : @core.Value,
+  right : @core.Value,
+) -> @core.Value raise @core.EvalError {
+  let (a, a_scopes, a_binding) = identifier_info(left)
+  let (b, b_scopes, b_binding) = identifier_info(right)
+  if a != b {
+    bool_value(false)
+  } else if a_binding is Some(_) && b_binding is Some(_) {
+    bool_value(a_binding == b_binding)
+  } else {
+    bool_value(scopes_equal(a_scopes, b_scopes))
   }
 }

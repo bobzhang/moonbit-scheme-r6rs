@@ -79,48 +79,17 @@ fn apply_vector_primitive(
       }
     VectorFill =>
       match args {
-        [vec_value, fill_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let fill = value_to_datum_element(fill_value)
-              let start = 0
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
-        [vec_value, fill_value, start_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let fill = value_to_datum_element(fill_value)
-              let start = value_as_int_index(start_value)
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
-        [vec_value, fill_value, start_value, end_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let fill = value_to_datum_element(fill_value)
-              let start = value_as_int_index(start_value)
-              let end = value_as_int_index(end_value)
-              check_slice_range(start, end, items.length())
-              for i in start..<end {
-                items[i] = fill
-              }
-              @core.Value::Void
-            },
-          )
+        [vec_value, fill_value, .. rest] => {
+          let items = value_as_vector(vec_value)
+          let fill = value_to_datum_element(fill_value)
+          let start = if rest.length() >= 1 { value_as_int_index(rest[0]) } else { 0 }
+          let end = if rest.length() >= 2 { value_as_int_index(rest[1]) } else { items.length() }
+          check_slice_range(start, end, items.length())
+          for i in start..<end {
+            items[i] = fill
+          }
+          Some(@core.Value::Void)
+        }
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 2 to 4 got \{args.length()}",
@@ -128,39 +97,14 @@ fn apply_vector_primitive(
       }
     VectorCopy =>
       match args {
-        [vec_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let start = 0
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(Vector(slice))
-            },
-          )
-        [vec_value, start_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = items.length()
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(Vector(slice))
-            },
-          )
-        [vec_value, start_value, end_value] =>
-          Some(
-            {
-              let items = value_as_vector(vec_value)
-              let start = value_as_int_index(start_value)
-              let end = value_as_int_index(end_value)
-              check_slice_range(start, end, items.length())
-              let slice = items.sub(start~, end~).to_array()
-              @core.Value::Datum(Vector(slice))
-            },
-          )
+        [vec_value, .. rest] => {
+          let items = value_as_vector(vec_value)
+          let start = if rest.length() >= 1 { value_as_int_index(rest[0]) } else { 0 }
+          let end = if rest.length() >= 2 { value_as_int_index(rest[1]) } else { items.length() }
+          check_slice_range(start, end, items.length())
+          let slice = items.sub(start~, end~).to_array()
+          Some(@core.Value::Datum(Vector(slice)))
+        }
         _ =>
           raise @core.EvalError(
             "arity mismatch: expected 1 to 3 got \{args.length()}",

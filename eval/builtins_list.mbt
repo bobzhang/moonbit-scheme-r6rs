@@ -235,51 +235,16 @@ fn apply_pair_list_primitive(
         }
         _ => raise arity_mismatch(1, args.length())
       }
-    Member =>
+    Member | Memq | Memv | Assoc | Assq | Assv =>
       match args {
         [item, list_value] => {
           let list = value_as_datum(list_value)
-          list_member(EqualMode, item, list)
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    Memq =>
-      match args {
-        [item, list_value] => {
-          let list = value_as_datum(list_value)
-          list_member(EqvMode, item, list)
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    Memv =>
-      match args {
-        [item, list_value] => {
-          let list = value_as_datum(list_value)
-          list_member(EqvMode, item, list)
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    Assoc =>
-      match args {
-        [item, list_value] => {
-          let list = value_as_datum(list_value)
-          list_assoc(EqualMode, item, list)
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    Assq =>
-      match args {
-        [item, list_value] => {
-          let list = value_as_datum(list_value)
-          list_assoc(EqvMode, item, list)
-        }
-        _ => raise arity_mismatch(2, args.length())
-      }
-    Assv =>
-      match args {
-        [item, list_value] => {
-          let list = value_as_datum(list_value)
-          list_assoc(EqvMode, item, list)
+          let mode = if prim is Member || prim is Assoc { EqualMode } else { EqvMode }
+          if prim is Member || prim is Memq || prim is Memv {
+            list_member(mode, item, list)
+          } else {
+            list_assoc(mode, item, list)
+          }
         }
         _ => raise arity_mismatch(2, args.length())
       }
